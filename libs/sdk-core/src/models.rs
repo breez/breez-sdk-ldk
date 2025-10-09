@@ -456,6 +456,13 @@ pub struct Config {
     ///
     /// Note that, if specified, the URL has to be in the format: `https://mempool.space/api`
     pub mempoolspace_url: Option<String>,
+
+    pub esplora_url: String,
+    pub vss_url: String,
+    pub rgs_url: String,
+    /// LSP address in the format: pubkey@host:port.
+    pub lsps2_address: String,
+
     /// Directory in which all SDK files (DB, log) are stored. Defaults to ".", otherwise if it's customized,
     /// the folder should exist before starting the SDK.
     pub working_dir: String,
@@ -476,6 +483,13 @@ impl Config {
             breezserver: PRODUCTION_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
             mempoolspace_url: None,
+
+            // TODO: Set proper values.
+            esplora_url: String::new(),
+            vss_url: String::new(),
+            rgs_url: String::new(),
+            lsps2_address: String::new(),
+
             working_dir: ".".to_string(),
             network: Bitcoin,
             payment_timeout_sec: 60,
@@ -492,6 +506,13 @@ impl Config {
             breezserver: STAGING_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
             mempoolspace_url: None,
+
+            // TODO: Set proper values.
+            esplora_url: String::new(),
+            vss_url: String::new(),
+            rgs_url: String::new(),
+            lsps2_address: String::new(),
+
             working_dir: ".".to_string(),
             network: Bitcoin,
             payment_timeout_sec: 60,
@@ -508,6 +529,14 @@ impl Config {
             breezserver: REGTEST_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
             mempoolspace_url: Some(REGTEST_MEMPOOL_URL.to_string()),
+
+            esplora_url: "http://localhost:30000".to_string(),
+            vss_url: "http://localhost:3080/vss".to_string(),
+            rgs_url: "http://localhost:8011/v2".to_string(),
+            lsps2_address:
+                "02b49b94e068e05c04c2ac98e096a06202d04920daec25d82f7898e21901f15d81@localhost:9735"
+                    .to_string(),
+
             working_dir: ".".to_string(),
             network: Regtest,
             payment_timeout_sec: 60,

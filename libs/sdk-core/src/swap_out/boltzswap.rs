@@ -79,6 +79,7 @@ impl From<BoltzRouteHints> for Vec<RouteHint> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Post {
