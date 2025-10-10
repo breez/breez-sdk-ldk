@@ -1,15 +1,20 @@
-use crate::ldk::store::versioned_store::{Error, VersionedStore};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
 use tonic::async_trait;
+
+use crate::ldk::store::versioned_store::{Error, VersionedStore};
+
+pub type Map = HashMap<String, (Vec<u8>, i64)>;
 
 /// A mock implementation of VersionedStore for testing purposes.
 ///
 /// This mock store maintains an in-memory HashMap to simulate a versioned key-value store.
 /// It can be configured to return specific errors or simulate various scenarios for testing.
+#[allow(dead_code)]
 #[derive(Default, Clone)]
 pub struct MockVersionedStore {
-    pub data: Arc<Mutex<HashMap<String, (Vec<u8>, i64)>>>,
+    pub data: Arc<Mutex<Map>>,
     pub should_fail_get: bool,
     pub should_fail_put: bool,
     pub should_fail_delete: bool,

@@ -20,7 +20,7 @@ impl From<bitcoin::network::constants::Network> for Network {
             bitcoin::network::constants::Network::Signet => Network::Signet,
             bitcoin::network::constants::Network::Regtest => Network::Regtest,
             _ => {
-                warn!("Unknown network: {:?}", network);
+                warn!("Unknown network: {network:?}");
                 Network::Bitcoin
             }
         }

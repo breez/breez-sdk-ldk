@@ -7,20 +7,11 @@ version.workspace = true
 name = "breez_sdk_core"
 crate-type = ["staticlib", "cdylib", "lib"]
 
-[features]
-default = ["greenlight"]
-greenlight = ["dep:gl-client"]
-# Enable LDK (Lightning Development Kit) node implementation
-ldk = ["dep:ldk-node", "dep:vss-client"]
-
 [dependencies]
 flutter_rust_bridge = "=2.9.0"
 aes = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
-gl-client = { git = "https://github.com/Blockstream/greenlight.git", features = [
-    "permissive",
-], rev = "1dcbc53d10e66e97e8d2550c269e2b130198ad5e", optional = true }
 zbase32 = "0.1.2"
 base64 = { workspace = true }
 bitcoin = { workspace = true, features = ["serde", "rand"] }
@@ -64,8 +55,8 @@ ryu = "1.0.18"
 #    https://github.com/lightningdevkit/ldk-node/pull/543
 # - "Add receive_via_jit_channel_for_hash() method"
 #   https://github.com/lightningdevkit/ldk-node/pull/608
-ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "fdaa759f2485189319f5b5b7d046c2b0de281e23", optional = true }
-vss-client = { version = "0.3.1", default-features = false, optional = true }
+ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "fdaa759f2485189319f5b5b7d046c2b0de281e23" }
+vss-client = { version = "0.3.1", default-features = false }
 
 [dev-dependencies]
 mockall = "0.13.1"

@@ -2,6 +2,7 @@ use std::fmt;
 use tonic::async_trait;
 
 /// Errors that can occur during versioned store operations.
+#[allow(dead_code)] // The use in `Debug` trait is not considered as usage by the compiler.
 #[derive(Debug)]
 pub enum Error {
     /// A conflict occurred, typically when trying to update a key with an outdated version.
@@ -64,6 +65,7 @@ pub trait VersionedStore {
     /// # Returns
     /// * `Ok(())` - If the key was deleted successfully or didn't exist
     /// * `Err(Error)` - If an error occurred during deletion
+    #[allow(dead_code)]
     async fn delete(&self, key: String) -> Result<(), Error>;
 
     /// Lists all keys and their versions in the store.
@@ -71,5 +73,6 @@ pub trait VersionedStore {
     /// # Returns
     /// * `Ok(Vec<(String, i64)>)` - A list of (key, version) pairs
     /// * `Err(Error)` - If an error occurred during listing
+    #[allow(dead_code)]
     async fn list(&self) -> Result<Vec<(String, i64)>, Error>;
 }
