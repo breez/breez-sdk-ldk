@@ -61,6 +61,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> MirroringStore<S, T>
                 value BLOB NOT NULL,
                 local_version INTEGER NOT NULL,
                 remote_version INTEGER NOT NULL DEFAULT -1,
+                removed INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (primary_ns, secondary_ns, key)
             )",
             [],
@@ -97,7 +98,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
     fn read(&self, primary_ns: &str, secondary_ns: &str, key: &str) -> io::Result<Vec<u8>> {
         let conn = self.pool.get().map_err(other)?;
         conn.query_row(
-            "SELECT value FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
+            "SELECT value FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3 AND removed = 0",
             params![primary_ns, secondary_ns, key],
             |row| row.get(0),
         )
@@ -117,29 +118,32 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         debug!("Writing {full_key} {} bytes", value.len());
         let conn = self.pool.get().map_err(other)?;
 
-        let local_data: Option<(i64, Vec<u8>)> = conn.query_row(
-            "SELECT local_version, value FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
-            params![primary_ns, secondary_ns, key],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        ).optional().map_err(other)?;
+        let local_data: Option<(i64, Vec<u8>, bool)> = conn
+            .query_row(
+                "SELECT local_version, value, removed FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
+                params![primary_ns, secondary_ns, key],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()
+            .map_err(other)?;
         let next_version = match local_data {
             None => {
                 let next_version = 0;
                 conn.execute(
-                    "INSERT INTO store (primary_ns, secondary_ns, key, value, local_version, remote_version) VALUES (?1, ?2, ?3, ?4, ?5, -1)",
+                    "INSERT INTO store (primary_ns, secondary_ns, key, value, local_version, remote_version, removed) VALUES (?1, ?2, ?3, ?4, ?5, -1, 0)",
                     params![primary_ns, secondary_ns, key, value, next_version],
                 ).map_err(other)?;
                 next_version
             }
-            Some((_, local_value)) if local_value == value => {
+            Some((_local_version, local_value, false)) if local_value == value => {
                 trace!("Local value is the same, skipping writing");
                 return Ok(());
             }
-            Some((local_version, _)) => {
+            Some((local_version, _local_value, _removed)) => {
                 trace!("Local value is different, writing");
                 let next_version = local_version + 1;
                 conn.execute(
-                    "UPDATE store SET value = ?1, local_version = ?2 WHERE primary_ns = ?3 AND secondary_ns = ?4 AND key = ?5",
+                    "UPDATE store SET value = ?1, local_version = ?2, removed = 0 WHERE primary_ns = ?3 AND secondary_ns = ?4 AND key = ?5",
                     params![value, next_version, primary_ns, secondary_ns, key],
                 ).map_err(other)?;
                 next_version
@@ -172,7 +176,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         let conn = self.pool.get().map_err(other)?;
 
         conn.execute(
-            "DELETE FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
+            "UPDATE store SET removed = 1 WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
             params![primary_ns, secondary_ns, key],
         )
         .map_err(other)?;
@@ -181,6 +185,12 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         tokio::task::block_in_place(|| self.handle.block_on(self.remote_client.delete(full_key)))
             .map_err(other)?;
 
+        conn.execute(
+            "DELETE FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
+            params![primary_ns, secondary_ns, key],
+        )
+        .map_err(other)?;
+
         Ok(())
     }
 
@@ -188,7 +198,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         self.pool
             .get()
             .map_err(other)?
-            .prepare("SELECT key FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2")
+            .prepare("SELECT key FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND removed = 0 ORDER BY primary_ns, secondary_ns, key")
             .map_err(other)?
             .query_map(params![primary_ns, secondary_ns], |row| row.get(0))
             .map_err(other)?
@@ -199,7 +209,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
 
 fn is_dirty(conn: &Connection) -> rusqlite::Result<bool> {
     let dirty_rows: i64 = conn.query_row(
-        "SELECT count(1) FROM store WHERE local_version != remote_version",
+        "SELECT count(1) FROM store WHERE local_version != remote_version OR removed = 1",
         [],
         |row| row.get(0),
     )?;
@@ -220,7 +230,7 @@ async fn download<S: VersionedStore>(conn: &Connection, remote: &S) -> Result<()
         if let Some((value, version)) = remote.get(full_key).await? {
             trace!("Got {} bytes @ {version}", value.len());
             conn.execute(
-                "INSERT INTO store (primary_ns, secondary_ns, key, value, local_version, remote_version) VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
+                "INSERT INTO store (primary_ns, secondary_ns, key, value, local_version, remote_version, removed) VALUES (?1, ?2, ?3, ?4, ?5, ?5, 0)",
                 params![primary, secondary, key, value, version - 1],
             )?;
         }
@@ -229,7 +239,34 @@ async fn download<S: VersionedStore>(conn: &Connection, remote: &S) -> Result<()
 }
 
 async fn upload<S: VersionedStore>(conn: &Connection, remote: &S) -> Result<(), Error> {
-    let mut statement = conn.prepare("SELECT primary_ns, secondary_ns, key, value, local_version FROM store WHERE local_version != remote_version")?;
+    // First, process deletions (tombstoned rows).
+    {
+        let mut statement =
+            conn.prepare("SELECT primary_ns, secondary_ns, key FROM store WHERE removed = 1")?;
+        let deleted_rows = statement.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })?;
+
+        for row in deleted_rows {
+            let (primary_ns, secondary_ns, key) = row?;
+            let full_key = format!("{primary_ns}/{secondary_ns}/{key}");
+            trace!("Deleting remotely {full_key} ...");
+            remote.delete(full_key).await?;
+            conn.execute(
+                "DELETE FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
+                params![primary_ns, secondary_ns, key],
+            )?;
+        }
+    }
+
+    // Then, upload modified values.
+    let mut statement = conn.prepare(
+        "SELECT primary_ns, secondary_ns, key, value, local_version FROM store WHERE local_version != remote_version AND removed = 0",
+    )?;
     let outdated_rows = statement.query_map([], |row| {
         Ok((
             row.get::<_, String>(0)?,
@@ -359,7 +396,7 @@ mod tests {
         assert_eq!(value, b"value_dirty");
 
         {
-            // A new instance does not load this imformation.
+            // A new instance does not load this information.
             let store = MirroringStore::new(
                 Handle::current().clone(),
                 create_in_memory_db(),
@@ -417,6 +454,91 @@ mod tests {
             let data = mock_store.data.lock().unwrap();
             let value = data.get("ns/sub/key_dirty").unwrap().0.clone();
             assert_eq!(value, b"value_dirty");
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_mirroring_store_remote_failure_handling_remove() {
+        let mut mock_store = MockVersionedStore::default();
+        mock_store.should_fail_delete = true; // Simulate remote failure
+
+        let dirty_local_db = {
+            let store = MirroringStore::new(
+                Handle::current().clone(),
+                create_in_memory_db(),
+                &mock_store,
+                PreviousHolder::LocalInstance,
+            )
+            .await
+            .unwrap();
+
+            store
+                .write("ns", "sub", "key_to_remove", b"remove_me")
+                .unwrap();
+            let value = store.read("ns", "sub", "key_to_remove").unwrap();
+            assert_eq!(value, b"remove_me");
+
+            // Simulate remote delete failure.
+            let err = store
+                .remove("ns", "sub", "key_to_remove", false)
+                .unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::Other);
+
+            // Locally, the key is tombstoned: not listed, not readable.
+            let list = store.list("ns", "sub").unwrap();
+            assert!(!list.contains(&"key_to_remove".to_string()));
+            let err = store.read("ns", "sub", "key_to_remove").unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::NotFound);
+            let dirty_local_db = create_in_memory_db();
+            clone_data(
+                &*store.pool.get().unwrap(),
+                &mut *dirty_local_db.get().unwrap(),
+            );
+            dirty_local_db
+        };
+
+        {
+            // A new instance sees the key still present, because remote deletion failed.
+            let store_remote_first = MirroringStore::new(
+                Handle::current().clone(),
+                create_in_memory_db(),
+                &mock_store,
+                PreviousHolder::RemoteInstance,
+            )
+            .await
+            .unwrap();
+            let list_remote = store_remote_first.list("ns", "sub").unwrap();
+            assert!(list_remote.contains(&"key_to_remove".to_string()));
+            let value_remote = store_remote_first
+                .read("ns", "sub", "key_to_remove")
+                .unwrap();
+            assert_eq!(value_remote, b"remove_me");
+        }
+
+        {
+            // Recovery of a dirty instance with *no* other instances accessing
+            // the store in between.
+            mock_store.should_fail_delete = false;
+            let store_cleanup = MirroringStore::new(
+                Handle::current().clone(),
+                dirty_local_db,
+                &mock_store,
+                PreviousHolder::LocalInstance,
+            )
+            .await
+            .unwrap();
+
+            // After reconciliation, the key should be gone from remote and local.
+            let data = mock_store.data.lock().unwrap();
+            assert!(!data.contains_key("ns/sub/key_to_remove"));
+            drop(data);
+
+            let err = store_cleanup
+                .read("ns", "sub", "key_to_remove")
+                .unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::NotFound);
+            let list = store_cleanup.list("ns", "sub").unwrap();
+            assert!(!list.contains(&"key_to_remove".to_string()));
         }
     }
 

@@ -97,17 +97,9 @@ impl Ldk {
         // It is not possible to use oneshot here, because `oneshot::Sender::send()`
         // consumes itself, not allowing to call `closed()` method after.
         let (remote_lock_shutdown_tx, remote_lock_shutdown_rx) = mpsc::channel(1);
-<<<<<<< HEAD
-        let _locking_store =
-            build_locking_store(&config.working_dir, vss_store, remote_lock_shutdown_rx).await?;
-
-        // TODO: Use remote/local storage.
-        builder.set_storage_dir_path(config.working_dir.clone());
-=======
         let mirroring_store =
             build_mirroring_store(&config.working_dir, vss_store, remote_lock_shutdown_rx).await?;
         let kv_store: KVStore = Arc::new(mirroring_store);
->>>>>>> ae8597c8 (Build LDK Node with mirroring store)
 
         let node = builder
             .build_with_store(kv_store)
