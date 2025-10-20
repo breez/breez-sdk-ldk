@@ -69,6 +69,7 @@ pub enum NodeError {
 }
 
 impl NodeError {
+    #[allow(dead_code)]
     pub(crate) fn credentials(err: &str) -> Self {
         Self::Credentials(err.to_string())
     }
@@ -105,6 +106,7 @@ impl From<NodeError> for LnUrlAuthError {
     }
 }
 
+#[allow(dead_code)]
 pub struct CreateInvoiceRequest {
     pub amount_msat: u64,
     pub description: String,

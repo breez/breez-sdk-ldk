@@ -3,6 +3,7 @@ use strum_macros::FromRepr;
 
 use super::{db::SqliteStorage, error::PersistResult};
 
+#[allow(dead_code)]
 #[derive(FromRepr)]
 #[repr(i32)]
 pub(crate) enum SendPayStatus {
@@ -11,6 +12,7 @@ pub(crate) enum SendPayStatus {
     Complete = 2,
 }
 
+#[allow(dead_code)]
 pub(crate) struct SendPay {
     pub created_index: u64,
     pub updated_index: Option<u64>,
@@ -37,6 +39,7 @@ pub(crate) struct SendPay {
 }
 
 impl SqliteStorage {
+    #[allow(dead_code)]
     pub(crate) fn insert_send_pays(&self, send_pays: &[SendPay]) -> PersistResult<()> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
@@ -78,6 +81,7 @@ impl SqliteStorage {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub(crate) fn list_send_pays(
         &self,
         hash_groups: &[(Vec<u8>, String)],
