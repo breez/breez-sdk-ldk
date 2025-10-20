@@ -40,7 +40,8 @@ pub(crate) async fn build_mirroring_store(
 
     let sqlite_file_path = Path::new(working_dir).join("ldk_node_storage.sql");
     let manager = SqliteConnectionManager::file(sqlite_file_path);
-    let pool = Pool::new(manager).unwrap();
+    let pool = Pool::new(manager)
+        .map_err(|e| PersistError::Sql(format!("Failed to create sqlite connection pool: {e}")))?;
     MirroringStore::new(Handle::current(), pool, locking_store, previous_holder)
         .await
         .map_err(Into::into)
