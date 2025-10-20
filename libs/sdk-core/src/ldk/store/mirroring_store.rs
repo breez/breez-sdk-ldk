@@ -374,8 +374,11 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_mirroring_store_remote_failure_handling() {
-        let mut mock_store = MockVersionedStore::default();
-        mock_store.should_fail_put = true; // Simulate remote failure
+        // Simulate remote failure.
+        let mut mock_store = MockVersionedStore {
+            should_fail_put: true,
+            ..Default::default()
+        };
 
         let store = MirroringStore::new(
             Handle::current().clone(),
@@ -414,8 +417,8 @@ mod tests {
             // store in between.
             let dirty_local_db = create_in_memory_db();
             clone_data(
-                &*store.pool.get().unwrap(),
-                &mut *dirty_local_db.get().unwrap(),
+                &store.pool.get().unwrap(),
+                &mut dirty_local_db.get().unwrap(),
             );
 
             let store = MirroringStore::new(
@@ -435,8 +438,8 @@ mod tests {
             // the store in between.
             let dirty_local_db = create_in_memory_db();
             clone_data(
-                &*store.pool.get().unwrap(),
-                &mut *dirty_local_db.get().unwrap(),
+                &store.pool.get().unwrap(),
+                &mut dirty_local_db.get().unwrap(),
             );
             mock_store.should_fail_put = false;
 
@@ -459,8 +462,11 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_mirroring_store_remote_failure_handling_remove() {
-        let mut mock_store = MockVersionedStore::default();
-        mock_store.should_fail_delete = true; // Simulate remote failure
+        // Simulate remote failure.
+        let mut mock_store = MockVersionedStore {
+            should_fail_delete: true,
+            ..Default::default()
+        };
 
         let dirty_local_db = {
             let store = MirroringStore::new(
@@ -491,8 +497,8 @@ mod tests {
             assert_eq!(err.kind(), ErrorKind::NotFound);
             let dirty_local_db = create_in_memory_db();
             clone_data(
-                &*store.pool.get().unwrap(),
-                &mut *dirty_local_db.get().unwrap(),
+                &store.pool.get().unwrap(),
+                &mut dirty_local_db.get().unwrap(),
             );
             dirty_local_db
         };
