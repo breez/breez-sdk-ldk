@@ -28,9 +28,8 @@ use crate::bitcoin::blockdata::opcodes::all::{
 };
 use crate::bitcoin::blockdata::script;
 use crate::bitcoin::hashes::ripemd160;
-use crate::bitcoin::hashes::{sha256, Hash};
-use crate::bitcoin::secp256k1::ecdsa::RecoverableSignature;
-use crate::bitcoin::secp256k1::{KeyPair, Message, PublicKey, Secp256k1};
+use crate::bitcoin::hashes::{sha256, Hash as _};
+use crate::bitcoin::secp256k1::{Message, PublicKey, Secp256k1};
 use crate::bitcoin::taproot::{TaprootBuilder, TaprootSpendInfo};
 use crate::bitcoin::{key::XOnlyPublicKey, Address, Network, ScriptBuf, Sequence};
 use crate::breez_services::{OpenChannelParams, Receiver};
@@ -38,8 +37,10 @@ use crate::buy::BuyBitcoinApi;
 use crate::chain::{ChainService, OnchainTx, Outspend, RecommendedFees, TxStatus};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::invoice::{InvoiceError, InvoiceResult};
-use crate::lightning::ln::PaymentSecret;
-use crate::lightning_invoice::{Currency, InvoiceBuilder, RawBolt11Invoice};
+use crate::lightning::bitcoin::hashes as ldk_hashes;
+use crate::lightning::bitcoin::hashes::Hash as _;
+use crate::lightning::bitcoin::secp256k1 as ldk_secp256k1;
+use crate::lightning_invoice::{Currency, InvoiceBuilder, PaymentSecret, RawBolt11Invoice};
 use crate::lsp::LspInformation;
 use crate::models::{
     LnPaymentDetails, LspAPI, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType,
@@ -740,27 +741,25 @@ pub(crate) fn rand_invoice_with_description_hash_and_preimage(
     expected_desc: String,
     preimage: sha256::Hash,
 ) -> InvoiceResult<crate::lightning_invoice::Bolt11Invoice> {
-    let expected_desc_hash = Hash::hash(expected_desc.as_bytes());
+    let expected_desc_hash = ldk_hashes::sha256::Hash::hash(expected_desc.as_bytes());
 
-    let hashed_preimage = Message::from_hashed_data::<sha256::Hash>(&preimage[..]);
-    let payment_hash = hashed_preimage.as_ref();
+    let payment_hash = ldk_hashes::sha256::Hash::from_slice(preimage.as_ref())
+        .map_err(|e| InvoiceError::Generic(e.to_string()))?;
 
     let payment_secret = PaymentSecret([42u8; 32]);
 
-    let secp = Secp256k1::new();
-    let key_pair = KeyPair::new(&secp, &mut rand::thread_rng());
+    let secp = ldk_secp256k1::Secp256k1::new();
+    let key_pair = ldk_secp256k1::Keypair::new(&secp, &mut rand::thread_rng());
     let private_key = key_pair.secret_key();
 
     Ok(InvoiceBuilder::new(Currency::Bitcoin)
         .description_hash(expected_desc_hash)
         .amount_milli_satoshis(50 * 1000)
-        .payment_hash(
-            Hash::from_slice(payment_hash).map_err(|e| InvoiceError::Generic(e.to_string()))?,
-        )
+        .payment_hash(payment_hash)
         .payment_secret(payment_secret)
         .current_timestamp()
         .min_final_cltv_expiry_delta(144)
-        .build_signed(|hash| Secp256k1::new().sign_ecdsa_recoverable(hash, &private_key))?)
+        .build_signed(|hash| secp.sign_ecdsa_recoverable(hash, &private_key))?)
 }
 
 pub fn rand_string(len: usize) -> String {
@@ -821,10 +820,12 @@ pub fn create_invoice(
     let preimage = invoice_preimage.unwrap_or(rand::thread_rng().gen::<[u8; 32]>().to_vec());
     let hashed = Message::from_hashed_data::<sha256::Hash>(&preimage[..]);
     let hash = hashed.as_ref();
+    let payment_hash =
+        ldk_hashes::sha256::Hash::from_slice(hash).expect("hash has a fixed 32-byte size");
 
     let mut invoice_builder = InvoiceBuilder::new(Currency::Bitcoin)
         .description(description)
-        .payment_hash(sha256::Hash::hash(hash))
+        .payment_hash(payment_hash)
         .timestamp(SystemTime::now())
         .amount_milli_satoshis(amount_msat)
         .expiry_time(Duration::new(3600, 0))
@@ -840,12 +841,14 @@ pub fn create_invoice(
 }
 
 fn sign_invoice(invoice: RawBolt11Invoice) -> String {
-    let secp = Secp256k1::new();
+    let secp = ldk_secp256k1::Secp256k1::new();
     let (secret_key, _) = secp.generate_keypair(&mut OsRng);
     invoice
-        .sign(|m| -> Result<RecoverableSignature, anyhow::Error> {
-            Ok(secp.sign_ecdsa_recoverable(m, &secret_key))
-        })
+        .sign(
+            |m| -> Result<ldk_secp256k1::ecdsa::RecoverableSignature, anyhow::Error> {
+                Ok(secp.sign_ecdsa_recoverable(m, &secret_key))
+            },
+        )
         .unwrap()
         .to_string()
 }

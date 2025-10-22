@@ -32,9 +32,6 @@ urlencoding = { version = "2.1.3" }
 
 [target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
 hickory-resolver = { version = "0.24.2", features = ["dnssec-ring"] }
-lightning-with-bolt12 = { package = "lightning", version = "0.1.2", default-features = false, features = [
-    "std",
-], optional = true }
 prost = { workspace = true }
 tonic = { workspace = true, features = [
     "tls",
@@ -47,7 +44,6 @@ maybe-sync = { version = "0.1.1", features = ["sync"] }
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 dns-parser = "0.8.0"
 getrandom = { version = "0.2.14", features = ["js"] }
-lightning-with-bolt12 = { package = "lightning", version = "0.1.2", default-features = false, features = [], optional = true }
 prost = "^0.13"
 tonic = { version = "0.12", default-features = false, features = [
     "codegen",
@@ -75,5 +71,5 @@ tonic-build = { workspace = true }
 tonic-build = "0.12"
 
 [features]
-liquid = ["dep:elements", "dep:lightning-with-bolt12"]
+liquid = ["dep:elements"]
 test-utils = []

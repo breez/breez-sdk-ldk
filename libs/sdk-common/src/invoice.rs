@@ -3,8 +3,8 @@ use std::str::FromStr;
 use std::time::{SystemTimeError, UNIX_EPOCH};
 
 use anyhow::anyhow;
-use bitcoin::secp256k1::{self, PublicKey};
 use hex::ToHex;
+use lightning::bitcoin::secp256k1::PublicKey;
 use lightning::routing::gossip::RoutingFees;
 use lightning::routing::*;
 use lightning_invoice::*;
@@ -12,8 +12,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "liquid")]
 use {
-    lightning_with_bolt12::ln::msgs::DecodeError, lightning_with_bolt12::offers::offer::Offer,
-    lightning_with_bolt12::offers::parse::Bolt12ParseError,
+    lightning::ln::msgs::DecodeError, lightning::offers::offer::Offer,
+    lightning::offers::parse::Bolt12ParseError,
 };
 
 use crate::prelude::*;
@@ -76,8 +76,8 @@ impl From<regex::Error> for InvoiceError {
     }
 }
 
-impl From<secp256k1::Error> for InvoiceError {
-    fn from(err: secp256k1::Error) -> Self {
+impl From<lightning::bitcoin::secp256k1::Error> for InvoiceError {
+    fn from(err: lightning::bitcoin::secp256k1::Error) -> Self {
         Self::Generic(err.to_string())
     }
 }
@@ -269,8 +269,13 @@ pub fn add_routing_hints(
         ldk_hints.push(h.to_ldk_hint()?);
     }
 
+    let invoice_description = match invoice.description() {
+        Bolt11InvoiceDescriptionRef::Direct(desc) => Bolt11InvoiceDescription::Direct(desc.clone()),
+        Bolt11InvoiceDescriptionRef::Hash(hash) => Bolt11InvoiceDescription::Hash(hash.clone()),
+    };
+
     let mut invoice_builder = InvoiceBuilder::new(invoice.currency())
-        .invoice_description(invoice.description())
+        .invoice_description(invoice_description)
         .payment_hash(*invoice.payment_hash())
         .timestamp(invoice.timestamp())
         .expiry_time(invoice.expiry_time())
@@ -364,9 +369,16 @@ pub fn parse_invoice(bolt11: &str) -> InvoiceResult<LNInvoice> {
     let invoice_hints = invoice.route_hints();
     let converted_hints = invoice_hints.iter().map(RouteHint::from_ldk_hint).collect();
     // return the parsed invoice
+    let description_ref = invoice.description();
     let ln_invoice = LNInvoice {
         bolt11: bolt11.to_string(),
-        network: invoice.network().into(),
+        network: match invoice.network() {
+            lightning::bitcoin::Network::Bitcoin => Network::Bitcoin,
+            lightning::bitcoin::Network::Testnet => Network::Testnet,
+            lightning::bitcoin::Network::Testnet4 => Network::Testnet,
+            lightning::bitcoin::Network::Signet => Network::Signet,
+            lightning::bitcoin::Network::Regtest => Network::Regtest,
+        },
         payee_pubkey,
         expiry: invoice.expiry_time().as_secs(),
         amount_msat: invoice.amount_milli_satoshis(),
@@ -374,13 +386,13 @@ pub fn parse_invoice(bolt11: &str) -> InvoiceResult<LNInvoice> {
         routing_hints: converted_hints,
         payment_hash: invoice.payment_hash().encode_hex::<String>(),
         payment_secret: invoice.payment_secret().0.to_vec(),
-        description: match invoice.description() {
-            Bolt11InvoiceDescription::Direct(msg) => Some(msg.to_string()),
-            Bolt11InvoiceDescription::Hash(_) => None,
+        description: match description_ref {
+            Bolt11InvoiceDescriptionRef::Direct(msg) => Some(msg.to_string()),
+            Bolt11InvoiceDescriptionRef::Hash(_) => None,
         },
-        description_hash: match invoice.description() {
-            Bolt11InvoiceDescription::Direct(_) => None,
-            Bolt11InvoiceDescription::Hash(h) => Some(h.0.to_string()),
+        description_hash: match description_ref {
+            Bolt11InvoiceDescriptionRef::Direct(_) => None,
+            Bolt11InvoiceDescriptionRef::Hash(h) => Some(h.0.to_string()),
         },
         min_final_cltv_expiry_delta: invoice.min_final_cltv_expiry_delta(),
     };
@@ -401,12 +413,10 @@ pub fn parse_bolt12_offer(input: &str) -> Result<LNOffer, Bolt12ParseError> {
     let min_amount = offer
         .amount()
         .map(|amount| match amount {
-            lightning_with_bolt12::offers::offer::Amount::Bitcoin { amount_msats } => {
-                Ok(Amount::Bitcoin {
-                    amount_msat: amount_msats,
-                })
-            }
-            lightning_with_bolt12::offers::offer::Amount::Currency {
+            lightning::offers::offer::Amount::Bitcoin { amount_msats } => Ok(Amount::Bitcoin {
+                amount_msat: amount_msats,
+            }),
+            lightning::offers::offer::Amount::Currency {
                 iso4217_code,
                 amount,
             } => Ok(Amount::Currency {
