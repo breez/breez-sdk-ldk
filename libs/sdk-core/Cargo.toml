@@ -9,11 +9,8 @@ crate-type = ["staticlib", "cdylib", "lib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.9.0"
-aes = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
-zbase32 = "0.1.2"
-base64 = { workspace = true }
 bitcoin = { workspace = true, features = ["serde", "rand"] }
 chrono = "0.4"
 ecies = { version = "0.2.6", default-features = false, features = ["pure"] }
@@ -35,10 +32,8 @@ tonic = { workspace = true, features = [
     "tls-roots",
     "tls-webpki-roots",
 ] }
-lazy_static = "^1.4.0"
 log = { workspace = true }
 once_cell = { workspace = true }
-openssl = { version = "0.10", features = ["vendored"] }
 secp256k1 = { git = "https://github.com/rust-bitcoin/rust-secp256k1", rev = "1cc7410df436b73d06db3c8ff7cbb29a78916b06"}
 strum = { workspace = true }
 strum_macros = { workspace = true }
@@ -48,7 +43,6 @@ const_format = "0.2"
 miniz_oxide = "0.7.1"
 tokio-stream = { version = "0.1.15", features = ["sync"] }
 serde_with = "3.3.0"
-regex = { workspace = true }
 ryu = "1.0.18"
 # Waiting for features to to be released:
 # - "Introduce Runtime object allowng to detect outer runtime context"
@@ -59,7 +53,9 @@ ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "fdaa759
 vss-client = { version = "0.3.1", default-features = false }
 
 [dev-dependencies]
+base64 = { workspace = true }
 mockall = "0.13.1"
+regex = { workspace = true }
 sdk-common = { path = "../sdk-common", features = ["test-utils"] }
 
 [lints.rust]

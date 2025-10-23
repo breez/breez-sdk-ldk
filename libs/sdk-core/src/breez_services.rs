@@ -1862,14 +1862,11 @@ impl BreezServices {
                 info,
                 breez_sdk_core=debug,
                 sdk_common=debug,
-                gl_client=debug,
                 h2=warn,
                 hyper=warn,
-                lightning_signer=warn,
                 reqwest=warn,
                 rustls=warn,
                 rustyline=warn,
-                vls_protocol_signer=warn
             "#,
             )
             .format(|buf, record| {
