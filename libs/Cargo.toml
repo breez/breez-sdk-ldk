@@ -10,6 +10,8 @@ members = [
   "sdk-bindings",
   "sdk-common",
   "sdk-core",
+  "sdk-itest",
+  "sdk-itest/lsps2-server",
   "sdk-macros",
 ]
 resolver = "2"
