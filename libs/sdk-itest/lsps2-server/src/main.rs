@@ -166,7 +166,7 @@ fn build() -> Result<Node> {
     let service_config = LSPS2ServiceConfig {
         require_token: lsp_token,
         advertise_service: false,
-        channel_opening_fee_ppm: 100_000,         // 10%
+        channel_opening_fee_ppm: 40_000,          // 4%
         channel_over_provisioning_ppm: 1_000_000, // 100%
         min_channel_opening_fee_msat: 1_000_000,
         min_channel_lifetime: 100_000,

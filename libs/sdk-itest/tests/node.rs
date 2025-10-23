@@ -74,7 +74,7 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
     let opening_fee_msat = response.opening_fee_msat.unwrap_or_default();
-    assert!(opening_fee_msat > 0);
+    assert_eq!(opening_fee_msat, 1_000_000);
     let bolt11 = response.ln_invoice.bolt11;
     println!("Invoice created: {bolt11}");
 
@@ -106,12 +106,6 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
-    // TODO: Fix balance not being updated.
-    // let balance_msat = services.node_info().unwrap().channels_balance_msat;
-    // assert_eq!(
-    //     balance_msat,
-    //     huge_amount_msat - opening_fee_msat - small_amount_msat
-    // );
 
     services.disconnect().await.unwrap();
     drop(services);

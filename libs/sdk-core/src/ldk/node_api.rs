@@ -406,7 +406,7 @@ impl LspAPI for Ldk {
         let in_one_year: DateTime<Utc> = in_one_year.into();
         let opening_fee_params = OpeningFeeParams {
             min_msat: 1_000_000,
-            proportional: 100_000,
+            proportional: 40_000,
             valid_until: in_one_year.to_rfc3339(),
             max_idle_time: 0,
             max_client_to_self_delay: 10_000,
