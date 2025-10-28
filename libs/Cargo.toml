@@ -27,10 +27,10 @@ aes = "0.8"
 anyhow = { version = "1.0.79", features = ["backtrace"] }
 async-trait = "0.1.86"
 base64 = "0.13.0"
-bitcoin = "=0.30.2" # Same version as used in gl-client
+bitcoin = "0.30.2"
 hex = "0.4"
-lightning = "=0.0.123" # Same version as used in gl-client
-lightning-invoice = "=0.31.0" # Same version as used in gl-client
+lightning = "0.1.7"
+lightning-invoice = { version = "0.33.2", features = ["std"] }
 log = "0.4"
 once_cell = "1"
 prost = "^0.12"
