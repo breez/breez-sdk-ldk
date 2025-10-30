@@ -16,7 +16,7 @@ use strum_macros::{Display, EnumString};
 use crate::bitcoin::{
     absolute::LockTime,
     blockdata::{opcodes, script::Builder},
-    hashes::{sha256, Hash},
+    hashes::{sha256, Hash as _},
     script::PushBytes,
     secp256k1::{PublicKey, Secp256k1, SecretKey},
     Address, ScriptBuf,
@@ -280,12 +280,13 @@ impl FullReverseSwapInfo {
         let inv: crate::lightning_invoice::Bolt11Invoice = self.invoice.parse()?;
         let preimage_hash_from_invoice = inv.payment_hash();
         let preimage_hash_from_req = &self.get_preimage_hash();
-        match preimage_hash_from_invoice == preimage_hash_from_req {
-            false => Err(ReverseSwapError::unexpected_payment_hash(
-                "Does not match the request",
-            )),
-            true => Ok(()),
-        }
+        let invoice_hash_bytes = <_ as AsRef<[u8]>>::as_ref(preimage_hash_from_invoice).to_vec();
+        let req_hash_bytes = <_ as AsRef<[u8]>>::as_ref(preimage_hash_from_req).to_vec();
+        ensure_sdk!(
+            invoice_hash_bytes == req_hash_bytes,
+            ReverseSwapError::unexpected_payment_hash("Does not match the request")
+        );
+        Ok(())
     }
 
     /// Derives the lockup address from the redeem script
