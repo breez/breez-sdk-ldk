@@ -55,8 +55,8 @@ impl From<bip32::Error> for LnUrlError {
     }
 }
 
-impl From<bech32::Error> for LnUrlError {
-    fn from(err: bech32::Error) -> Self {
+impl From<bech32::DecodeError> for LnUrlError {
+    fn from(err: bech32::DecodeError) -> Self {
         Self::Generic(err.to_string())
     }
 }

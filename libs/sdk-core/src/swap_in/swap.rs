@@ -14,8 +14,8 @@ use crate::bitcoin::{
     address::NetworkUnchecked,
     blockdata::constants::WITNESS_SCALE_FACTOR,
     consensus::encode,
-    hashes::sha256,
-    secp256k1::{Message, PublicKey, Secp256k1, SecretKey},
+    hashes::{sha256, Hash as _},
+    secp256k1::{PublicKey, Secp256k1, SecretKey},
     Address, AddressType, Network, OutPoint, ScriptBuf, Sequence, TxIn, Witness,
 };
 use crate::lightning_invoice::Bolt11Invoice;
@@ -68,9 +68,7 @@ impl SwapKeys {
     }
 
     pub(crate) fn preimage_hash_bytes(&self) -> Vec<u8> {
-        Message::from_hashed_data::<sha256::Hash>(&self.preimage[..])
-            .as_ref()
-            .to_vec()
+        sha256::Hash::hash(&self.preimage).as_byte_array().to_vec()
     }
 }
 

@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use bitcoin::bip32::{ChildNumber, ExtendedPubKey};
+use bitcoin::bip32::{ChildNumber, Xpub};
 use reqwest::Url;
 
 use crate::prelude::*;
@@ -39,7 +39,7 @@ pub async fn perform_lnurl_auth<C: RestClient + ?Sized, S: LnurlAuthSigner>(
         )
         .await?;
     let xpub_bytes = signer.derive_bip32_pub_key(&derivation_path).await?;
-    let xpub = ExtendedPubKey::decode(xpub_bytes.as_slice())?;
+    let xpub = Xpub::decode(xpub_bytes.as_slice())?;
 
     // <LNURL_hostname_and_path>?<LNURL_existing_query_parameters>&sig=<hex(sign(utf8ToBytes(k1), linkingPrivKey))>&key=<hex(linkingKey)>
     let mut callback_url =

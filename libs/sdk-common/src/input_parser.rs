@@ -6,7 +6,6 @@ use ::bip21::Uri;
 use anyhow::{anyhow, bail, Context, Result};
 use bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use bitcoin::bech32;
-use bitcoin::bech32::FromBase32;
 use log::{debug, error};
 use percent_encoding::NON_ALPHANUMERIC;
 use regex::Regex;
@@ -525,8 +524,8 @@ fn lnurl_decode(encoded: &str) -> LnUrlResult<(String, String, Option<String>)> 
     }
 
     match bech32::decode(encoded) {
-        Ok((_hrp, payload, _variant)) => {
-            let decoded = String::from_utf8(Vec::from_base32(&payload)?)?;
+        Ok((_hrp, payload)) => {
+            let decoded = String::from_utf8(payload)?;
 
             let url = reqwest::Url::parse(&decoded)
                 .map_err(|e| super::prelude::LnUrlError::InvalidUri(e.to_string()))?;
@@ -880,9 +879,20 @@ impl BitcoinAddressData {
 
 impl From<Uri<'_, NetworkChecked>> for BitcoinAddressData {
     fn from(uri: Uri<'_, NetworkChecked>) -> Self {
+        let address = uri.address.to_string();
+        let network = [
+            bitcoin::Network::Bitcoin,
+            bitcoin::Network::Testnet,
+            bitcoin::Network::Signet,
+            bitcoin::Network::Regtest,
+        ]
+        .into_iter()
+        .find(|candidate| uri.address.as_unchecked().is_valid_for_network(*candidate))
+        .unwrap_or(bitcoin::Network::Bitcoin);
+
         BitcoinAddressData {
-            address: uri.address.to_string(),
-            network: uri.address.network.into(),
+            address,
+            network: network.into(),
             amount_sat: uri.amount.map(|a| a.to_sat()),
             label: uri.label.map(|label| label.try_into().unwrap()),
             message: uri.message.map(|msg| msg.try_into().unwrap()),
@@ -906,7 +916,7 @@ pub struct ExternalInputParser {
 pub(crate) mod tests {
     use anyhow::{anyhow, Result};
     use bitcoin::bech32;
-    use bitcoin::bech32::{ToBase32, Variant};
+    use bitcoin::bech32::Hrp;
     use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
     use serde_json::json;
 
@@ -1344,39 +1354,21 @@ pub(crate) mod tests {
 
         // HTTPS allowed with clearnet domains
         assert_eq!(
-            lnurl_decode(&bech32::encode(
-                "LNURL",
-                "https://domain.com".to_base32(),
-                Variant::Bech32
-            )?)?,
+            lnurl_decode(&encode_lnurl("https://domain.com")?)?,
             ("domain.com".into(), "https://domain.com".into(), None)
         );
 
         // HTTP not allowed with clearnet domains
-        assert!(lnurl_decode(&bech32::encode(
-            "LNURL",
-            "http://domain.com".to_base32(),
-            Variant::Bech32
-        )?)
-        .is_err());
+        assert!(lnurl_decode(&encode_lnurl("http://domain.com")?).is_err());
 
         // HTTP allowed with onion domains
         assert_eq!(
-            lnurl_decode(&bech32::encode(
-                "LNURL",
-                "http://3fdsf.onion".to_base32(),
-                Variant::Bech32
-            )?)?,
+            lnurl_decode(&encode_lnurl("http://3fdsf.onion")?)?,
             ("3fdsf.onion".into(), "http://3fdsf.onion".into(), None)
         );
 
         // HTTPS not allowed with onion domains
-        assert!(lnurl_decode(&bech32::encode(
-            "LNURL",
-            "https://3fdsf.onion".to_base32(),
-            Variant::Bech32
-        )?)
-        .is_err());
+        assert!(lnurl_decode(&encode_lnurl("https://3fdsf.onion")?).is_err());
 
         let decoded_url = "https://service.com/api?q=3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df";
         let lnurl_raw = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS";
@@ -1397,6 +1389,11 @@ pub(crate) mod tests {
         .is_err());
 
         Ok(())
+    }
+
+    fn encode_lnurl(url: &str) -> Result<String, bech32::EncodeError> {
+        let hrp = Hrp::parse("lnurl").expect("valid lnurl hrp");
+        bech32::encode::<bech32::Bech32>(hrp, url.as_bytes())
     }
 
     fn mock_lnurl_withdraw_endpoint(mock_rest_client: &MockRestClient, error: Option<String>) {

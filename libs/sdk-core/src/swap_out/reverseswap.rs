@@ -11,14 +11,15 @@ use super::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapSta
 use super::error::{ReverseSwapError, ReverseSwapResult};
 use crate::bitcoin::{
     absolute,
+    amount::Amount,
     blockdata::constants::WITNESS_SCALE_FACTOR,
     consensus::serialize,
     hashes::{sha256, Hash},
-    key::KeyPair,
+    key::Keypair,
     secp256k1::{Message, Secp256k1, SecretKey},
     sighash::{EcdsaSighashType, SighashCache},
-    Address, AddressType, Network, OutPoint, Script, ScriptBuf, Sequence, Transaction, TxIn, TxOut,
-    Txid, Witness,
+    transaction, Address, AddressType, Network, OutPoint, Script, ScriptBuf, Sequence, Transaction,
+    TxIn, TxOut, Txid, Witness,
 };
 use crate::chain::{get_utxos, AddressUtxos, ChainService, OnchainTx, Utxo};
 use crate::error::SdkResult;
@@ -440,13 +441,13 @@ impl BTCSendSwap {
             .collect();
 
         let tx_out: Vec<TxOut> = vec![TxOut {
-            value: tx_out_value,
+            value: Amount::from_sat(tx_out_value),
             script_pubkey: claim_addr.script_pubkey(),
         }];
 
         // construct the transaction
         let mut tx = Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: txins.clone(),
             output: tx_out,
@@ -459,13 +460,13 @@ impl BTCSendSwap {
         let mut signed_inputs: Vec<TxIn> = Vec::new();
         for (index, input) in tx.input.iter().enumerate() {
             let mut signer = SighashCache::new(&tx);
-            let sig = signer.segwit_signature_hash(
+            let sighash = signer.p2wsh_signature_hash(
                 index,
                 redeem_script,
-                utxos.confirmed[index].value,
+                Amount::from_sat(utxos.confirmed[index].value),
                 EcdsaSighashType::All,
             )?;
-            let msg = Message::from_slice(&sig[..])?;
+            let msg: Message = sighash.into();
             let sig = scpt.sign_ecdsa(&msg, &secret_key);
 
             let mut sigvec = sig.serialize_der().to_vec();
@@ -489,7 +490,7 @@ impl BTCSendSwap {
         // Based on https://github.com/breez/boltz/blob/master/boltz.go#L32
         let claim_witness_input_size: u32 = 1 + 1 + 8 + 73 + 1 + 32 + 1 + 100;
         let tx_weight =
-            tx.strippedsize() as u32 * WITNESS_SCALE_FACTOR as u32 + claim_witness_input_size;
+            tx.base_size() as u32 * WITNESS_SCALE_FACTOR as u32 + claim_witness_input_size;
         let fees: u64 = (tx_weight * claim_tx_feerate / WITNESS_SCALE_FACTOR as u32) as u64;
 
         Ok(fees)
@@ -547,7 +548,7 @@ impl BTCSendSwap {
             "Tried to get status for non-monitored reverse swap"
         );
 
-        let payment_hash_hex = format!("{:x}", &rsi.get_preimage_hash().forward_hex());
+        let payment_hash_hex = format!("{:x}", rsi.get_preimage_hash());
         let payment_status = self.persister.get_payment_by_hash(&payment_hash_hex)?;
         if let Some(ref payment) = payment_status {
             if payment.status == PaymentStatus::Failed {
@@ -660,7 +661,7 @@ impl BTCSendSwap {
                     &rsi.id,
                     claim_tx
                         .map(|tx| tx.txid)
-                        .or(broadcasted_claim_tx.map(|tx| tx.txid().to_string())),
+                        .or(broadcasted_claim_tx.map(|tx| tx.compute_txid().to_string())),
                 )?;
                 self.emit_reverse_swap_updated(&rsi.id).await?;
             }
@@ -738,7 +739,7 @@ impl BTCSendSwap {
                     .create_claim_tx(&full_rsi)
                     .await
                     .ok()
-                    .map(|claim_tx| claim_tx.txid().to_string()),
+                    .map(|claim_tx| claim_tx.compute_txid().to_string()),
                 _ => None,
             },
             onchain_amount_sat: full_rsi.onchain_amount_sat,
@@ -753,7 +754,7 @@ impl BTCSendSwap {
 /// This is used to get the claim tx size, in order to then estimate the claim tx fee, before
 /// knowing the actual claim tx.
 fn build_fake_claim_tx() -> Result<Transaction> {
-    let keys = KeyPair::new(&Secp256k1::new(), &mut thread_rng());
+    let keys = Keypair::new(&Secp256k1::new(), &mut thread_rng());
 
     let sk = keys.secret_key();
     let pk_compressed_bytes = keys.public_key().serialize();

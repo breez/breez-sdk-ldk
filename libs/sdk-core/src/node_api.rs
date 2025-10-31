@@ -10,7 +10,7 @@ use tokio_stream::Stream;
 use sdk_common::prelude::*;
 
 use crate::{
-    bitcoin::bip32::{ChildNumber, ExtendedPrivKey},
+    bitcoin::bip32::{ChildNumber, Xpriv},
     lightning_invoice::RawBolt11Invoice,
     persist::error::PersistError,
     CustomMessage, LnUrlAuthError, LspInformation, MaxChannelAmount, NodeCredentials, Payment, PaymentType,PaymentDetails,LnPaymentDetails,PaymentStatus,
@@ -253,8 +253,8 @@ pub trait NodeAPI: Send + Sync {
     ) -> NodeResult<Pin<Box<dyn Stream<Item = Result<CustomMessage>> + Send>>>;
 
     /// Gets the private key at the path specified
-    async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<ExtendedPrivKey>;
-    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<ExtendedPrivKey>;
+    async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
+    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
 
     /// Gets the routing hints related to all private channels that the node has.
     /// Also returns a boolean indicating if the node has a public channel or not.
