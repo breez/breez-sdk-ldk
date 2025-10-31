@@ -48,6 +48,8 @@ jobs:
 
   deploy:
     name: Deploy to Pages
+    # Temporarily disable GitHub Pages deployment
+    if: ${{ false }}
 
     needs: build
 
