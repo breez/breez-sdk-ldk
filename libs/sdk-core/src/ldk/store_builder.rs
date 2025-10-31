@@ -4,10 +4,14 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use hex::ToHex;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use sdk_common::bitcoin::hashes::sha256::Hash as Sha256;
+use sdk_common::bitcoin::hashes::Hash;
+use sdk_common::prelude::Network;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc;
 use vss_client::client::VssClient;
@@ -17,14 +21,28 @@ use vss_client::util::retry::{ExponentialBackoffRetryPolicy, MaxAttemptsRetryPol
 use crate::ldk::store::{PreviousHolder, VssStore};
 use crate::node_api::NodeResult;
 use crate::persist::error::PersistError;
+use crate::Config;
 
 pub(crate) type CustomRetryPolicy = MaxAttemptsRetryPolicy<ExponentialBackoffRetryPolicy<VssError>>;
 pub(crate) type LockingStore = crate::ldk::store::LockingStore<VssStore<CustomRetryPolicy>>;
 pub(crate) type MirroringStore = crate::ldk::store::MirroringStore<Arc<LockingStore>, LockingStore>;
 
-pub(crate) fn build_vss_store(url: String, store_id: String) -> VssStore<CustomRetryPolicy> {
+pub(crate) fn build_vss_store(
+    config: &Config,
+    seed: &[u8],
+    store_id: &str,
+) -> VssStore<CustomRetryPolicy> {
+    let store_id = match config.network {
+        Network::Regtest => {
+            // Regtest instance of VSS does not implement authentication,
+            // that is why the hash of the seed is used to avoid collisions.
+            let seed_hash = Sha256::hash(seed).encode_hex::<String>();
+            format!("{seed_hash}/{store_id}")
+        }
+        _ => store_id.to_string(),
+    };
     let vss_client = VssClient::new(
-        url,
+        config.vss_url.clone(),
         ExponentialBackoffRetryPolicy::<VssError>::new(Duration::from_secs(1)).with_max_attempts(5),
     );
     VssStore::new(vss_client, store_id)

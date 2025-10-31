@@ -21,9 +21,9 @@ pub async fn build_node(
     restore_only: Option<bool>,
     persister: Arc<SqliteStorage>,
 ) -> NodeResult<NodeImpls> {
+    let backup_transport = Arc::new(LdkBackupTransport::new(&config, &seed));
     let ldk = Ldk::build(config, &seed, restore_only).await?;
     let ldk = Arc::new(ldk);
-    let backup_transport = Arc::new(LdkBackupTransport {});
     let lsp: Option<Arc<dyn LspAPI>> = Some(ldk.clone());
     let receiver: Option<Arc<dyn Receiver>> = Some(ldk.clone());
     Ok(NodeImpls {
