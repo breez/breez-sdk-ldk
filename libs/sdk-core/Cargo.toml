@@ -51,6 +51,8 @@ ryu = "1.0.18"
 #   https://github.com/lightningdevkit/ldk-node/pull/608
 ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "fdaa759f2485189319f5b5b7d046c2b0de281e23" }
 vss-client = { version = "0.3.1", default-features = false }
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
 
 [dev-dependencies]
 base64 = { workspace = true }
