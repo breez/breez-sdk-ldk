@@ -1665,7 +1665,7 @@ impl BreezServices {
                     if let Some(ref p) = payment {
                         let res = cloned
                             .persister
-                            .insert_or_update_payments(&vec![p.clone()], false);
+                            .insert_or_update_payments(std::slice::from_ref(p), false);
                         debug!("paid invoice was added to payments list {res:?}");
                         if let Ok(Some(mut node_info)) = cloned.persister.get_node_state() {
                             node_info.channels_balance_msat += p.amount_msat;
