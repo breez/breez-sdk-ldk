@@ -5,7 +5,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
-use hex::ToHex;
 use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
@@ -83,16 +82,7 @@ impl Ldk {
         let (lsp_id, lsp_address) = get_lsp(&config)?;
         builder.set_liquidity_source_lsps2(lsp_id, lsp_address, None);
 
-        let store_id = match config.network {
-            Network::Regtest => {
-                // Regtest instance of VSS does not implement authentication,
-                // that is why the hash of the seed is used to avoid collisions.
-                let seed_hash = Sha256::hash(&seed).encode_hex::<String>();
-                format!("{seed_hash}/ldk_node")
-            }
-            _ => "ldk_node".to_string(),
-        };
-        let vss_store = build_vss_store(config.vss_url.clone(), store_id);
+        let vss_store = build_vss_store(&config, &seed, "ldk_node");
 
         // It is not possible to use oneshot here, because `oneshot::Sender::send()`
         // consumes itself, not allowing to call `closed()` method after.
