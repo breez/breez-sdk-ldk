@@ -12,28 +12,29 @@ pub enum Network {
     Regtest,
 }
 
-impl From<bitcoin::network::constants::Network> for Network {
-    fn from(network: bitcoin::network::constants::Network) -> Self {
+impl From<bitcoin::Network> for Network {
+    fn from(network: bitcoin::Network) -> Self {
+        #[allow(unreachable_patterns)]
         match network {
-            bitcoin::network::constants::Network::Bitcoin => Network::Bitcoin,
-            bitcoin::network::constants::Network::Testnet => Network::Testnet,
-            bitcoin::network::constants::Network::Signet => Network::Signet,
-            bitcoin::network::constants::Network::Regtest => Network::Regtest,
-            _ => {
-                warn!("Unknown network: {network:?}");
+            bitcoin::Network::Bitcoin => Network::Bitcoin,
+            bitcoin::Network::Testnet | bitcoin::Network::Testnet4 => Network::Testnet,
+            bitcoin::Network::Signet => Network::Signet,
+            bitcoin::Network::Regtest => Network::Regtest,
+            other => {
+                warn!("Unknown network: {other:?}");
                 Network::Bitcoin
             }
         }
     }
 }
 
-impl From<Network> for bitcoin::network::constants::Network {
+impl From<Network> for bitcoin::Network {
     fn from(network: Network) -> Self {
         match network {
-            Network::Bitcoin => bitcoin::network::constants::Network::Bitcoin,
-            Network::Testnet => bitcoin::network::constants::Network::Testnet,
-            Network::Signet => bitcoin::network::constants::Network::Signet,
-            Network::Regtest => bitcoin::network::constants::Network::Regtest,
+            Network::Bitcoin => bitcoin::Network::Bitcoin,
+            Network::Testnet => bitcoin::Network::Testnet,
+            Network::Signet => bitcoin::Network::Signet,
+            Network::Regtest => bitcoin::Network::Regtest,
         }
     }
 }

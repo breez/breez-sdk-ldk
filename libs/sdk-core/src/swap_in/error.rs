@@ -53,20 +53,32 @@ impl ReceiveSwapError {
 }
 pub type ReceiveSwapResult<T, E = ReceiveSwapError> = Result<T, E>;
 
-impl From<bitcoin::hashes::hex::Error> for ReceiveSwapError {
-    fn from(e: bitcoin::hashes::hex::Error) -> Self {
+impl From<FromHexError> for ReceiveSwapError {
+    fn from(e: FromHexError) -> Self {
         Self::Generic(e.to_string())
     }
 }
 
-impl From<bitcoin::absolute::Error> for ReceiveSwapError {
-    fn from(e: bitcoin::absolute::Error) -> Self {
+impl From<bitcoin::absolute::ConversionError> for ReceiveSwapError {
+    fn from(e: bitcoin::absolute::ConversionError) -> Self {
         Self::Generic(e.to_string())
     }
 }
 
-impl From<bitcoin::address::Error> for ReceiveSwapError {
-    fn from(e: bitcoin::address::Error) -> Self {
+impl From<bitcoin::address::error::ParseError> for ReceiveSwapError {
+    fn from(e: bitcoin::address::error::ParseError) -> Self {
+        Self::Generic(e.to_string())
+    }
+}
+
+impl From<bitcoin::hex::HexToArrayError> for ReceiveSwapError {
+    fn from(e: bitcoin::hex::HexToArrayError) -> Self {
+        Self::Generic(e.to_string())
+    }
+}
+
+impl From<bitcoin::hex::HexToBytesError> for ReceiveSwapError {
+    fn from(e: bitcoin::hex::HexToBytesError) -> Self {
         Self::Generic(e.to_string())
     }
 }
@@ -86,8 +98,14 @@ impl From<SdkError> for ReceiveSwapError {
     }
 }
 
-impl From<bitcoin::sighash::Error> for ReceiveSwapError {
-    fn from(e: bitcoin::sighash::Error) -> Self {
+impl From<bitcoin::transaction::InputsIndexError> for ReceiveSwapError {
+    fn from(e: bitcoin::transaction::InputsIndexError) -> Self {
+        Self::Generic(e.to_string())
+    }
+}
+
+impl From<bitcoin::sighash::TaprootError> for ReceiveSwapError {
+    fn from(e: bitcoin::sighash::TaprootError) -> Self {
         Self::Generic(e.to_string())
     }
 }
@@ -157,12 +175,6 @@ impl From<GetPaymentRequestError> for ReceiveSwapError {
                 ReceiveSwapError::MissingOpeningFeeParams
             }
         }
-    }
-}
-
-impl From<FromHexError> for ReceiveSwapError {
-    fn from(_value: FromHexError) -> Self {
-        Self::generic("could not convert from hex")
     }
 }
 

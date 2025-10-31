@@ -453,8 +453,16 @@ pub mod model {
         }
     }
 
-    impl From<bitcoin::hashes::hex::Error> for LnUrlPayError {
-        fn from(err: bitcoin::hashes::hex::Error) -> Self {
+    impl From<hex::FromHexError> for LnUrlPayError {
+        fn from(err: hex::FromHexError) -> Self {
+            Self::Generic {
+                err: err.to_string(),
+            }
+        }
+    }
+
+    impl From<crate::bitcoin::hex::HexToArrayError> for LnUrlPayError {
+        fn from(err: crate::bitcoin::hex::HexToArrayError) -> Self {
             Self::Generic {
                 err: err.to_string(),
             }

@@ -23,7 +23,7 @@ use tokio_stream::wrappers::errors::BroadcastStreamRecvError::Lagged;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::{Stream, StreamExt};
 
-use crate::bitcoin::bip32::{ChildNumber, ExtendedPrivKey};
+use crate::bitcoin::bip32::{ChildNumber, Xpriv};
 use crate::bitcoin::secp256k1::Secp256k1;
 use crate::breez_services::{OpenChannelParams, Receiver};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
@@ -370,14 +370,15 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<ExtendedPrivKey> {
+    async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
+        let bitcoin_network: crate::bitcoin::Network = self.config.network.into();
         Ok(
-            ExtendedPrivKey::new_master(self.config.network.into(), &self.seed)?
+            Xpriv::new_master(bitcoin_network, &self.seed)?
                 .derive_priv(&Secp256k1::new(), &path)?,
         )
     }
 
-    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<ExtendedPrivKey> {
+    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
         // Using the main implementation, because legacy way was never used for LDK.
         self.derive_bip32_key(path).await
     }
