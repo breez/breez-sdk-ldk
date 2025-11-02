@@ -1,6 +1,7 @@
 use std::time::SystemTimeError;
 
 use anyhow::Result;
+use hex::FromHexError;
 use sdk_common::prelude::*;
 use thiserror::Error;
 
@@ -388,8 +389,8 @@ impl From<anyhow::Error> for SdkError {
     }
 }
 
-impl From<crate::bitcoin::hashes::hex::Error> for SdkError {
-    fn from(err: crate::bitcoin::hashes::hex::Error) -> Self {
+impl From<FromHexError> for SdkError {
+    fn from(err: FromHexError) -> Self {
         Self::Generic {
             err: err.to_string(),
         }

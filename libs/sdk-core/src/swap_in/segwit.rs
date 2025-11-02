@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use crate::bitcoin::{
     absolute::Height,
+    amount::Amount,
     blockdata::{opcodes, script::Builder},
     hashes::{ripemd160, Hash},
     secp256k1::{Message, Secp256k1, SecretKey},
     sighash::{EcdsaSighashType, SighashCache},
-    Address, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
+    transaction, Address, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
 };
 use crate::{SwapInfo, SwapperAPI};
 
@@ -43,7 +44,7 @@ impl SegwitReceiveSwap {
         destination_address: &Address,
     ) -> ReceiveSwapResult<Transaction> {
         Ok(Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: bitcoin::absolute::LockTime::ZERO,
             input: utxos
                 .iter()
@@ -59,7 +60,7 @@ impl SegwitReceiveSwap {
                 })
                 .collect::<Result<_, ReceiveSwapError>>()?,
             output: vec![TxOut {
-                value: 0,
+                value: Amount::from_sat(0),
                 script_pubkey: destination_address.script_pubkey(),
             }],
         })
@@ -111,7 +112,7 @@ impl SegwitReceiveSwap {
         )?;
 
         let mut tx = Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: bitcoin::absolute::LockTime::Blocks(lock_time),
             input: utxos
                 .iter()
@@ -123,7 +124,7 @@ impl SegwitReceiveSwap {
                 })
                 .collect::<Result<Vec<TxIn>, ReceiveSwapError>>()?,
             output: vec![TxOut {
-                value,
+                value: Amount::from_sat(value),
                 script_pubkey: destination_address.script_pubkey(),
             }],
         };
@@ -132,13 +133,13 @@ impl SegwitReceiveSwap {
         let cloned_tx = tx.clone();
         let mut signer = SighashCache::new(&cloned_tx);
         for (input_index, input) in tx.input.iter_mut().enumerate() {
-            let sig = signer.segwit_signature_hash(
+            let sighash = signer.p2wsh_signature_hash(
                 input_index,
                 &input_script,
-                utxos[input_index].amount_sat,
+                Amount::from_sat(utxos[input_index].amount_sat),
                 EcdsaSighashType::All,
             )?;
-            let msg = Message::from_slice(&sig[..])?;
+            let msg: Message = sighash.into();
             let secret_key = SecretKey::from_slice(&swap_info.private_key)?;
             let sig = scpt.sign_ecdsa(&msg, &secret_key);
 

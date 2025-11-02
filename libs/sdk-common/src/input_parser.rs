@@ -4,9 +4,8 @@ use std::str::FromStr;
 
 use ::bip21::Uri;
 use anyhow::{anyhow, bail, Context, Result};
-use bitcoin::address::{NetworkChecked, NetworkUnchecked};
+use bitcoin::address::NetworkUnchecked;
 use bitcoin::bech32;
-use bitcoin::bech32::FromBase32;
 use log::{debug, error};
 use percent_encoding::NON_ALPHANUMERIC;
 use regex::Regex;
@@ -311,8 +310,7 @@ async fn parse_core<C: RestClient + ?Sized>(rest_client: &C, input: &str) -> Res
     if let Ok(bip21_uri) =
         prepend_if_missing("bitcoin:", input).parse::<Uri<'_, NetworkUnchecked>>()
     {
-        let bip21_uri = bip21_uri.assume_checked();
-        let bitcoin_addr_data: BitcoinAddressData = bip21_uri.into();
+        let bitcoin_addr_data: BitcoinAddressData = bip21_uri.try_into()?;
 
         // Special case of LN BOLT11 with onchain fallback
         // Search for the `lightning=bolt11` param in the BIP21 URI and, if found, extract the bolt11
@@ -525,8 +523,8 @@ fn lnurl_decode(encoded: &str) -> LnUrlResult<(String, String, Option<String>)> 
     }
 
     match bech32::decode(encoded) {
-        Ok((_hrp, payload, _variant)) => {
-            let decoded = String::from_utf8(Vec::from_base32(&payload)?)?;
+        Ok((_hrp, payload)) => {
+            let decoded = String::from_utf8(payload)?;
 
             let url = reqwest::Url::parse(&decoded)
                 .map_err(|e| super::prelude::LnUrlError::InvalidUri(e.to_string()))?;
@@ -878,15 +876,38 @@ impl BitcoinAddressData {
     }
 }
 
-impl From<Uri<'_, NetworkChecked>> for BitcoinAddressData {
-    fn from(uri: Uri<'_, NetworkChecked>) -> Self {
-        BitcoinAddressData {
-            address: uri.address.to_string(),
-            network: uri.address.network.into(),
-            amount_sat: uri.amount.map(|a| a.to_sat()),
-            label: uri.label.map(|label| label.try_into().unwrap()),
-            message: uri.message.map(|msg| msg.try_into().unwrap()),
-        }
+impl TryFrom<Uri<'_, NetworkUnchecked>> for BitcoinAddressData {
+    type Error = anyhow::Error;
+
+    fn try_from(uri: Uri<'_, NetworkUnchecked>) -> Result<Self> {
+        let (address, network) = [
+            bitcoin::Network::Bitcoin,
+            bitcoin::Network::Testnet,
+            bitcoin::Network::Signet,
+            bitcoin::Network::Regtest,
+        ]
+        .into_iter()
+        .find_map(|candidate| {
+            uri.address
+                .clone()
+                .require_network(candidate)
+                .ok()
+                .map(|address| (address, candidate))
+        })
+        .ok_or(anyhow!(
+            "BIP21 URI address must be valid for at least one Bitcoin network"
+        ))?;
+
+        let label = uri.label.map(|label| label.try_into()).transpose()?;
+        let message = uri.message.map(|message| message.try_into()).transpose()?;
+
+        Ok(Self {
+            address: address.to_string(),
+            network: network.into(),
+            amount_sat: uri.amount.map(bitcoin::Amount::to_sat),
+            label,
+            message,
+        })
     }
 }
 
@@ -906,7 +927,7 @@ pub struct ExternalInputParser {
 pub(crate) mod tests {
     use anyhow::{anyhow, Result};
     use bitcoin::bech32;
-    use bitcoin::bech32::{ToBase32, Variant};
+    use bitcoin::bech32::Hrp;
     use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
     use serde_json::json;
 
@@ -1344,39 +1365,21 @@ pub(crate) mod tests {
 
         // HTTPS allowed with clearnet domains
         assert_eq!(
-            lnurl_decode(&bech32::encode(
-                "LNURL",
-                "https://domain.com".to_base32(),
-                Variant::Bech32
-            )?)?,
+            lnurl_decode(&encode_lnurl("https://domain.com")?)?,
             ("domain.com".into(), "https://domain.com".into(), None)
         );
 
         // HTTP not allowed with clearnet domains
-        assert!(lnurl_decode(&bech32::encode(
-            "LNURL",
-            "http://domain.com".to_base32(),
-            Variant::Bech32
-        )?)
-        .is_err());
+        assert!(lnurl_decode(&encode_lnurl("http://domain.com")?).is_err());
 
         // HTTP allowed with onion domains
         assert_eq!(
-            lnurl_decode(&bech32::encode(
-                "LNURL",
-                "http://3fdsf.onion".to_base32(),
-                Variant::Bech32
-            )?)?,
+            lnurl_decode(&encode_lnurl("http://3fdsf.onion")?)?,
             ("3fdsf.onion".into(), "http://3fdsf.onion".into(), None)
         );
 
         // HTTPS not allowed with onion domains
-        assert!(lnurl_decode(&bech32::encode(
-            "LNURL",
-            "https://3fdsf.onion".to_base32(),
-            Variant::Bech32
-        )?)
-        .is_err());
+        assert!(lnurl_decode(&encode_lnurl("https://3fdsf.onion")?).is_err());
 
         let decoded_url = "https://service.com/api?q=3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df";
         let lnurl_raw = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS";
@@ -1397,6 +1400,11 @@ pub(crate) mod tests {
         .is_err());
 
         Ok(())
+    }
+
+    fn encode_lnurl(url: &str) -> Result<String, bech32::EncodeError> {
+        let hrp = Hrp::parse("lnurl").expect("valid lnurl hrp");
+        bech32::encode::<bech32::Bech32>(hrp, url.as_bytes())
     }
 
     fn mock_lnurl_withdraw_endpoint(mock_rest_client: &MockRestClient, error: Option<String>) {

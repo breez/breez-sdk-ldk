@@ -303,7 +303,7 @@ fn test_sync_closed_channels() {
     // test all channels were closed
     storage.update_channels(&Vec::new()).unwrap();
     let queried_channels = storage.list_channels().unwrap();
-    let expected = vec![
+    let expected = [
         Channel {
             funding_txid: "123".to_string(),
             short_channel_id: Some("10x11x12".to_string()),

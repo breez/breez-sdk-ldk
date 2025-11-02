@@ -240,8 +240,9 @@ impl FullReverseSwapInfo {
         match redeem_script_received.eq(&redeem_script_expected) {
             true => {
                 let lockup_addr_expected = &received_lockup_address;
+                let bitcoin_network: bitcoin::Network = network.into();
                 let lockup_addr_from_script =
-                    &Address::p2wsh(&redeem_script_received, network.into()).to_string();
+                    &Address::p2wsh(&redeem_script_received, bitcoin_network).to_string();
 
                 match lockup_addr_from_script == lockup_addr_expected {
                     true => Ok(()),
@@ -292,7 +293,8 @@ impl FullReverseSwapInfo {
     /// Derives the lockup address from the redeem script
     pub(crate) fn get_lockup_address(&self, network: Network) -> ReverseSwapResult<Address> {
         let redeem_script = ScriptBuf::from_hex(&self.redeem_script)?;
-        Ok(Address::p2wsh(redeem_script.as_script(), network.into()))
+        let bitcoin_network: bitcoin::Network = network.into();
+        Ok(Address::p2wsh(redeem_script.as_script(), bitcoin_network))
     }
 
     /// Get the preimage hash sent in the create request
