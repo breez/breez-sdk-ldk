@@ -42,6 +42,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   AesSuccessActionDataResult dco_decode_aes_success_action_data_result(dynamic raw);
 
   @protected
+  Amount dco_decode_amount(dynamic raw);
+
+  @protected
   BackupFailedData dco_decode_backup_failed_data(dynamic raw);
 
   @protected
@@ -61,6 +64,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   AesSuccessActionDataResult dco_decode_box_autoadd_aes_success_action_data_result(dynamic raw);
+
+  @protected
+  Amount dco_decode_box_autoadd_amount(dynamic raw);
 
   @protected
   BackupFailedData dco_decode_box_autoadd_backup_failed_data(dynamic raw);
@@ -115,6 +121,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice dco_decode_box_autoadd_ln_invoice(dynamic raw);
+
+  @protected
+  LNOffer dco_decode_box_autoadd_ln_offer(dynamic raw);
 
   @protected
   LnPaymentDetails dco_decode_box_autoadd_ln_payment_details(dynamic raw);
@@ -312,6 +321,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   List<FiatCurrency> dco_decode_list_fiat_currency(dynamic raw);
 
   @protected
+  List<LnOfferBlindedPath> dco_decode_list_ln_offer_blinded_path(dynamic raw);
+
+  @protected
   List<LocaleOverrides> dco_decode_list_locale_overrides(dynamic raw);
 
   @protected
@@ -367,6 +379,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice dco_decode_ln_invoice(dynamic raw);
+
+  @protected
+  LNOffer dco_decode_ln_offer(dynamic raw);
+
+  @protected
+  LnOfferBlindedPath dco_decode_ln_offer_blinded_path(dynamic raw);
 
   @protected
   LnPaymentDetails dco_decode_ln_payment_details(dynamic raw);
@@ -454,6 +472,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  Amount? dco_decode_opt_box_autoadd_amount(dynamic raw);
 
   @protected
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
@@ -690,6 +711,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   AesSuccessActionDataResult sse_decode_aes_success_action_data_result(SseDeserializer deserializer);
 
   @protected
+  Amount sse_decode_amount(SseDeserializer deserializer);
+
+  @protected
   BackupFailedData sse_decode_backup_failed_data(SseDeserializer deserializer);
 
   @protected
@@ -713,6 +737,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   AesSuccessActionDataResult sse_decode_box_autoadd_aes_success_action_data_result(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Amount sse_decode_box_autoadd_amount(SseDeserializer deserializer);
 
   @protected
   BackupFailedData sse_decode_box_autoadd_backup_failed_data(SseDeserializer deserializer);
@@ -771,6 +798,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice sse_decode_box_autoadd_ln_invoice(SseDeserializer deserializer);
+
+  @protected
+  LNOffer sse_decode_box_autoadd_ln_offer(SseDeserializer deserializer);
 
   @protected
   LnPaymentDetails sse_decode_box_autoadd_ln_payment_details(SseDeserializer deserializer);
@@ -976,6 +1006,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   List<FiatCurrency> sse_decode_list_fiat_currency(SseDeserializer deserializer);
 
   @protected
+  List<LnOfferBlindedPath> sse_decode_list_ln_offer_blinded_path(SseDeserializer deserializer);
+
+  @protected
   List<LocaleOverrides> sse_decode_list_locale_overrides(SseDeserializer deserializer);
 
   @protected
@@ -1031,6 +1064,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice sse_decode_ln_invoice(SseDeserializer deserializer);
+
+  @protected
+  LNOffer sse_decode_ln_offer(SseDeserializer deserializer);
+
+  @protected
+  LnOfferBlindedPath sse_decode_ln_offer_blinded_path(SseDeserializer deserializer);
 
   @protected
   LnPaymentDetails sse_decode_ln_payment_details(SseDeserializer deserializer);
@@ -1118,6 +1157,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  Amount? sse_decode_opt_box_autoadd_amount(SseDeserializer deserializer);
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
@@ -1398,6 +1440,14 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  ffi.Pointer<wire_cst_amount> cst_encode_box_autoadd_amount(Amount raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ptr = wire.cst_new_box_autoadd_amount();
+    cst_api_fill_to_wire_amount(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
   ffi.Pointer<wire_cst_backup_failed_data> cst_encode_box_autoadd_backup_failed_data(BackupFailedData raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ptr = wire.cst_new_box_autoadd_backup_failed_data();
@@ -1556,6 +1606,14 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ptr = wire.cst_new_box_autoadd_ln_invoice();
     cst_api_fill_to_wire_ln_invoice(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_ln_offer> cst_encode_box_autoadd_ln_offer(LNOffer raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ptr = wire.cst_new_box_autoadd_ln_offer();
+    cst_api_fill_to_wire_ln_offer(raw, ptr.ref);
     return ptr;
   }
 
@@ -1951,6 +2009,18 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  ffi.Pointer<wire_cst_list_ln_offer_blinded_path> cst_encode_list_ln_offer_blinded_path(
+    List<LnOfferBlindedPath> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_ln_offer_blinded_path(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_ln_offer_blinded_path(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
   ffi.Pointer<wire_cst_list_locale_overrides> cst_encode_list_locale_overrides(List<LocaleOverrides> raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ans = wire.cst_new_list_locale_overrides(raw.length);
@@ -2121,6 +2191,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  ffi.Pointer<wire_cst_amount> cst_encode_opt_box_autoadd_amount(Amount? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? ffi.nullptr : cst_encode_box_autoadd_amount(raw);
+  }
+
+  @protected
   ffi.Pointer<ffi.Bool> cst_encode_opt_box_autoadd_bool(bool? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? ffi.nullptr : cst_encode_box_autoadd_bool(raw);
@@ -2283,6 +2359,24 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  void cst_api_fill_to_wire_amount(Amount apiObj, wire_cst_amount wireObj) {
+    if (apiObj is Amount_Bitcoin) {
+      var pre_amount_msat = cst_encode_u_64(apiObj.amountMsat);
+      wireObj.tag = 0;
+      wireObj.kind.Bitcoin.amount_msat = pre_amount_msat;
+      return;
+    }
+    if (apiObj is Amount_Currency) {
+      var pre_iso4217_code = cst_encode_String(apiObj.iso4217Code);
+      var pre_fractional_amount = cst_encode_u_64(apiObj.fractionalAmount);
+      wireObj.tag = 1;
+      wireObj.kind.Currency.iso4217_code = pre_iso4217_code;
+      wireObj.kind.Currency.fractional_amount = pre_fractional_amount;
+      return;
+    }
+  }
+
+  @protected
   void cst_api_fill_to_wire_backup_failed_data(BackupFailedData apiObj, wire_cst_backup_failed_data wireObj) {
     wireObj.error = cst_encode_String(apiObj.error);
   }
@@ -2325,6 +2419,11 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     ffi.Pointer<wire_cst_aes_success_action_data_result> wireObj,
   ) {
     cst_api_fill_to_wire_aes_success_action_data_result(apiObj, wireObj.ref);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_box_autoadd_amount(Amount apiObj, ffi.Pointer<wire_cst_amount> wireObj) {
+    cst_api_fill_to_wire_amount(apiObj, wireObj.ref);
   }
 
   @protected
@@ -2445,6 +2544,11 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     ffi.Pointer<wire_cst_ln_invoice> wireObj,
   ) {
     cst_api_fill_to_wire_ln_invoice(apiObj, wireObj.ref);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_box_autoadd_ln_offer(LNOffer apiObj, ffi.Pointer<wire_cst_ln_offer> wireObj) {
+    cst_api_fill_to_wire_ln_offer(apiObj, wireObj.ref);
   }
 
   @protected
@@ -2941,41 +3045,49 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
       wireObj.kind.Bolt11.invoice = pre_invoice;
       return;
     }
+    if (apiObj is InputType_Bolt12Offer) {
+      var pre_offer = cst_encode_box_autoadd_ln_offer(apiObj.offer);
+      var pre_bip353_address = cst_encode_opt_String(apiObj.bip353Address);
+      wireObj.tag = 2;
+      wireObj.kind.Bolt12Offer.offer = pre_offer;
+      wireObj.kind.Bolt12Offer.bip353_address = pre_bip353_address;
+      return;
+    }
     if (apiObj is InputType_NodeId) {
       var pre_node_id = cst_encode_String(apiObj.nodeId);
-      wireObj.tag = 2;
+      wireObj.tag = 3;
       wireObj.kind.NodeId.node_id = pre_node_id;
       return;
     }
     if (apiObj is InputType_Url) {
       var pre_url = cst_encode_String(apiObj.url);
-      wireObj.tag = 3;
+      wireObj.tag = 4;
       wireObj.kind.Url.url = pre_url;
       return;
     }
     if (apiObj is InputType_LnUrlPay) {
       var pre_data = cst_encode_box_autoadd_ln_url_pay_request_data(apiObj.data);
       var pre_bip353_address = cst_encode_opt_String(apiObj.bip353Address);
-      wireObj.tag = 4;
+      wireObj.tag = 5;
       wireObj.kind.LnUrlPay.data = pre_data;
       wireObj.kind.LnUrlPay.bip353_address = pre_bip353_address;
       return;
     }
     if (apiObj is InputType_LnUrlWithdraw) {
       var pre_data = cst_encode_box_autoadd_ln_url_withdraw_request_data(apiObj.data);
-      wireObj.tag = 5;
+      wireObj.tag = 6;
       wireObj.kind.LnUrlWithdraw.data = pre_data;
       return;
     }
     if (apiObj is InputType_LnUrlAuth) {
       var pre_data = cst_encode_box_autoadd_ln_url_auth_request_data(apiObj.data);
-      wireObj.tag = 6;
+      wireObj.tag = 7;
       wireObj.kind.LnUrlAuth.data = pre_data;
       return;
     }
     if (apiObj is InputType_LnUrlError) {
       var pre_data = cst_encode_box_autoadd_ln_url_error_data(apiObj.data);
-      wireObj.tag = 7;
+      wireObj.tag = 8;
       wireObj.kind.LnUrlError.data = pre_data;
       return;
     }
@@ -3028,6 +3140,26 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.routing_hints = cst_encode_list_route_hint(apiObj.routingHints);
     wireObj.payment_secret = cst_encode_list_prim_u_8_strict(apiObj.paymentSecret);
     wireObj.min_final_cltv_expiry_delta = cst_encode_u_64(apiObj.minFinalCltvExpiryDelta);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_ln_offer(LNOffer apiObj, wire_cst_ln_offer wireObj) {
+    wireObj.offer = cst_encode_String(apiObj.offer);
+    wireObj.chains = cst_encode_list_String(apiObj.chains);
+    wireObj.min_amount = cst_encode_opt_box_autoadd_amount(apiObj.minAmount);
+    wireObj.description = cst_encode_opt_String(apiObj.description);
+    wireObj.absolute_expiry = cst_encode_opt_box_autoadd_u_64(apiObj.absoluteExpiry);
+    wireObj.issuer = cst_encode_opt_String(apiObj.issuer);
+    wireObj.signing_pubkey = cst_encode_opt_String(apiObj.signingPubkey);
+    wireObj.paths = cst_encode_list_ln_offer_blinded_path(apiObj.paths);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_ln_offer_blinded_path(
+    LnOfferBlindedPath apiObj,
+    wire_cst_ln_offer_blinded_path wireObj,
+  ) {
+    wireObj.blinded_hops = cst_encode_list_String(apiObj.blindedHops);
   }
 
   @protected
@@ -3845,6 +3977,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_aes_success_action_data_result(AesSuccessActionDataResult self, SseSerializer serializer);
 
   @protected
+  void sse_encode_amount(Amount self, SseSerializer serializer);
+
+  @protected
   void sse_encode_backup_failed_data(BackupFailedData self, SseSerializer serializer);
 
   @protected
@@ -3870,6 +4005,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     AesSuccessActionDataResult self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_box_autoadd_amount(Amount self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_backup_failed_data(BackupFailedData self, SseSerializer serializer);
@@ -3930,6 +4068,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_box_autoadd_ln_invoice(LNInvoice self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_ln_offer(LNOffer self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_ln_payment_details(LnPaymentDetails self, SseSerializer serializer);
@@ -4154,6 +4295,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_list_fiat_currency(List<FiatCurrency> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_ln_offer_blinded_path(List<LnOfferBlindedPath> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_locale_overrides(List<LocaleOverrides> self, SseSerializer serializer);
 
   @protected
@@ -4212,6 +4356,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_ln_invoice(LNInvoice self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_offer(LNOffer self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_offer_blinded_path(LnOfferBlindedPath self, SseSerializer serializer);
 
   @protected
   void sse_encode_ln_payment_details(LnPaymentDetails self, SseSerializer serializer);
@@ -4302,6 +4452,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_amount(Amount? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
@@ -5345,6 +5498,17 @@ class BreezSdkBindingsWire implements BaseWire {
       _cst_new_box_autoadd_aes_success_action_data_resultPtr
           .asFunction<ffi.Pointer<wire_cst_aes_success_action_data_result> Function()>();
 
+  ffi.Pointer<wire_cst_amount> cst_new_box_autoadd_amount() {
+    return _cst_new_box_autoadd_amount();
+  }
+
+  late final _cst_new_box_autoadd_amountPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_amount> Function()>>(
+        'frbgen_breez_sdk_cst_new_box_autoadd_amount',
+      );
+  late final _cst_new_box_autoadd_amount = _cst_new_box_autoadd_amountPtr
+      .asFunction<ffi.Pointer<wire_cst_amount> Function()>();
+
   ffi.Pointer<wire_cst_backup_failed_data> cst_new_box_autoadd_backup_failed_data() {
     return _cst_new_box_autoadd_backup_failed_data();
   }
@@ -5544,6 +5708,17 @@ class BreezSdkBindingsWire implements BaseWire {
       );
   late final _cst_new_box_autoadd_ln_invoice = _cst_new_box_autoadd_ln_invoicePtr
       .asFunction<ffi.Pointer<wire_cst_ln_invoice> Function()>();
+
+  ffi.Pointer<wire_cst_ln_offer> cst_new_box_autoadd_ln_offer() {
+    return _cst_new_box_autoadd_ln_offer();
+  }
+
+  late final _cst_new_box_autoadd_ln_offerPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_ln_offer> Function()>>(
+        'frbgen_breez_sdk_cst_new_box_autoadd_ln_offer',
+      );
+  late final _cst_new_box_autoadd_ln_offer = _cst_new_box_autoadd_ln_offerPtr
+      .asFunction<ffi.Pointer<wire_cst_ln_offer> Function()>();
 
   ffi.Pointer<wire_cst_ln_payment_details> cst_new_box_autoadd_ln_payment_details() {
     return _cst_new_box_autoadd_ln_payment_details();
@@ -6018,6 +6193,17 @@ class BreezSdkBindingsWire implements BaseWire {
       );
   late final _cst_new_list_fiat_currency = _cst_new_list_fiat_currencyPtr
       .asFunction<ffi.Pointer<wire_cst_list_fiat_currency> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_ln_offer_blinded_path> cst_new_list_ln_offer_blinded_path(int len) {
+    return _cst_new_list_ln_offer_blinded_path(len);
+  }
+
+  late final _cst_new_list_ln_offer_blinded_pathPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_list_ln_offer_blinded_path> Function(ffi.Int32)>>(
+        'frbgen_breez_sdk_cst_new_list_ln_offer_blinded_path',
+      );
+  late final _cst_new_list_ln_offer_blinded_path = _cst_new_list_ln_offer_blinded_pathPtr
+      .asFunction<ffi.Pointer<wire_cst_list_ln_offer_blinded_path> Function(int)>();
 
   ffi.Pointer<wire_cst_list_locale_overrides> cst_new_list_locale_overrides(int len) {
     return _cst_new_list_locale_overrides(len);
@@ -7018,6 +7204,31 @@ final class wire_cst_static_backup_request extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> working_dir;
 }
 
+final class wire_cst_Amount_Bitcoin extends ffi.Struct {
+  @ffi.Uint64()
+  external int amount_msat;
+}
+
+final class wire_cst_Amount_Currency extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> iso4217_code;
+
+  @ffi.Uint64()
+  external int fractional_amount;
+}
+
+final class AmountKind extends ffi.Union {
+  external wire_cst_Amount_Bitcoin Bitcoin;
+
+  external wire_cst_Amount_Currency Currency;
+}
+
+final class wire_cst_amount extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external AmountKind kind;
+}
+
 final class wire_cst_bitcoin_address_data extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> address;
 
@@ -7033,6 +7244,35 @@ final class wire_cst_bitcoin_address_data extends ffi.Struct {
 
 final class wire_cst_greenlight_device_credentials extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> device;
+}
+
+final class wire_cst_ln_offer_blinded_path extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_String> blinded_hops;
+}
+
+final class wire_cst_list_ln_offer_blinded_path extends ffi.Struct {
+  external ffi.Pointer<wire_cst_ln_offer_blinded_path> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_ln_offer extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> offer;
+
+  external ffi.Pointer<wire_cst_list_String> chains;
+
+  external ffi.Pointer<wire_cst_amount> min_amount;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
+
+  external ffi.Pointer<ffi.Uint64> absolute_expiry;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> issuer;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> signing_pubkey;
+
+  external ffi.Pointer<wire_cst_list_ln_offer_blinded_path> paths;
 }
 
 final class wire_cst_ln_url_error_data extends ffi.Struct {
@@ -7267,6 +7507,12 @@ final class wire_cst_InputType_Bolt11 extends ffi.Struct {
   external ffi.Pointer<wire_cst_ln_invoice> invoice;
 }
 
+final class wire_cst_InputType_Bolt12Offer extends ffi.Struct {
+  external ffi.Pointer<wire_cst_ln_offer> offer;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> bip353_address;
+}
+
 final class wire_cst_InputType_NodeId extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> node_id;
 }
@@ -7297,6 +7543,8 @@ final class InputTypeKind extends ffi.Union {
   external wire_cst_InputType_BitcoinAddress BitcoinAddress;
 
   external wire_cst_InputType_Bolt11 Bolt11;
+
+  external wire_cst_InputType_Bolt12Offer Bolt12Offer;
 
   external wire_cst_InputType_NodeId NodeId;
 
