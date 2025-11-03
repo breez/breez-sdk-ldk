@@ -13,6 +13,7 @@ use secp256k1::musig::{
 
 use crate::bitcoin::{
     self,
+    amount::Amount,
     blockdata::{
         opcodes::all::{OP_CHECKSIG, OP_CHECKSIGVERIFY, OP_CSV, OP_EQUALVERIFY, OP_HASH160},
         script,
@@ -23,7 +24,7 @@ use crate::bitcoin::{
     secp256k1::{Message, PublicKey, SecretKey},
     sighash::{Prevouts, SighashCache, TapSighashType},
     taproot::{LeafVersion, TapLeafHash, TaprootBuilder, TaprootSpendInfo},
-    Address, Network, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
+    transaction, Address, Network, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
 };
 use crate::{NodeState, OpeningFeeParams, SwapInfo, SwapStatus};
 
@@ -150,7 +151,7 @@ impl TaprootReceiveSwap {
         destination_address: &Address,
     ) -> ReceiveSwapResult<Transaction> {
         Ok(Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: utxos
                 .iter()
@@ -162,7 +163,7 @@ impl TaprootReceiveSwap {
                 })
                 .collect::<Result<_, ReceiveSwapError>>()?,
             output: vec![TxOut {
-                value: 0,
+                value: Amount::ZERO,
                 script_pubkey: destination_address.script_pubkey(),
             }],
         })
@@ -175,7 +176,7 @@ impl TaprootReceiveSwap {
         destination_address: &Address,
     ) -> ReceiveSwapResult<Transaction> {
         Ok(Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: utxos
                 .iter()
@@ -191,7 +192,7 @@ impl TaprootReceiveSwap {
                 })
                 .collect::<Result<_, ReceiveSwapError>>()?,
             output: vec![TxOut {
-                value: 0,
+                value: Amount::ZERO,
                 script_pubkey: destination_address.script_pubkey(),
             }],
         })
@@ -214,14 +215,14 @@ impl TaprootReceiveSwap {
             .sum::<u64>()
             .saturating_sub(fee);
         let mut tx = Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: utxos
                 .iter()
                 .map(|utxo| utxo.try_into())
                 .collect::<Result<_, _>>()?,
             output: vec![TxOut {
-                value,
+                value: Amount::from_sat(value),
                 script_pubkey: destination_address.script_pubkey(),
             }],
         };
@@ -262,7 +263,7 @@ impl TaprootReceiveSwap {
         let prevouts: Vec<_> = utxos
             .iter()
             .map(|u| TxOut {
-                value: u.amount_sat,
+                value: Amount::from_sat(u.amount_sat),
                 script_pubkey: swap_address_script_pubkey.clone(),
             })
             .collect();
@@ -337,7 +338,7 @@ impl TaprootReceiveSwap {
             .saturating_sub(fee);
 
         let mut tx = Transaction {
-            version: 2,
+            version: transaction::Version::TWO,
             lock_time: absolute::LockTime::ZERO,
             input: utxos
                 .iter()
@@ -349,7 +350,7 @@ impl TaprootReceiveSwap {
                 })
                 .collect::<Result<_, ReceiveSwapError>>()?,
             output: vec![TxOut {
-                value,
+                value: Amount::from_sat(value),
                 script_pubkey: destination_address.script_pubkey(),
             }],
         };
@@ -368,7 +369,7 @@ impl TaprootReceiveSwap {
         let prevouts: Vec<_> = utxos
             .iter()
             .map(|u| TxOut {
-                value: u.amount_sat,
+                value: Amount::from_sat(u.amount_sat),
                 script_pubkey: swap_address_script_pubkey.clone(),
             })
             .collect();

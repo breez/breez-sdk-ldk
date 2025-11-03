@@ -22,7 +22,7 @@ use tokio_stream::StreamExt;
 use tonic::Status;
 
 use crate::backup::{BackupState, BackupTransport};
-use crate::bitcoin::bip32::{ChildNumber, ExtendedPrivKey};
+use crate::bitcoin::bip32::{ChildNumber, Xpriv};
 use crate::bitcoin::blockdata::opcodes::all::{
     OP_CHECKSIG, OP_CHECKSIGVERIFY, OP_CSV, OP_EQUALVERIFY, OP_HASH160,
 };
@@ -38,7 +38,6 @@ use crate::chain::{ChainService, OnchainTx, Outspend, RecommendedFees, TxStatus}
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::invoice::{InvoiceError, InvoiceResult};
 use crate::lightning::bitcoin::hashes as ldk_hashes;
-use crate::lightning::bitcoin::hashes::Hash as _;
 use crate::lightning::bitcoin::secp256k1 as ldk_secp256k1;
 use crate::lightning_invoice::{Currency, InvoiceBuilder, PaymentSecret, RawBolt11Invoice};
 use crate::lsp::LspInformation;
@@ -467,15 +466,12 @@ impl NodeAPI for MockNodeAPI {
         Err(NodeError::Generic("Not implemented".to_string()))
     }
 
-    async fn derive_bip32_key(&self, _path: Vec<ChildNumber>) -> NodeResult<ExtendedPrivKey> {
-        Ok(ExtendedPrivKey::new_master(Network::Bitcoin, &[])?)
+    async fn derive_bip32_key(&self, _path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
+        Ok(Xpriv::new_master(Network::Bitcoin, &[])?)
     }
 
-    async fn legacy_derive_bip32_key(
-        &self,
-        _path: Vec<ChildNumber>,
-    ) -> NodeResult<ExtendedPrivKey> {
-        Ok(ExtendedPrivKey::new_master(Network::Bitcoin, &[])?)
+    async fn legacy_derive_bip32_key(&self, _path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
+        Ok(Xpriv::new_master(Network::Bitcoin, &[])?)
     }
 
     async fn send_custom_message(&self, message: CustomMessage) -> NodeResult<()> {
@@ -818,10 +814,10 @@ pub fn create_invoice(
     invoice_preimage: Option<Vec<u8>>,
 ) -> LNInvoice {
     let preimage = invoice_preimage.unwrap_or(rand::thread_rng().gen::<[u8; 32]>().to_vec());
-    let hashed = Message::from_hashed_data::<sha256::Hash>(&preimage[..]);
-    let hash = hashed.as_ref();
-    let payment_hash =
-        ldk_hashes::sha256::Hash::from_slice(hash).expect("hash has a fixed 32-byte size");
+    let hash = sha256::Hash::hash(&preimage);
+    let hashed = Message::from_digest(hash.to_byte_array());
+    let payment_hash = ldk_hashes::sha256::Hash::from_slice(hashed.as_ref())
+        .expect("hash has a fixed 32-byte size");
 
     let mut invoice_builder = InvoiceBuilder::new(Currency::Bitcoin)
         .description(description)

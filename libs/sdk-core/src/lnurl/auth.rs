@@ -6,7 +6,7 @@ use crate::node_api::NodeAPI;
 use crate::bitcoin::{
     hashes::{sha256, Hash, HashEngine, Hmac, HmacEngine},
     secp256k1::{Message, Secp256k1},
-    bip32::{ChildNumber, ExtendedPubKey},
+    bip32::{ChildNumber, Xpub},
 };
 
 pub(crate) struct SdkLnurlAuthSigner {
@@ -23,17 +23,16 @@ impl SdkLnurlAuthSigner {
 impl LnurlAuthSigner for SdkLnurlAuthSigner {
     async fn derive_bip32_pub_key(&self, derivation_path: &[ChildNumber]) -> LnUrlResult<Vec<u8>> {
         let xpriv = self.node_api.derive_bip32_key(derivation_path.to_vec()).await?;
-        Ok(ExtendedPubKey::from_priv(&Secp256k1::new(), &xpriv)
+        Ok(Xpub::from_priv(&Secp256k1::new(), &xpriv)
             .encode()
             .to_vec())
     }
 
     async fn sign_ecdsa(&self, msg: &[u8], derivation_path: &[ChildNumber]) -> LnUrlResult<Vec<u8>> {
         let xpriv = self.node_api.derive_bip32_key(derivation_path.to_vec()).await?;
-        let sig = Secp256k1::new().sign_ecdsa(
-            &Message::from_slice(msg).map_err(|_| LnUrlError::generic("Failed to sign"))?,
-            &xpriv.private_key,
-        );
+        let message = Message::from_digest_slice(msg)
+            .map_err(|_| LnUrlError::generic("Failed to sign"))?;
+        let sig = Secp256k1::new().sign_ecdsa(&message, &xpriv.private_key);
         Ok(sig.serialize_der().to_vec())
     }
 
