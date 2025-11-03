@@ -10,7 +10,6 @@ use lightning::routing::*;
 use lightning_invoice::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "liquid")]
 use {
     lightning::ln::msgs::DecodeError, lightning::offers::offer::Offer,
     lightning::offers::parse::Bolt12ParseError,
@@ -399,13 +398,6 @@ pub fn parse_invoice(bolt11: &str) -> InvoiceResult<LNInvoice> {
     Ok(ln_invoice)
 }
 
-#[cfg(feature = "liquid")]
-// Covers BIP 21 URIs and simple onchain Liquid addresses (which are valid BIP 21 with the 'liquidnetwork:' prefix)
-pub fn parse_liquid_address(input: &str) -> Result<LiquidAddressData, DeserializeError> {
-    LiquidAddressData::from_addr(input).or_else(|_| input.parse::<LiquidAddressData>())
-}
-
-#[cfg(feature = "liquid")]
 pub fn parse_bolt12_offer(input: &str) -> Result<LNOffer, Bolt12ParseError> {
     let offer = input.parse::<Offer>()?;
     // TODO This conversion (between lightning-v0.0.125 to -v0.0.118 Amount types)
