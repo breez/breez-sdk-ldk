@@ -27,6 +27,7 @@ const DEFAULT_MINING_ADDRESS: &str = "bcrt1qs758ursh4q9z627kt3pp5yysm78ddny6txaq
 
 pub struct Bitcoind {
     pub api: ApiCredentials,
+    pub rest_api: ApiCredentials,
     pub zmq_block: ApiCredentials,
     pub zmq_tx: ApiCredentials,
     mining_address: Address,
@@ -68,6 +69,7 @@ impl Bitcoind {
                 format!("-zmqpubrawtx=tcp://0.0.0.0:{ZMQPUBRAWTX_RPC_PORT}").as_str(),
                 "-rpcbind=0.0.0.0",
                 "-rpcallowip=0.0.0.0/0",
+                "-rest",
             ])
             .start()
             .await?;
@@ -76,6 +78,8 @@ impl Bitcoind {
         let mut api = ApiCredentials::from_container(&container, RPC_PORT).await?;
         api.username = RPC_USER.to_string();
         api.password = RPC_PASSWORD.to_string();
+        let mut rest_api = ApiCredentials::from_container(&container, RPC_PORT).await?;
+        rest_api.path = "/rest".to_string();
         let zmq_block = ApiCredentials::from_container(&container, ZMQPUBRAWBLOCK_RPC_PORT).await?;
         let zmq_tx = ApiCredentials::from_container(&container, ZMQPUBRAWTX_RPC_PORT).await?;
         // Create instance with RPC URL
@@ -83,6 +87,7 @@ impl Bitcoind {
             mining_address: Address::from_str(DEFAULT_MINING_ADDRESS)?
                 .require_network(Network::Regtest)?,
             api,
+            rest_api,
             zmq_block,
             zmq_tx,
             client: Client::new(),
