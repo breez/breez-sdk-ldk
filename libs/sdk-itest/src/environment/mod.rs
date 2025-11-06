@@ -4,6 +4,7 @@ mod lnd;
 mod log;
 mod lsp;
 mod mempool;
+mod rgs;
 mod vss;
 
 use std::path::PathBuf;
@@ -16,6 +17,7 @@ pub use lnd::Lnd;
 use lsp::Lsp;
 use mempool::Mempool;
 use rand::Rng;
+use rgs::Rgs;
 use testcontainers::{ContainerAsync, Image};
 use testdir::testdir;
 use tokio::sync::OnceCell;
@@ -114,12 +116,18 @@ pub struct Environment {
     lsp: OnceCell<Lsp>,
     lnd: OnceCell<Lnd>,
     channel: OnceCell<()>,
+    rgs: OnceCell<Rgs>,
 }
 
 impl Environment {
     #[instrument(skip(self))]
     pub async fn bitcoind_api(&self) -> Result<&ApiCredentials> {
         Ok(&self.bitcoind().await?.api)
+    }
+
+    #[instrument(skip(self))]
+    async fn bitcoind_rest_api(&self) -> Result<&ApiCredentials> {
+        Ok(&self.bitcoind().await?.rest_api)
     }
 
     #[instrument(skip(self))]
@@ -176,6 +184,14 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
+    async fn lsp_address(&self) -> Result<String> {
+        let lsp = self.lsp().await?;
+        let pubkey = lsp.get_node_id().await?;
+        let address = lsp.lightning_api.address();
+        Ok(format!("{pubkey}@{address}"))
+    }
+
+    #[instrument(skip(self))]
     pub async fn lnd(&self) -> Result<&Lnd> {
         self.lnd.get_or_try_init(|| self.init_lnd()).await
     }
@@ -184,6 +200,23 @@ impl Environment {
     pub async fn lnd_with_channel(&self) -> Result<&Lnd> {
         self.channel.get_or_try_init(|| self.open_channel()).await?;
         self.lnd().await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn rgs(&self) -> Result<&ApiCredentials> {
+        let rgs = self
+            .rgs
+            .get_or_try_init(|| async {
+                info!("Initializing RGS");
+                let bitcoind_rest_api = self.bitcoind_rest_api();
+                let lsp_address = self.lsp_address();
+                let lnd = self.lnd_with_channel();
+                let result =
+                    Rgs::new(&self.environmnet_id, bitcoind_rest_api, lsp_address, lnd).await;
+                log_result(result, "RGS")
+            })
+            .await?;
+        Ok(&rgs.api)
     }
 
     #[instrument(skip(self))]

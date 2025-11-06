@@ -19,12 +19,13 @@ use crate::event_listener::EventListenerImpl;
 #[test_log::test]
 async fn test_node_receive_payments() {
     let env = Environment::default();
-    let (esplora, mempool, vss, lsp, lnd) = try_join!(
+    let (esplora, mempool, vss, lsp, lnd, rgs) = try_join!(
         env.esplora_api(),
         env.mempool_api(),
         env.vss_api(),
         env.lsp_external_address(),
-        env.lnd_with_channel()
+        env.lnd_with_channel(),
+        env.rgs()
     )
     .unwrap();
     println!("Esplora is running: {}", esplora.external_endpoint());
@@ -32,6 +33,7 @@ async fn test_node_receive_payments() {
     println!("    VSS is running: {}", vss.external_endpoint());
     println!("    LSP is running: {lsp}");
     println!("    LND is running");
+    println!("    RGS is running: {}", rgs.external_endpoint());
 
     let node_config = NodeConfig::Greenlight {
         config: GreenlightNodeConfig {
@@ -44,7 +46,7 @@ async fn test_node_receive_payments() {
     config.mempoolspace_url = Some(mempool.external_endpoint());
     config.esplora_url = esplora.external_endpoint();
     config.vss_url = vss.external_endpoint();
-    config.rgs_url = "http://localhost:9".to_string();
+    config.rgs_url = rgs.external_endpoint();
     config.lsps2_address = lsp;
 
     let seed = rand::rng().random::<[u8; 64]>().to_vec();
