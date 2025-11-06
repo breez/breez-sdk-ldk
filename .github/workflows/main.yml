@@ -68,6 +68,39 @@ jobs:
             echo "No changes in git status"
           fi
   
+  sdk-itest:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install rust
+        run: |
+          rustup set auto-self-update disable
+          rustup toolchain install stable --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: libs/sdk-itest -> ../target
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "27.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build sdk-itest images
+        working-directory: libs/sdk-itest
+        run: make build-images
+
+      - name: Run sdk-itest tests
+        working-directory: libs/sdk-itest
+        env:
+          RUST_BACKTRACE: 1
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+        run: cargo test -- --nocapture --test-threads=1
+
   build-bindings:
     name: Test sdk-bindings
     runs-on: ubuntu-latest
