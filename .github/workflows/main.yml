@@ -255,14 +255,6 @@ jobs:
             echo "No changes in git status"
           fi
 
-      - name: Test sdk-common liquid
-        working-directory: libs/sdk-common
-        run: cargo test --features liquid
-
-      - name: Test sdk-common WASM/liquid
-        working-directory: libs/sdk-common
-        run: wasm-pack test --headless --firefox --features liquid
-
   clippy:
     name: Clippy
     runs-on: ubuntu-latest

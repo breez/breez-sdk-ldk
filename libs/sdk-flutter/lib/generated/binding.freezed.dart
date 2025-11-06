@@ -175,6 +175,170 @@ as String,
 }
 
 /// @nodoc
+mixin _$Amount {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Amount);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'Amount()';
+}
+
+
+}
+
+/// @nodoc
+class $AmountCopyWith<$Res>  {
+$AmountCopyWith(Amount _, $Res Function(Amount) __);
+}
+
+
+/// @nodoc
+
+
+class Amount_Bitcoin extends Amount {
+  const Amount_Bitcoin({required this.amountMsat}): super._();
+  
+
+ final  BigInt amountMsat;
+
+/// Create a copy of Amount
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$Amount_BitcoinCopyWith<Amount_Bitcoin> get copyWith => _$Amount_BitcoinCopyWithImpl<Amount_Bitcoin>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Amount_Bitcoin&&(identical(other.amountMsat, amountMsat) || other.amountMsat == amountMsat));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,amountMsat);
+
+@override
+String toString() {
+  return 'Amount.bitcoin(amountMsat: $amountMsat)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $Amount_BitcoinCopyWith<$Res> implements $AmountCopyWith<$Res> {
+  factory $Amount_BitcoinCopyWith(Amount_Bitcoin value, $Res Function(Amount_Bitcoin) _then) = _$Amount_BitcoinCopyWithImpl;
+@useResult
+$Res call({
+ BigInt amountMsat
+});
+
+
+
+
+}
+/// @nodoc
+class _$Amount_BitcoinCopyWithImpl<$Res>
+    implements $Amount_BitcoinCopyWith<$Res> {
+  _$Amount_BitcoinCopyWithImpl(this._self, this._then);
+
+  final Amount_Bitcoin _self;
+  final $Res Function(Amount_Bitcoin) _then;
+
+/// Create a copy of Amount
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? amountMsat = null,}) {
+  return _then(Amount_Bitcoin(
+amountMsat: null == amountMsat ? _self.amountMsat : amountMsat // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class Amount_Currency extends Amount {
+  const Amount_Currency({required this.iso4217Code, required this.fractionalAmount}): super._();
+  
+
+ final  String iso4217Code;
+ final  BigInt fractionalAmount;
+
+/// Create a copy of Amount
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$Amount_CurrencyCopyWith<Amount_Currency> get copyWith => _$Amount_CurrencyCopyWithImpl<Amount_Currency>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Amount_Currency&&(identical(other.iso4217Code, iso4217Code) || other.iso4217Code == iso4217Code)&&(identical(other.fractionalAmount, fractionalAmount) || other.fractionalAmount == fractionalAmount));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,iso4217Code,fractionalAmount);
+
+@override
+String toString() {
+  return 'Amount.currency(iso4217Code: $iso4217Code, fractionalAmount: $fractionalAmount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $Amount_CurrencyCopyWith<$Res> implements $AmountCopyWith<$Res> {
+  factory $Amount_CurrencyCopyWith(Amount_Currency value, $Res Function(Amount_Currency) _then) = _$Amount_CurrencyCopyWithImpl;
+@useResult
+$Res call({
+ String iso4217Code, BigInt fractionalAmount
+});
+
+
+
+
+}
+/// @nodoc
+class _$Amount_CurrencyCopyWithImpl<$Res>
+    implements $Amount_CurrencyCopyWith<$Res> {
+  _$Amount_CurrencyCopyWithImpl(this._self, this._then);
+
+  final Amount_Currency _self;
+  final $Res Function(Amount_Currency) _then;
+
+/// Create a copy of Amount
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? iso4217Code = null,Object? fractionalAmount = null,}) {
+  return _then(Amount_Currency(
+iso4217Code: null == iso4217Code ? _self.iso4217Code : iso4217Code // ignore: cast_nullable_to_non_nullable
+as String,fractionalAmount: null == fractionalAmount ? _self.fractionalAmount : fractionalAmount // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$InputType {
 
 
@@ -330,6 +494,74 @@ class _$InputType_Bolt11CopyWithImpl<$Res>
   return _then(InputType_Bolt11(
 invoice: null == invoice ? _self.invoice : invoice // ignore: cast_nullable_to_non_nullable
 as LNInvoice,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class InputType_Bolt12Offer extends InputType {
+  const InputType_Bolt12Offer({required this.offer, this.bip353Address}): super._();
+  
+
+ final  LNOffer offer;
+ final  String? bip353Address;
+
+/// Create a copy of InputType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InputType_Bolt12OfferCopyWith<InputType_Bolt12Offer> get copyWith => _$InputType_Bolt12OfferCopyWithImpl<InputType_Bolt12Offer>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InputType_Bolt12Offer&&(identical(other.offer, offer) || other.offer == offer)&&(identical(other.bip353Address, bip353Address) || other.bip353Address == bip353Address));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,offer,bip353Address);
+
+@override
+String toString() {
+  return 'InputType.bolt12Offer(offer: $offer, bip353Address: $bip353Address)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InputType_Bolt12OfferCopyWith<$Res> implements $InputTypeCopyWith<$Res> {
+  factory $InputType_Bolt12OfferCopyWith(InputType_Bolt12Offer value, $Res Function(InputType_Bolt12Offer) _then) = _$InputType_Bolt12OfferCopyWithImpl;
+@useResult
+$Res call({
+ LNOffer offer, String? bip353Address
+});
+
+
+
+
+}
+/// @nodoc
+class _$InputType_Bolt12OfferCopyWithImpl<$Res>
+    implements $InputType_Bolt12OfferCopyWith<$Res> {
+  _$InputType_Bolt12OfferCopyWithImpl(this._self, this._then);
+
+  final InputType_Bolt12Offer _self;
+  final $Res Function(InputType_Bolt12Offer) _then;
+
+/// Create a copy of InputType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? offer = null,Object? bip353Address = freezed,}) {
+  return _then(InputType_Bolt12Offer(
+offer: null == offer ? _self.offer : offer // ignore: cast_nullable_to_non_nullable
+as LNOffer,bip353Address: freezed == bip353Address ? _self.bip353Address : bip353Address // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

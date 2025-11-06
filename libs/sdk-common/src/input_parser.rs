@@ -208,7 +208,6 @@ pub async fn parse_with_rest_client<C: RestClient + ?Sized>(
     if let Ok(input_type) = parse_core(rest_client, &bip353_parsed_input).await {
         let input_type = if is_bip353 {
             match input_type {
-                #[cfg(feature = "liquid")]
                 InputType::Bolt12Offer { offer, .. } => InputType::Bolt12Offer {
                     offer,
                     bip353_address: Some(input.to_string()),
@@ -245,13 +244,7 @@ fn parse_bip353_record(bip353_record: String) -> Option<String> {
 
     let query_params = querystring::querify(query_part);
 
-    // If the feature is enabled, we also look for the BOLT12 Offer prefix
-    if cfg!(feature = "liquid") {
-        get_by_key(&query_params, BOLT12_PREFIX)
-            .or_else(|| get_by_key(&query_params, LNURL_PAY_PREFIX))
-    } else {
-        get_by_key(&query_params, LNURL_PAY_PREFIX)
-    }
+    get_by_key(&query_params, BOLT12_PREFIX).or_else(|| get_by_key(&query_params, LNURL_PAY_PREFIX))
 }
 
 fn is_valid_bip353_record(decoded: &str) -> bool {
@@ -331,12 +324,6 @@ async fn parse_core<C: RestClient + ?Sized>(rest_client: &C, input: &str) -> Res
         };
     }
 
-    #[cfg(feature = "liquid")]
-    if let Ok(address) = parse_liquid_address(input) {
-        return Ok(InputType::LiquidAddress { address });
-    }
-
-    #[cfg(feature = "liquid")]
     if let Ok(offer) = parse_bolt12_offer(input) {
         return Ok(InputType::Bolt12Offer {
             offer,
@@ -625,21 +612,11 @@ pub enum InputType {
         address: BitcoinAddressData,
     },
 
-    /// # Supported standards
-    ///
-    /// - plain on-chain liquid address
-    /// - BIP21 on liquid/liquidtestnet/liquidregtest
-    #[cfg(feature = "liquid")]
-    LiquidAddress {
-        address: LiquidAddressData,
-    },
-
     /// Also covers URIs like `bitcoin:...&lightning=bolt11`. In this case, it returns the BOLT11
     /// and discards all other data.
     Bolt11 {
         invoice: LNInvoice,
     },
-    #[cfg(feature = "liquid")]
     Bolt12Offer {
         offer: LNOffer,
         /// The BIP353 address from which this InputType was resolved
@@ -1089,61 +1066,6 @@ pub(crate) mod tests {
                 }
                 _ => return Err(anyhow!("Invalid type parsed")),
             }
-        }
-
-        Ok(())
-    }
-
-    #[sdk_macros::async_test_all]
-    #[cfg(feature = "liquid")]
-    async fn test_liquid_address() -> Result<()> {
-        let mock_rest_client = MockRestClient::new();
-        let rest_client: Arc<dyn RestClient> = Arc::new(mock_rest_client);
-
-        assert!(parse_with_rest_client(rest_client.as_ref(), "tlq1qqw5ur50rnvcx33vmljjtnez3hrtl6n7vs44tdj2c9fmnxrrgzgwnhw6jtpn8cljkmlr8tgfw9hemrr5y8u2nu024hhak3tpdk", None)
-            .await
-            .is_ok());
-        assert!(parse_with_rest_client(rest_client.as_ref(), "liquidnetwork:tlq1qqw5ur50rnvcx33vmljjtnez3hrtl6n7vs44tdj2c9fmnxrrgzgwnhw6jtpn8cljkmlr8tgfw9hemrr5y8u2nu024hhak3tpdk", None)
-            .await
-            .is_ok());
-        assert!(parse_with_rest_client(rest_client.as_ref(), "wrong-net:tlq1qqw5ur50rnvcx33vmljjtnez3hrtl6n7vs44tdj2c9fmnxrrgzgwnhw6jtpn8cljkmlr8tgfw9hemrr5y8u2nu024hhak3tpdk", None).await.is_err());
-        assert!(parse_with_rest_client(
-            rest_client.as_ref(),
-            "liquidnetwork:testinvalidaddress",
-            None
-        )
-        .await
-        .is_err());
-
-        let address: elements::Address = "tlq1qqw5ur50rnvcx33vmljjtnez3hrtl6n7vs44tdj2c9fmnxrrgzgwnhw6jtpn8cljkmlr8tgfw9hemrr5y8u2nu024hhak3tpdk".parse()?;
-        let amount_btc = 0.00001; // 1000 sats
-        let label = "label";
-        let message = "this%20is%20a%20message";
-        let asset_id = elements::issuance::AssetId::LIQUID_BTC.to_string();
-        let output = parse_with_rest_client(rest_client.as_ref(), &format!(
-                    "liquidnetwork:{}?amount={amount_btc}&assetid={asset_id}&label={label}&message={message}",
-                    address
-                ),
-                           None)
-        .await?;
-
-        if let InputType::LiquidAddress {
-            address: liquid_address_data,
-        } = output
-        {
-            assert_eq!(Network::Bitcoin, liquid_address_data.network);
-            assert_eq!(address.to_string(), liquid_address_data.address.to_string());
-            assert_eq!(
-                Some((amount_btc * 100_000_000.0) as u64),
-                liquid_address_data.amount_sat
-            );
-            assert_eq!(Some(label.to_string()), liquid_address_data.label);
-            assert_eq!(
-                Some(urlencoding::decode(message).unwrap().into_owned()),
-                liquid_address_data.message
-            );
-        } else {
-            panic!("Invalid input type received");
         }
 
         Ok(())

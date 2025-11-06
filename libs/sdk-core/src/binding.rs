@@ -20,12 +20,13 @@ use log::{Level, LevelFilter, Metadata, Record};
 use once_cell::sync::{Lazy, OnceCell};
 use sdk_common::invoice;
 pub use sdk_common::prelude::{
-    parse, AesSuccessActionDataDecrypted, AesSuccessActionDataResult, BitcoinAddressData,
-    CurrencyInfo, FiatCurrency, InputType, LNInvoice, LnUrlAuthRequestData, LnUrlCallbackStatus,
-    LnUrlError, LnUrlErrorData, LnUrlPayErrorData, LnUrlPayRequest, LnUrlPayRequestData,
-    LnUrlWithdrawRequest, LnUrlWithdrawRequestData, LnUrlWithdrawResult, LnUrlWithdrawSuccessData,
-    LocaleOverrides, LocalizedName, MessageSuccessActionData, Network, Rate, RouteHint,
-    RouteHintHop, SuccessActionProcessed, Symbol, UrlSuccessActionData,
+    parse, AesSuccessActionDataDecrypted, AesSuccessActionDataResult, Amount, BitcoinAddressData,
+    CurrencyInfo, FiatCurrency, InputType, LNInvoice, LNOffer, LnOfferBlindedPath,
+    LnUrlAuthRequestData, LnUrlCallbackStatus, LnUrlError, LnUrlErrorData, LnUrlPayErrorData,
+    LnUrlPayRequest, LnUrlPayRequestData, LnUrlWithdrawRequest, LnUrlWithdrawRequestData,
+    LnUrlWithdrawResult, LnUrlWithdrawSuccessData, LocaleOverrides, LocalizedName,
+    MessageSuccessActionData, Network, Rate, RouteHint, RouteHintHop, SuccessActionProcessed,
+    Symbol, UrlSuccessActionData,
 };
 use sdk_common::prelude::{LnUrlPayError, LnUrlWithdrawError};
 use tokio::sync::Mutex;
@@ -144,6 +145,17 @@ pub struct _LnUrlPayRequestData {
     pub ln_address: Option<String>,
 }
 
+#[frb(mirror(Amount))]
+pub enum _Amount {
+    Bitcoin {
+        amount_msat: u64,
+    },
+    Currency {
+        iso4217_code: String,
+        fractional_amount: u64,
+    },
+}
+
 #[frb(mirror(LnUrlWithdrawRequest))]
 pub struct _LnUrlWithdrawRequest {
     pub data: LnUrlWithdrawRequestData,
@@ -160,6 +172,23 @@ pub struct _LnUrlWithdrawRequestData {
     pub max_withdrawable: u64,
 }
 
+#[frb(mirror(LnOfferBlindedPath))]
+pub struct _LnOfferBlindedPath {
+    pub blinded_hops: Vec<String>,
+}
+
+#[frb(mirror(LNOffer))]
+pub struct _LNOffer {
+    pub offer: String,
+    pub chains: Vec<String>,
+    pub min_amount: Option<Amount>,
+    pub description: Option<String>,
+    pub absolute_expiry: Option<u64>,
+    pub issuer: Option<String>,
+    pub signing_pubkey: Option<String>,
+    pub paths: Vec<LnOfferBlindedPath>,
+}
+
 #[frb(mirror(InputType))]
 pub enum _InputType {
     BitcoinAddress {
@@ -167,6 +196,10 @@ pub enum _InputType {
     },
     Bolt11 {
         invoice: LNInvoice,
+    },
+    Bolt12Offer {
+        offer: LNOffer,
+        bip353_address: Option<String>,
     },
     NodeId {
         node_id: String,

@@ -6,8 +6,6 @@ mod fiat;
 pub mod grpc;
 pub mod input_parser;
 pub mod invoice;
-#[cfg(feature = "liquid")]
-pub mod liquid;
 mod lnurl;
 mod model;
 mod test_utils;
@@ -34,8 +32,6 @@ pub mod prelude {
     pub use crate::buy::moonpay::*;
     pub use crate::input_parser::*;
     pub use crate::invoice::*;
-    #[cfg(feature = "liquid")]
-    pub use crate::liquid::*;
     pub use crate::lnurl::error::*;
     pub use crate::lnurl::model::*;
     pub use crate::lnurl::specs::auth::model::*;

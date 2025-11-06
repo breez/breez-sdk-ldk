@@ -11,7 +11,6 @@ base64 = { workspace = true }
 bip21 = "0.5"
 bitcoin = { workspace = true }
 cbc = { version = "0.1", features = ["std"] }
-elements = { version = "0.25.0", optional = true }
 hex = { workspace = true }
 lazy_static = "1.5.0"
 lightning = { workspace = true }
@@ -71,5 +70,4 @@ tonic-build = { workspace = true }
 tonic-build = "0.12"
 
 [features]
-liquid = ["dep:elements"]
 test-utils = []

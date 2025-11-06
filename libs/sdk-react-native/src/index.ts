@@ -147,6 +147,17 @@ export interface LnInvoice {
     minFinalCltvExpiryDelta: number
 }
 
+export interface LnOffer {
+    offer: string
+    chains: string[]
+    paths: LnOfferBlindedPath[]
+    description?: string
+    signingPubkey?: string
+    minAmount?: Amount
+    absoluteExpiry?: number
+    issuer?: string
+}
+
 export interface ListPaymentsRequest {
     filters?: PaymentTypeFilter[]
     metadataFilters?: MetadataFilter[]
@@ -163,6 +174,10 @@ export interface ListSwapsRequest {
     toTimestamp?: number
     offset?: number
     limit?: number
+}
+
+export interface LnOfferBlindedPath {
+    blindedHops: string[]
 }
 
 export interface LnPaymentDetails {
@@ -600,6 +615,20 @@ export type AesSuccessActionDataResult = {
     reason: string
 }
 
+export enum AmountVariant {
+    BITCOIN = "bitcoin",
+    CURRENCY = "currency"
+}
+
+export type Amount = {
+    type: AmountVariant.BITCOIN,
+    amountMsat: number
+} | {
+    type: AmountVariant.CURRENCY,
+    iso4217Code: string
+    fractionalAmount: number
+}
+
 export enum BreezEventVariant {
     NEW_BLOCK = "newBlock",
     INVOICE_PAID = "invoicePaid",
@@ -674,6 +703,7 @@ export enum HealthCheckStatus {
 export enum InputTypeVariant {
     BITCOIN_ADDRESS = "bitcoinAddress",
     BOLT11 = "bolt11",
+    BOLT12_OFFER = "bolt12Offer",
     NODE_ID = "nodeId",
     URL = "url",
     LN_URL_PAY = "lnUrlPay",
@@ -688,6 +718,10 @@ export type InputType = {
 } | {
     type: InputTypeVariant.BOLT11,
     invoice: LnInvoice
+} | {
+    type: InputTypeVariant.BOLT12_OFFER,
+    offer: LnOffer
+    bip353Address?: string
 } | {
     type: InputTypeVariant.NODE_ID,
     nodeId: string

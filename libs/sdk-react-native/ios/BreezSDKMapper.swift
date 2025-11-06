@@ -896,6 +896,85 @@ enum BreezSDKMapper {
         return lnInvoiceList.map { v -> [String: Any?] in return dictionaryOf(lnInvoice: v) }
     }
 
+    static func asLnOffer(lnOffer: [String: Any?]) throws -> LnOffer {
+        guard let offer = lnOffer["offer"] as? String else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "offer", typeName: "LnOffer"))
+        }
+        guard let chains = lnOffer["chains"] as? [String] else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "chains", typeName: "LnOffer"))
+        }
+        guard let pathsTmp = lnOffer["paths"] as? [[String: Any?]] else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "paths", typeName: "LnOffer"))
+        }
+        let paths = try asLnOfferBlindedPathList(arr: pathsTmp)
+
+        var description: String?
+        if hasNonNilKey(data: lnOffer, key: "description") {
+            guard let descriptionTmp = lnOffer["description"] as? String else {
+                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "description"))
+            }
+            description = descriptionTmp
+        }
+        var signingPubkey: String?
+        if hasNonNilKey(data: lnOffer, key: "signingPubkey") {
+            guard let signingPubkeyTmp = lnOffer["signingPubkey"] as? String else {
+                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "signingPubkey"))
+            }
+            signingPubkey = signingPubkeyTmp
+        }
+        var minAmount: Amount?
+        if let minAmountTmp = lnOffer["minAmount"] as? [String: Any?] {
+            minAmount = try asAmount(amount: minAmountTmp)
+        }
+
+        var absoluteExpiry: UInt64?
+        if hasNonNilKey(data: lnOffer, key: "absoluteExpiry") {
+            guard let absoluteExpiryTmp = lnOffer["absoluteExpiry"] as? UInt64 else {
+                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "absoluteExpiry"))
+            }
+            absoluteExpiry = absoluteExpiryTmp
+        }
+        var issuer: String?
+        if hasNonNilKey(data: lnOffer, key: "issuer") {
+            guard let issuerTmp = lnOffer["issuer"] as? String else {
+                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "issuer"))
+            }
+            issuer = issuerTmp
+        }
+
+        return LnOffer(offer: offer, chains: chains, paths: paths, description: description, signingPubkey: signingPubkey, minAmount: minAmount, absoluteExpiry: absoluteExpiry, issuer: issuer)
+    }
+
+    static func dictionaryOf(lnOffer: LnOffer) -> [String: Any?] {
+        return [
+            "offer": lnOffer.offer,
+            "chains": lnOffer.chains,
+            "paths": arrayOf(lnOfferBlindedPathList: lnOffer.paths),
+            "description": lnOffer.description == nil ? nil : lnOffer.description,
+            "signingPubkey": lnOffer.signingPubkey == nil ? nil : lnOffer.signingPubkey,
+            "minAmount": lnOffer.minAmount == nil ? nil : dictionaryOf(amount: lnOffer.minAmount!),
+            "absoluteExpiry": lnOffer.absoluteExpiry == nil ? nil : lnOffer.absoluteExpiry,
+            "issuer": lnOffer.issuer == nil ? nil : lnOffer.issuer,
+        ]
+    }
+
+    static func asLnOfferList(arr: [Any]) throws -> [LnOffer] {
+        var list = [LnOffer]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnOffer = try asLnOffer(lnOffer: val)
+                list.append(lnOffer)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnOffer"))
+            }
+        }
+        return list
+    }
+
+    static func arrayOf(lnOfferList: [LnOffer]) -> [Any] {
+        return lnOfferList.map { v -> [String: Any?] in return dictionaryOf(lnOffer: v) }
+    }
+
     static func asListPaymentsRequest(listPaymentsRequest: [String: Any?]) throws -> ListPaymentsRequest {
         var filters: [PaymentTypeFilter]?
         if let filtersTmp = listPaymentsRequest["filters"] as? [String] {
@@ -1038,6 +1117,37 @@ enum BreezSDKMapper {
 
     static func arrayOf(listSwapsRequestList: [ListSwapsRequest]) -> [Any] {
         return listSwapsRequestList.map { v -> [String: Any?] in return dictionaryOf(listSwapsRequest: v) }
+    }
+
+    static func asLnOfferBlindedPath(lnOfferBlindedPath: [String: Any?]) throws -> LnOfferBlindedPath {
+        guard let blindedHops = lnOfferBlindedPath["blindedHops"] as? [String] else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "blindedHops", typeName: "LnOfferBlindedPath"))
+        }
+
+        return LnOfferBlindedPath(blindedHops: blindedHops)
+    }
+
+    static func dictionaryOf(lnOfferBlindedPath: LnOfferBlindedPath) -> [String: Any?] {
+        return [
+            "blindedHops": lnOfferBlindedPath.blindedHops,
+        ]
+    }
+
+    static func asLnOfferBlindedPathList(arr: [Any]) throws -> [LnOfferBlindedPath] {
+        var list = [LnOfferBlindedPath]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnOfferBlindedPath = try asLnOfferBlindedPath(lnOfferBlindedPath: val)
+                list.append(lnOfferBlindedPath)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnOfferBlindedPath"))
+            }
+        }
+        return list
+    }
+
+    static func arrayOf(lnOfferBlindedPathList: [LnOfferBlindedPath]) -> [Any] {
+        return lnOfferBlindedPathList.map { v -> [String: Any?] in return dictionaryOf(lnOfferBlindedPath: v) }
     }
 
     static func asLnPaymentDetails(lnPaymentDetails: [String: Any?]) throws -> LnPaymentDetails {
@@ -3941,6 +4051,65 @@ enum BreezSDKMapper {
         return list
     }
 
+    static func asAmount(amount: [String: Any?]) throws -> Amount {
+        let type = amount["type"] as! String
+        if type == "bitcoin" {
+            guard let _amountMsat = amount["amountMsat"] as? UInt64 else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "amountMsat", typeName: "Amount"))
+            }
+            return Amount.bitcoin(amountMsat: _amountMsat)
+        }
+        if type == "currency" {
+            guard let _iso4217Code = amount["iso4217Code"] as? String else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "iso4217Code", typeName: "Amount"))
+            }
+            guard let _fractionalAmount = amount["fractionalAmount"] as? UInt64 else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "fractionalAmount", typeName: "Amount"))
+            }
+            return Amount.currency(iso4217Code: _iso4217Code, fractionalAmount: _fractionalAmount)
+        }
+
+        throw SdkError.Generic(message: "Unexpected type \(type) for enum Amount")
+    }
+
+    static func dictionaryOf(amount: Amount) -> [String: Any?] {
+        switch amount {
+        case let .bitcoin(
+            amountMsat
+        ):
+            return [
+                "type": "bitcoin",
+                "amountMsat": amountMsat,
+            ]
+
+        case let .currency(
+            iso4217Code, fractionalAmount
+        ):
+            return [
+                "type": "currency",
+                "iso4217Code": iso4217Code,
+                "fractionalAmount": fractionalAmount,
+            ]
+        }
+    }
+
+    static func arrayOf(amountList: [Amount]) -> [Any] {
+        return amountList.map { v -> [String: Any?] in return dictionaryOf(amount: v) }
+    }
+
+    static func asAmountList(arr: [Any]) throws -> [Amount] {
+        var list = [Amount]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var amount = try asAmount(amount: val)
+                list.append(amount)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "Amount"))
+            }
+        }
+        return list
+    }
+
     static func asBreezEvent(breezEvent: [String: Any?]) throws -> BreezEvent {
         let type = breezEvent["type"] as! String
         if type == "newBlock" {
@@ -4339,6 +4508,16 @@ enum BreezSDKMapper {
 
             return InputType.bolt11(invoice: _invoice)
         }
+        if type == "bolt12Offer" {
+            guard let offerTmp = inputType["offer"] as? [String: Any?] else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "offer", typeName: "InputType"))
+            }
+            let _offer = try asLnOffer(lnOffer: offerTmp)
+
+            let _bip353Address = inputType["bip353Address"] as? String
+
+            return InputType.bolt12Offer(offer: _offer, bip353Address: _bip353Address)
+        }
         if type == "nodeId" {
             guard let _nodeId = inputType["nodeId"] as? String else {
                 throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "nodeId", typeName: "InputType"))
@@ -4405,6 +4584,15 @@ enum BreezSDKMapper {
             return [
                 "type": "bolt11",
                 "invoice": dictionaryOf(lnInvoice: invoice),
+            ]
+
+        case let .bolt12Offer(
+            offer, bip353Address
+        ):
+            return [
+                "type": "bolt12Offer",
+                "offer": dictionaryOf(lnOffer: offer),
+                "bip353Address": bip353Address == nil ? nil : bip353Address,
             ]
 
         case let .nodeId(
