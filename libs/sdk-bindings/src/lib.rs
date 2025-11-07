@@ -251,10 +251,7 @@ impl BlockingBreezServices {
     }
 
     pub fn close_lsp_channels(&self) -> SdkResult<()> {
-        rt().block_on(async {
-            _ = self.breez_services.close_lsp_channels().await?;
-            Ok(())
-        })
+        rt().block_on(async { self.breez_services.close_lsp_channels().await })
     }
 
     pub fn register_webhook(&self, webhook_url: String) -> SdkResult<()> {

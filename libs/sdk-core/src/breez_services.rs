@@ -809,18 +809,12 @@ impl BreezServices {
         })
     }
 
-    /// Close all channels with the current LSP.
+    /// Close all channels.
     ///
     /// Should be called when the user wants to close all the channels.
-    pub async fn close_lsp_channels(&self) -> SdkResult<Vec<String>> {
-        let lsps = self.get_lsps().await?;
-        let mut all_txids = Vec::new();
-        for lsp in lsps {
-            let txids = self.node_api.close_peer_channels(lsp.pubkey).await?;
-            all_txids.extend(txids);
-        }
-        self.sync().await?;
-        Ok(all_txids)
+    pub async fn close_lsp_channels(&self) -> SdkResult<()> {
+        self.node_api.close_all_channels().await?;
+        self.sync().await
     }
 
     /// Onchain receive swap API
@@ -1387,10 +1381,6 @@ impl BreezServices {
     /// Convenience method to look up LSP info based on current LSP ID
     pub async fn lsp_info(&self) -> SdkResult<LspInformation> {
         get_lsp(self.persister.clone(), self.lsp_api.clone()).await
-    }
-
-    async fn get_lsps(&self) -> SdkResult<Vec<LspInformation>> {
-        get_lsps(self.persister.clone(), self.lsp_api.clone()).await
     }
 
     /// Get the recommended fees for onchain transactions

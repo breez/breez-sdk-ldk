@@ -432,8 +432,8 @@ impl NodeAPI for MockNodeAPI {
         Ok(sign_invoice(invoice))
     }
 
-    async fn close_peer_channels(&self, _node_id: String) -> NodeResult<Vec<String>> {
-        Ok(vec![])
+    async fn close_all_channels(&self) -> NodeResult<()> {
+        Ok(())
     }
     async fn stream_incoming_payments(
         &self,

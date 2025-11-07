@@ -306,8 +306,12 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    async fn close_peer_channels(&self, _node_id: String) -> NodeResult<Vec<String>> {
-        Err(NodeError::generic("LDK implementation not yet available"))
+    async fn close_all_channels(&self) -> NodeResult<()> {
+        for channel_id in self.node.list_channels() {
+            self.node
+                .close_channel(&channel_id.user_channel_id, channel_id.counterparty_node_id)?;
+        }
+        Ok(())
     }
 
     async fn stream_incoming_payments(

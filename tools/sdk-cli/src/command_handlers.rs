@@ -391,8 +391,8 @@ impl CommandHandler {
                     .map_err(|e| e.into())
             }
             Commands::CloseLSPChannels {} => {
-                let tx_ids = self.sdk()?.close_lsp_channels().await?;
-                Ok(format!("Closing transaction ids:\n{tx_ids:?}"))
+                self.sdk()?.close_lsp_channels().await?;
+                Ok("Ok".to_string())
             }
             Commands::Disconnect {} => {
                 self.sdk()?.disconnect().await?;
