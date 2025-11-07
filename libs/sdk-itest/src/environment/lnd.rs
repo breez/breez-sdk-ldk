@@ -10,8 +10,8 @@ use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use tokio::sync::Mutex;
 use tonic_lnd::Client;
 use tonic_lnd::lnrpc::{
-    AddressType, ConnectPeerRequest, GetInfoRequest, LightningAddress, ListChannelsRequest,
-    NewAddressRequest, OpenChannelRequest, SendRequest,
+    AddressType, ConnectPeerRequest, GetInfoRequest, Invoice, LightningAddress,
+    ListChannelsRequest, NewAddressRequest, OpenChannelRequest, SendRequest,
 };
 
 use crate::environment::log::TracingConsumer;
@@ -84,10 +84,10 @@ impl Lnd {
         })
     }
 
-    pub async fn get_tip(&self) -> Result<u32> {
+    pub async fn get_id(&self) -> Result<String> {
         let mut client = self.client.lock().await;
         let info = client.lightning().get_info(GetInfoRequest {}).await?;
-        Ok(info.into_inner().block_height)
+        Ok(info.into_inner().identity_pubkey)
     }
 
     pub async fn get_new_address(&self) -> Result<Address> {
@@ -181,6 +181,18 @@ impl Lnd {
             bail!(res.payment_error);
         }
         Ok(())
+    }
+
+    pub async fn receive(&self, amount: &Amount) -> Result<String> {
+        let mut client = self.client.lock().await;
+        let resp = client
+            .lightning()
+            .add_invoice(Invoice {
+                value_msat: (amount.to_sat() * 1000) as i64,
+                ..Default::default()
+            })
+            .await?;
+        Ok(resp.into_inner().payment_request)
     }
 }
 
