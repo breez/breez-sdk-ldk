@@ -1,3 +1,4 @@
+use ldk_node::bitcoin::io::Error as IOError;
 use sdk_common::prelude::InvoiceError;
 
 use crate::node_api::NodeError;
@@ -83,5 +84,11 @@ impl From<ldk_node::NodeError> for NodeError {
             ldk_node::NodeError::LiquiditySourceUnavailable => generic(err),
             ldk_node::NodeError::LiquidityFeeTooHigh => generic(err),
         }
+    }
+}
+
+impl From<IOError> for NodeError {
+    fn from(err: IOError) -> Self {
+        PersistError::Generic(format!("Persistence IO error: {err}")).into()
     }
 }
