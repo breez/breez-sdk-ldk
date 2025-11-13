@@ -341,7 +341,6 @@ interface SuccessActionProcessed {
 
 dictionary LnPaymentDetails {
     string payment_hash;
-    string label;
     string destination_pubkey;
     string payment_preimage;
     boolean keysend;
@@ -431,7 +430,6 @@ dictionary PaymentFailedData {
     string error;
     string node_id;
     LNInvoice? invoice;
-    string? label;
 };
 
 dictionary BackupFailedData {
@@ -806,14 +804,12 @@ dictionary SendPaymentRequest {
     string bolt11;
     boolean use_trampoline;
     u64? amount_msat = null;
-    string? label = null;
 };
 
 dictionary SendSpontaneousPaymentRequest {
     string node_id;
     u64 amount_msat;
     sequence<TlvEntry>? extra_tlvs = null;
-    string? label = null;
 };
 
 dictionary SendPaymentResponse {

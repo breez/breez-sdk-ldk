@@ -130,12 +130,11 @@ class PaymentFailedData {
   final String error;
   final String nodeId;
   final LNInvoice? invoice;
-  final String? label;
 
-  const PaymentFailedData({required this.error, required this.nodeId, this.invoice, this.label});
+  const PaymentFailedData({required this.error, required this.nodeId, this.invoice});
 
   @override
-  int get hashCode => error.hashCode ^ nodeId.hashCode ^ invoice.hashCode ^ label.hashCode;
+  int get hashCode => error.hashCode ^ nodeId.hashCode ^ invoice.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -144,8 +143,7 @@ class PaymentFailedData {
           runtimeType == other.runtimeType &&
           error == other.error &&
           nodeId == other.nodeId &&
-          invoice == other.invoice &&
-          label == other.label;
+          invoice == other.invoice;
 }
 
 /// Request to sign a message with the node's private key.

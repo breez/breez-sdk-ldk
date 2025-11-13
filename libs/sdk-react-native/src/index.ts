@@ -182,7 +182,6 @@ export interface LnOfferBlindedPath {
 
 export interface LnPaymentDetails {
     paymentHash: string
-    label: string
     destinationPubkey: string
     paymentPreimage: string
     keysend: boolean
@@ -374,7 +373,6 @@ export interface PaymentFailedData {
     error: string
     nodeId: string
     invoice?: LnInvoice
-    label?: string
 }
 
 export interface PrepareOnchainPaymentRequest {
@@ -515,7 +513,6 @@ export interface SendPaymentRequest {
     bolt11: string
     useTrampoline: boolean
     amountMsat?: number
-    label?: string
 }
 
 export interface SendPaymentResponse {
@@ -526,7 +523,6 @@ export interface SendSpontaneousPaymentRequest {
     nodeId: string
     amountMsat: number
     extraTlvs?: TlvEntry[]
-    label?: string
 }
 
 export interface ServiceHealthCheckResponse {

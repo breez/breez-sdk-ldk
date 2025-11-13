@@ -356,12 +356,7 @@ impl NodeAPI for MockNodeAPI {
         Err(NodeError::Generic("Not implemented".to_string()))
     }
 
-    async fn send_payment(
-        &self,
-        bolt11: String,
-        _amount_msat: Option<u64>,
-        _label: Option<String>,
-    ) -> NodeResult<Payment> {
+    async fn send_payment(&self, bolt11: String, _amount_msat: Option<u64>) -> NodeResult<Payment> {
         let payment = self.add_dummy_payment_for(bolt11, None, None).await?;
         Ok(payment)
     }
@@ -370,7 +365,6 @@ impl NodeAPI for MockNodeAPI {
         &self,
         bolt11: String,
         _amount_msat: u64,
-        _label: Option<String>,
         _trampoline_id: Vec<u8>,
     ) -> NodeResult<Payment> {
         let payment = self.add_dummy_payment_for(bolt11, None, None).await?;
@@ -382,7 +376,6 @@ impl NodeAPI for MockNodeAPI {
         _node_id: String,
         _amount_msat: u64,
         _extra_tlvs: Option<Vec<TlvEntry>>,
-        _label: Option<String>,
     ) -> NodeResult<Payment> {
         let payment = self.add_dummy_payment_rand().await?;
         Ok(payment)
@@ -567,7 +560,6 @@ impl MockNodeAPI {
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: hex::encode(inv.payment_hash()),
-                    label: String::new(),
                     destination_pubkey: hex::encode(rand_vec_u8(32)),
                     payment_preimage: preimage,
                     keysend: false,

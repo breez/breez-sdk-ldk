@@ -2441,24 +2441,23 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   LnPaymentDetails dco_decode_ln_payment_details(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 16) throw Exception('unexpected arr length: expect 16 but see ${arr.length}');
+    if (arr.length != 15) throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
     return LnPaymentDetails(
       paymentHash: dco_decode_String(arr[0]),
-      label: dco_decode_String(arr[1]),
-      destinationPubkey: dco_decode_String(arr[2]),
-      paymentPreimage: dco_decode_String(arr[3]),
-      keysend: dco_decode_bool(arr[4]),
-      bolt11: dco_decode_String(arr[5]),
-      openChannelBolt11: dco_decode_opt_String(arr[6]),
-      lnurlSuccessAction: dco_decode_opt_box_autoadd_success_action_processed(arr[7]),
-      lnurlPayDomain: dco_decode_opt_String(arr[8]),
-      lnurlPayComment: dco_decode_opt_String(arr[9]),
-      lnAddress: dco_decode_opt_String(arr[10]),
-      lnurlMetadata: dco_decode_opt_String(arr[11]),
-      lnurlWithdrawEndpoint: dco_decode_opt_String(arr[12]),
-      swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[13]),
-      reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[14]),
-      pendingExpirationBlock: dco_decode_opt_box_autoadd_u_32(arr[15]),
+      destinationPubkey: dco_decode_String(arr[1]),
+      paymentPreimage: dco_decode_String(arr[2]),
+      keysend: dco_decode_bool(arr[3]),
+      bolt11: dco_decode_String(arr[4]),
+      openChannelBolt11: dco_decode_opt_String(arr[5]),
+      lnurlSuccessAction: dco_decode_opt_box_autoadd_success_action_processed(arr[6]),
+      lnurlPayDomain: dco_decode_opt_String(arr[7]),
+      lnurlPayComment: dco_decode_opt_String(arr[8]),
+      lnAddress: dco_decode_opt_String(arr[9]),
+      lnurlMetadata: dco_decode_opt_String(arr[10]),
+      lnurlWithdrawEndpoint: dco_decode_opt_String(arr[11]),
+      swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[12]),
+      reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[13]),
+      pendingExpirationBlock: dco_decode_opt_box_autoadd_u_32(arr[14]),
     );
   }
 
@@ -2974,12 +2973,11 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   PaymentFailedData dco_decode_payment_failed_data(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return PaymentFailedData(
       error: dco_decode_String(arr[0]),
       nodeId: dco_decode_String(arr[1]),
       invoice: dco_decode_opt_box_autoadd_ln_invoice(arr[2]),
-      label: dco_decode_opt_String(arr[3]),
     );
   }
 
@@ -3273,12 +3271,11 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   SendPaymentRequest dco_decode_send_payment_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return SendPaymentRequest(
       bolt11: dco_decode_String(arr[0]),
       useTrampoline: dco_decode_bool(arr[1]),
       amountMsat: dco_decode_opt_box_autoadd_u_64(arr[2]),
-      label: dco_decode_opt_String(arr[3]),
     );
   }
 
@@ -3294,12 +3291,11 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   SendSpontaneousPaymentRequest dco_decode_send_spontaneous_payment_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return SendSpontaneousPaymentRequest(
       nodeId: dco_decode_String(arr[0]),
       amountMsat: dco_decode_u_64(arr[1]),
       extraTlvs: dco_decode_opt_list_tlv_entry(arr[2]),
-      label: dco_decode_opt_String(arr[3]),
     );
   }
 
@@ -4603,7 +4599,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   LnPaymentDetails sse_decode_ln_payment_details(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_paymentHash = sse_decode_String(deserializer);
-    var var_label = sse_decode_String(deserializer);
     var var_destinationPubkey = sse_decode_String(deserializer);
     var var_paymentPreimage = sse_decode_String(deserializer);
     var var_keysend = sse_decode_bool(deserializer);
@@ -4620,7 +4615,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_pendingExpirationBlock = sse_decode_opt_box_autoadd_u_32(deserializer);
     return LnPaymentDetails(
       paymentHash: var_paymentHash,
-      label: var_label,
       destinationPubkey: var_destinationPubkey,
       paymentPreimage: var_paymentPreimage,
       keysend: var_keysend,
@@ -5303,8 +5297,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_error = sse_decode_String(deserializer);
     var var_nodeId = sse_decode_String(deserializer);
     var var_invoice = sse_decode_opt_box_autoadd_ln_invoice(deserializer);
-    var var_label = sse_decode_opt_String(deserializer);
-    return PaymentFailedData(error: var_error, nodeId: var_nodeId, invoice: var_invoice, label: var_label);
+    return PaymentFailedData(error: var_error, nodeId: var_nodeId, invoice: var_invoice);
   }
 
   @protected
@@ -5619,12 +5612,10 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_bolt11 = sse_decode_String(deserializer);
     var var_useTrampoline = sse_decode_bool(deserializer);
     var var_amountMsat = sse_decode_opt_box_autoadd_u_64(deserializer);
-    var var_label = sse_decode_opt_String(deserializer);
     return SendPaymentRequest(
       bolt11: var_bolt11,
       useTrampoline: var_useTrampoline,
       amountMsat: var_amountMsat,
-      label: var_label,
     );
   }
 
@@ -5641,12 +5632,10 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_nodeId = sse_decode_String(deserializer);
     var var_amountMsat = sse_decode_u_64(deserializer);
     var var_extraTlvs = sse_decode_opt_list_tlv_entry(deserializer);
-    var var_label = sse_decode_opt_String(deserializer);
     return SendSpontaneousPaymentRequest(
       nodeId: var_nodeId,
       amountMsat: var_amountMsat,
       extraTlvs: var_extraTlvs,
-      label: var_label,
     );
   }
 
@@ -6946,7 +6935,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   void sse_encode_ln_payment_details(LnPaymentDetails self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.paymentHash, serializer);
-    sse_encode_String(self.label, serializer);
     sse_encode_String(self.destinationPubkey, serializer);
     sse_encode_String(self.paymentPreimage, serializer);
     sse_encode_bool(self.keysend, serializer);
@@ -7495,7 +7483,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.error, serializer);
     sse_encode_String(self.nodeId, serializer);
     sse_encode_opt_box_autoadd_ln_invoice(self.invoice, serializer);
-    sse_encode_opt_String(self.label, serializer);
   }
 
   @protected
@@ -7726,7 +7713,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.bolt11, serializer);
     sse_encode_bool(self.useTrampoline, serializer);
     sse_encode_opt_box_autoadd_u_64(self.amountMsat, serializer);
-    sse_encode_opt_String(self.label, serializer);
   }
 
   @protected
@@ -7744,7 +7730,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.nodeId, serializer);
     sse_encode_u_64(self.amountMsat, serializer);
     sse_encode_opt_list_tlv_entry(self.extraTlvs, serializer);
-    sse_encode_opt_String(self.label, serializer);
   }
 
   @protected

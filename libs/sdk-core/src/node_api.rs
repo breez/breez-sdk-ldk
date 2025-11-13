@@ -124,7 +124,6 @@ pub struct FetchBolt11Result {
 
 #[derive(Debug, Clone)]
 pub struct IncomingPayment {
-    pub label: String,
     pub payment_hash: Vec<u8>,
     pub preimage: Vec<u8>,
     pub amount_msat: u64,
@@ -149,7 +148,6 @@ impl TryFrom<IncomingPayment> for Payment {
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: hex::encode(p.payment_hash),
-                    label: p.label,
                     destination_pubkey: ln_invoice.payee_pubkey,
                     payment_preimage: hex::encode(p.preimage),
                     keysend: false,
@@ -191,20 +189,17 @@ pub trait NodeAPI: Send + Sync {
         &self,
         bolt11: String,
         amount_msat: Option<u64>,
-        label: Option<String>,
     ) -> NodeResult<Payment>;
     async fn send_spontaneous_payment(
         &self,
         node_id: String,
         amount_msat: u64,
         extra_tlvs: Option<Vec<TlvEntry>>,
-        label: Option<String>,
     ) -> NodeResult<Payment>;
     async fn send_trampoline_payment(
         &self,
         bolt11: String,
         amount_msat: u64,
-        label: Option<String>,
         trampoline_node_id: Vec<u8>,
     ) -> NodeResult<Payment>;
     async fn node_id(&self) -> NodeResult<String>;
