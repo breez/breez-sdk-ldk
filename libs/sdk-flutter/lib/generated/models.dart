@@ -380,7 +380,6 @@ class ListSwapsRequest {
 /// Details of a LN payment, as included in a [Payment]
 class LnPaymentDetails {
   final String paymentHash;
-  final String label;
   final String destinationPubkey;
   final String paymentPreimage;
   final bool keysend;
@@ -420,7 +419,6 @@ class LnPaymentDetails {
 
   const LnPaymentDetails({
     required this.paymentHash,
-    required this.label,
     required this.destinationPubkey,
     required this.paymentPreimage,
     required this.keysend,
@@ -440,7 +438,6 @@ class LnPaymentDetails {
   @override
   int get hashCode =>
       paymentHash.hashCode ^
-      label.hashCode ^
       destinationPubkey.hashCode ^
       paymentPreimage.hashCode ^
       keysend.hashCode ^
@@ -462,7 +459,6 @@ class LnPaymentDetails {
       other is LnPaymentDetails &&
           runtimeType == other.runtimeType &&
           paymentHash == other.paymentHash &&
-          label == other.label &&
           destinationPubkey == other.destinationPubkey &&
           paymentPreimage == other.paymentPreimage &&
           keysend == other.keysend &&
@@ -1383,13 +1379,10 @@ class SendPaymentRequest {
   /// The amount to pay in millisatoshis. Should only be set when `bolt11` is a zero-amount invoice.
   final BigInt? amountMsat;
 
-  /// The external label or identifier of the [Payment]
-  final String? label;
-
-  const SendPaymentRequest({required this.bolt11, required this.useTrampoline, this.amountMsat, this.label});
+  const SendPaymentRequest({required this.bolt11, required this.useTrampoline, this.amountMsat});
 
   @override
-  int get hashCode => bolt11.hashCode ^ useTrampoline.hashCode ^ amountMsat.hashCode ^ label.hashCode;
+  int get hashCode => bolt11.hashCode ^ useTrampoline.hashCode ^ amountMsat.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1398,8 +1391,7 @@ class SendPaymentRequest {
           runtimeType == other.runtimeType &&
           bolt11 == other.bolt11 &&
           useTrampoline == other.useTrampoline &&
-          amountMsat == other.amountMsat &&
-          label == other.label;
+          amountMsat == other.amountMsat;
 }
 
 /// Represents a send payment response.
@@ -1426,18 +1418,10 @@ class SendSpontaneousPaymentRequest {
   final BigInt amountMsat;
   final List<TlvEntry>? extraTlvs;
 
-  /// The external label or identifier of the [Payment]
-  final String? label;
-
-  const SendSpontaneousPaymentRequest({
-    required this.nodeId,
-    required this.amountMsat,
-    this.extraTlvs,
-    this.label,
-  });
+  const SendSpontaneousPaymentRequest({required this.nodeId, required this.amountMsat, this.extraTlvs});
 
   @override
-  int get hashCode => nodeId.hashCode ^ amountMsat.hashCode ^ extraTlvs.hashCode ^ label.hashCode;
+  int get hashCode => nodeId.hashCode ^ amountMsat.hashCode ^ extraTlvs.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1446,8 +1430,7 @@ class SendSpontaneousPaymentRequest {
           runtimeType == other.runtimeType &&
           nodeId == other.nodeId &&
           amountMsat == other.amountMsat &&
-          extraTlvs == other.extraTlvs &&
-          label == other.label;
+          extraTlvs == other.extraTlvs;
 }
 
 /// Represents a service health check response.

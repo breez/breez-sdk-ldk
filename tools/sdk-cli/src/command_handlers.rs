@@ -223,7 +223,6 @@ impl CommandHandler {
             Commands::SendPayment {
                 bolt11,
                 amount_msat,
-                label,
                 use_trampoline,
             } => {
                 let start = SystemTime::now();
@@ -232,7 +231,6 @@ impl CommandHandler {
                     .send_payment(SendPaymentRequest {
                         bolt11,
                         amount_msat,
-                        label,
                         use_trampoline,
                     })
                     .await?;
@@ -244,7 +242,6 @@ impl CommandHandler {
             Commands::SendSpontaneousPayment {
                 node_id,
                 amount_msat,
-                label,
             } => {
                 let start = SystemTime::now();
                 let response = self
@@ -253,7 +250,6 @@ impl CommandHandler {
                         node_id,
                         amount_msat,
                         extra_tlvs: None,
-                        label,
                     })
                     .await?;
                 let end = SystemTime::now();

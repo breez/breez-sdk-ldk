@@ -147,7 +147,6 @@ typedef struct wire_cst_reverse_swap_info {
 
 typedef struct wire_cst_ln_payment_details {
   struct wire_cst_list_prim_u_8_strict *payment_hash;
-  struct wire_cst_list_prim_u_8_strict *label;
   struct wire_cst_list_prim_u_8_strict *destination_pubkey;
   struct wire_cst_list_prim_u_8_strict *payment_preimage;
   bool keysend;
@@ -259,7 +258,6 @@ typedef struct wire_cst_payment_failed_data {
   struct wire_cst_list_prim_u_8_strict *error;
   struct wire_cst_list_prim_u_8_strict *node_id;
   struct wire_cst_ln_invoice *invoice;
-  struct wire_cst_list_prim_u_8_strict *label;
 } wire_cst_payment_failed_data;
 
 typedef struct wire_cst_BreezEvent_PaymentFailed {
@@ -531,7 +529,6 @@ typedef struct wire_cst_send_payment_request {
   struct wire_cst_list_prim_u_8_strict *bolt11;
   bool use_trampoline;
   uint64_t *amount_msat;
-  struct wire_cst_list_prim_u_8_strict *label;
 } wire_cst_send_payment_request;
 
 typedef struct wire_cst_tlv_entry {
@@ -548,7 +545,6 @@ typedef struct wire_cst_send_spontaneous_payment_request {
   struct wire_cst_list_prim_u_8_strict *node_id;
   uint64_t amount_msat;
   struct wire_cst_list_tlv_entry *extra_tlvs;
-  struct wire_cst_list_prim_u_8_strict *label;
 } wire_cst_send_spontaneous_payment_request;
 
 typedef struct wire_cst_sign_message_request {

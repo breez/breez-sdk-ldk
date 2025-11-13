@@ -629,7 +629,6 @@ mod test {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_success_action.to_string(),
-                        label: "label".to_string(),
                         destination_pubkey: "pubey".to_string(),
                         payment_preimage: "1111".to_string(),
                         keysend: true,
@@ -660,7 +659,6 @@ mod test {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_withdraw.to_string(),
-                        label: "label".to_string(),
                         destination_pubkey: "pubey".to_string(),
                         payment_preimage: "2222".to_string(),
                         keysend: true,
@@ -691,7 +689,6 @@ mod test {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_with_swap_info),
-                        label: "label".to_string(),
                         destination_pubkey: "pubkey".to_string(),
                         payment_preimage: "3333".to_string(),
                         keysend: false,
@@ -722,7 +719,6 @@ mod test {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_with_rev_swap_info),
-                        label: "label".to_string(),
                         destination_pubkey: "pubkey".to_string(),
                         payment_preimage: hex::encode(rev_swap_preimage),
                         keysend: false,
@@ -753,7 +749,6 @@ mod test {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_domain.to_string(),
-                        label: "label".to_string(),
                         destination_pubkey: "pubey".to_string(),
                         payment_preimage: "payment_preimage".to_string(),
                         keysend: true,
@@ -785,7 +780,6 @@ mod test {
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: "125".to_string(),
-                    label: "label".to_string(),
                     destination_pubkey: "pubey".to_string(),
                     payment_preimage: "4444".to_string(),
                     keysend: true,
