@@ -27,7 +27,7 @@ impl std::error::Error for Error {}
 /// When updating a key, the version must match the current version in the store,
 /// otherwise a conflict error is returned.
 /// This trait provides a simplified abstraction over
-/// <https://docs.rs/vss-client/latest/vss_client/client/struct.VssClient.html>.
+/// <https://docs.rs/vss-client-ng/latest/vss_client_ng/client/struct.VssClient.html>.
 #[async_trait]
 pub trait VersionedStore {
     /// Retrieves a value and its version from the store.

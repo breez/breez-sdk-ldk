@@ -1,10 +1,11 @@
-use vss_client::error::VssError;
-use vss_client::util::retry::{ExponentialBackoffRetryPolicy, MaxAttemptsRetryPolicy};
+use vss_client_ng::error::VssError;
+use vss_client_ng::util::retry::{ExponentialBackoffRetryPolicy, MaxAttemptsRetryPolicy};
 
 use crate::backup::{BackupState, BackupTransport};
 use crate::error::{SdkError, SdkResult};
 use crate::ldk::store::{VersionedStore, VssStore};
 use crate::ldk::store_builder;
+use crate::node_api::NodeResult;
 use crate::Config;
 
 pub(crate) struct LdkBackupTransport {
@@ -14,9 +15,9 @@ pub(crate) struct LdkBackupTransport {
 impl LdkBackupTransport {
     const KEY: &str = "backup";
 
-    pub fn new(config: &Config, seed: &[u8]) -> Self {
-        let store = store_builder::build_vss_store(config, seed, "backups");
-        Self { store }
+    pub fn new(config: &Config, seed: &[u8]) -> NodeResult<Self> {
+        let store = store_builder::build_vss_store(config, seed, "backups")?;
+        Ok(Self { store })
     }
 }
 
