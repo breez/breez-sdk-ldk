@@ -234,7 +234,7 @@ pub trait NodeAPI: Send + Sync {
     async fn start_keep_alive(&self, shutdown: watch::Receiver<()>);
     async fn connect_peer(&self, node_id: String, addr: String) -> NodeResult<()>;
     async fn sign_invoice(&self, invoice: RawBolt11Invoice) -> NodeResult<String>;
-    async fn close_peer_channels(&self, node_id: String) -> NodeResult<Vec<String>>;
+    async fn close_all_channels(&self) -> NodeResult<()>;
     async fn stream_incoming_payments(
         &self,
     ) -> NodeResult<Pin<Box<dyn Stream<Item = IncomingPayment> + Send>>>;

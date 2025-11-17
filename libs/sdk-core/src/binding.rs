@@ -511,10 +511,8 @@ pub fn lsp_info() -> Result<LspInformation> {
 
 /// See [BreezServices::close_lsp_channels]
 pub fn close_lsp_channels() -> Result<()> {
-    block_on(async {
-        _ = get_breez_services().await?.close_lsp_channels().await?;
-        Ok(())
-    })
+    block_on(async { get_breez_services().await?.close_lsp_channels().await })
+        .map_err(anyhow::Error::new::<SdkError>)
 }
 
 pub fn register_webhook(webhook_url: String) -> Result<()> {
