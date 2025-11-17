@@ -2737,7 +2737,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_paymentHash = <String>::sse_decode(deserializer);
-        let mut var_label = <String>::sse_decode(deserializer);
         let mut var_destinationPubkey = <String>::sse_decode(deserializer);
         let mut var_paymentPreimage = <String>::sse_decode(deserializer);
         let mut var_keysend = <bool>::sse_decode(deserializer);
@@ -2756,7 +2755,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_pendingExpirationBlock = <Option<u32>>::sse_decode(deserializer);
         return crate::models::LnPaymentDetails {
             payment_hash: var_paymentHash,
-            label: var_label,
             destination_pubkey: var_destinationPubkey,
             payment_preimage: var_paymentPreimage,
             keysend: var_keysend,
@@ -3552,12 +3550,10 @@ impl SseDecode for crate::breez_services::PaymentFailedData {
         let mut var_error = <String>::sse_decode(deserializer);
         let mut var_nodeId = <String>::sse_decode(deserializer);
         let mut var_invoice = <Option<crate::binding::LNInvoice>>::sse_decode(deserializer);
-        let mut var_label = <Option<String>>::sse_decode(deserializer);
         return crate::breez_services::PaymentFailedData {
             error: var_error,
             node_id: var_nodeId,
             invoice: var_invoice,
-            label: var_label,
         };
     }
 }
@@ -3948,12 +3944,10 @@ impl SseDecode for crate::models::SendPaymentRequest {
         let mut var_bolt11 = <String>::sse_decode(deserializer);
         let mut var_useTrampoline = <bool>::sse_decode(deserializer);
         let mut var_amountMsat = <Option<u64>>::sse_decode(deserializer);
-        let mut var_label = <Option<String>>::sse_decode(deserializer);
         return crate::models::SendPaymentRequest {
             bolt11: var_bolt11,
             use_trampoline: var_useTrampoline,
             amount_msat: var_amountMsat,
-            label: var_label,
         };
     }
 }
@@ -3974,12 +3968,10 @@ impl SseDecode for crate::models::SendSpontaneousPaymentRequest {
         let mut var_nodeId = <String>::sse_decode(deserializer);
         let mut var_amountMsat = <u64>::sse_decode(deserializer);
         let mut var_extraTlvs = <Option<Vec<crate::models::TlvEntry>>>::sse_decode(deserializer);
-        let mut var_label = <Option<String>>::sse_decode(deserializer);
         return crate::models::SendSpontaneousPaymentRequest {
             node_id: var_nodeId,
             amount_msat: var_amountMsat,
             extra_tlvs: var_extraTlvs,
-            label: var_label,
         };
     }
 }
@@ -5038,7 +5030,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.payment_hash.into_into_dart().into_dart(),
-            self.label.into_into_dart().into_dart(),
             self.destination_pubkey.into_into_dart().into_dart(),
             self.payment_preimage.into_into_dart().into_dart(),
             self.keysend.into_into_dart().into_dart(),
@@ -5773,7 +5764,6 @@ impl flutter_rust_bridge::IntoDart for crate::breez_services::PaymentFailedData 
             self.error.into_into_dart().into_dart(),
             self.node_id.into_into_dart().into_dart(),
             self.invoice.into_into_dart().into_dart(),
-            self.label.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -6352,7 +6342,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::SendPaymentRequest {
             self.bolt11.into_into_dart().into_dart(),
             self.use_trampoline.into_into_dart().into_dart(),
             self.amount_msat.into_into_dart().into_dart(),
-            self.label.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -6392,7 +6381,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::SendSpontaneousPaymentRequ
             self.node_id.into_into_dart().into_dart(),
             self.amount_msat.into_into_dart().into_dart(),
             self.extra_tlvs.into_into_dart().into_dart(),
-            self.label.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -7389,7 +7377,6 @@ impl SseEncode for crate::models::LnPaymentDetails {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.payment_hash, serializer);
-        <String>::sse_encode(self.label, serializer);
         <String>::sse_encode(self.destination_pubkey, serializer);
         <String>::sse_encode(self.payment_preimage, serializer);
         <bool>::sse_encode(self.keysend, serializer);
@@ -8008,7 +7995,6 @@ impl SseEncode for crate::breez_services::PaymentFailedData {
         <String>::sse_encode(self.error, serializer);
         <String>::sse_encode(self.node_id, serializer);
         <Option<crate::binding::LNInvoice>>::sse_encode(self.invoice, serializer);
-        <Option<String>>::sse_encode(self.label, serializer);
     }
 }
 
@@ -8300,7 +8286,6 @@ impl SseEncode for crate::models::SendPaymentRequest {
         <String>::sse_encode(self.bolt11, serializer);
         <bool>::sse_encode(self.use_trampoline, serializer);
         <Option<u64>>::sse_encode(self.amount_msat, serializer);
-        <Option<String>>::sse_encode(self.label, serializer);
     }
 }
 
@@ -8317,7 +8302,6 @@ impl SseEncode for crate::models::SendSpontaneousPaymentRequest {
         <String>::sse_encode(self.node_id, serializer);
         <u64>::sse_encode(self.amount_msat, serializer);
         <Option<Vec<crate::models::TlvEntry>>>::sse_encode(self.extra_tlvs, serializer);
-        <Option<String>>::sse_encode(self.label, serializer);
     }
 }
 
@@ -9664,7 +9648,6 @@ mod io {
         fn cst_decode(self) -> crate::models::LnPaymentDetails {
             crate::models::LnPaymentDetails {
                 payment_hash: self.payment_hash.cst_decode(),
-                label: self.label.cst_decode(),
                 destination_pubkey: self.destination_pubkey.cst_decode(),
                 payment_preimage: self.payment_preimage.cst_decode(),
                 keysend: self.keysend.cst_decode(),
@@ -10070,7 +10053,6 @@ mod io {
                 error: self.error.cst_decode(),
                 node_id: self.node_id.cst_decode(),
                 invoice: self.invoice.cst_decode(),
-                label: self.label.cst_decode(),
             }
         }
     }
@@ -10325,7 +10307,6 @@ mod io {
                 bolt11: self.bolt11.cst_decode(),
                 use_trampoline: self.use_trampoline.cst_decode(),
                 amount_msat: self.amount_msat.cst_decode(),
-                label: self.label.cst_decode(),
             }
         }
     }
@@ -10346,7 +10327,6 @@ mod io {
                 node_id: self.node_id.cst_decode(),
                 amount_msat: self.amount_msat.cst_decode(),
                 extra_tlvs: self.extra_tlvs.cst_decode(),
-                label: self.label.cst_decode(),
             }
         }
     }
@@ -10902,7 +10882,6 @@ mod io {
         fn new_with_null_ptr() -> Self {
             Self {
                 payment_hash: core::ptr::null_mut(),
-                label: core::ptr::null_mut(),
                 destination_pubkey: core::ptr::null_mut(),
                 payment_preimage: core::ptr::null_mut(),
                 keysend: Default::default(),
@@ -11367,7 +11346,6 @@ mod io {
                 error: core::ptr::null_mut(),
                 node_id: core::ptr::null_mut(),
                 invoice: core::ptr::null_mut(),
-                label: core::ptr::null_mut(),
             }
         }
     }
@@ -11697,7 +11675,6 @@ mod io {
                 bolt11: core::ptr::null_mut(),
                 use_trampoline: Default::default(),
                 amount_msat: core::ptr::null_mut(),
-                label: core::ptr::null_mut(),
             }
         }
     }
@@ -11724,7 +11701,6 @@ mod io {
                 node_id: core::ptr::null_mut(),
                 amount_msat: Default::default(),
                 extra_tlvs: core::ptr::null_mut(),
-                label: core::ptr::null_mut(),
             }
         }
     }
@@ -13528,7 +13504,6 @@ mod io {
     #[derive(Clone, Copy)]
     pub struct wire_cst_ln_payment_details {
         payment_hash: *mut wire_cst_list_prim_u_8_strict,
-        label: *mut wire_cst_list_prim_u_8_strict,
         destination_pubkey: *mut wire_cst_list_prim_u_8_strict,
         payment_preimage: *mut wire_cst_list_prim_u_8_strict,
         keysend: bool,
@@ -13872,7 +13847,6 @@ mod io {
         error: *mut wire_cst_list_prim_u_8_strict,
         node_id: *mut wire_cst_list_prim_u_8_strict,
         invoice: *mut wire_cst_ln_invoice,
-        label: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -14052,7 +14026,6 @@ mod io {
         bolt11: *mut wire_cst_list_prim_u_8_strict,
         use_trampoline: bool,
         amount_msat: *mut u64,
-        label: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -14065,7 +14038,6 @@ mod io {
         node_id: *mut wire_cst_list_prim_u_8_strict,
         amount_msat: u64,
         extra_tlvs: *mut wire_cst_list_tlv_entry,
-        label: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]

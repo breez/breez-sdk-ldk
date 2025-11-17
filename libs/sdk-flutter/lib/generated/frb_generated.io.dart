@@ -3165,7 +3165,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   @protected
   void cst_api_fill_to_wire_ln_payment_details(LnPaymentDetails apiObj, wire_cst_ln_payment_details wireObj) {
     wireObj.payment_hash = cst_encode_String(apiObj.paymentHash);
-    wireObj.label = cst_encode_String(apiObj.label);
     wireObj.destination_pubkey = cst_encode_String(apiObj.destinationPubkey);
     wireObj.payment_preimage = cst_encode_String(apiObj.paymentPreimage);
     wireObj.keysend = cst_encode_bool(apiObj.keysend);
@@ -3529,7 +3528,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.error = cst_encode_String(apiObj.error);
     wireObj.node_id = cst_encode_String(apiObj.nodeId);
     wireObj.invoice = cst_encode_opt_box_autoadd_ln_invoice(apiObj.invoice);
-    wireObj.label = cst_encode_opt_String(apiObj.label);
   }
 
   @protected
@@ -3750,7 +3748,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
     wireObj.use_trampoline = cst_encode_bool(apiObj.useTrampoline);
     wireObj.amount_msat = cst_encode_opt_box_autoadd_u_64(apiObj.amountMsat);
-    wireObj.label = cst_encode_opt_String(apiObj.label);
   }
 
   @protected
@@ -3769,7 +3766,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.node_id = cst_encode_String(apiObj.nodeId);
     wireObj.amount_msat = cst_encode_u_64(apiObj.amountMsat);
     wireObj.extra_tlvs = cst_encode_opt_list_tlv_entry(apiObj.extraTlvs);
-    wireObj.label = cst_encode_opt_String(apiObj.label);
   }
 
   @protected
@@ -6584,8 +6580,6 @@ final class wire_cst_reverse_swap_info extends ffi.Struct {
 final class wire_cst_ln_payment_details extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_hash;
 
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> label;
-
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> destination_pubkey;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_preimage;
@@ -6764,8 +6758,6 @@ final class wire_cst_payment_failed_data extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> node_id;
 
   external ffi.Pointer<wire_cst_ln_invoice> invoice;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> label;
 }
 
 final class wire_cst_BreezEvent_PaymentFailed extends ffi.Struct {
@@ -7167,8 +7159,6 @@ final class wire_cst_send_payment_request extends ffi.Struct {
   external bool use_trampoline;
 
   external ffi.Pointer<ffi.Uint64> amount_msat;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> label;
 }
 
 final class wire_cst_tlv_entry extends ffi.Struct {
@@ -7192,8 +7182,6 @@ final class wire_cst_send_spontaneous_payment_request extends ffi.Struct {
   external int amount_msat;
 
   external ffi.Pointer<wire_cst_list_tlv_entry> extra_tlvs;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> label;
 }
 
 final class wire_cst_sign_message_request extends ffi.Struct {

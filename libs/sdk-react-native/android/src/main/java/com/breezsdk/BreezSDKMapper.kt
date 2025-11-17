@@ -978,7 +978,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
             lnPaymentDetails,
             arrayOf(
                 "paymentHash",
-                "label",
                 "destinationPubkey",
                 "paymentPreimage",
                 "keysend",
@@ -989,7 +988,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         return null
     }
     val paymentHash = lnPaymentDetails.getString("paymentHash")!!
-    val label = lnPaymentDetails.getString("label")!!
     val destinationPubkey = lnPaymentDetails.getString("destinationPubkey")!!
     val paymentPreimage = lnPaymentDetails.getString("paymentPreimage")!!
     val keysend = lnPaymentDetails.getBoolean("keysend")
@@ -1047,7 +1045,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         }
     return LnPaymentDetails(
         paymentHash,
-        label,
         destinationPubkey,
         paymentPreimage,
         keysend,
@@ -1068,7 +1065,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
 fun readableMapOf(lnPaymentDetails: LnPaymentDetails): ReadableMap =
     readableMapOf(
         "paymentHash" to lnPaymentDetails.paymentHash,
-        "label" to lnPaymentDetails.label,
         "destinationPubkey" to lnPaymentDetails.destinationPubkey,
         "paymentPreimage" to lnPaymentDetails.paymentPreimage,
         "keysend" to lnPaymentDetails.keysend,
@@ -2118,8 +2114,7 @@ fun asPaymentFailedData(paymentFailedData: ReadableMap): PaymentFailedData? {
     val error = paymentFailedData.getString("error")!!
     val nodeId = paymentFailedData.getString("nodeId")!!
     val invoice = if (hasNonNullKey(paymentFailedData, "invoice")) paymentFailedData.getMap("invoice")?.let { asLnInvoice(it) } else null
-    val label = if (hasNonNullKey(paymentFailedData, "label")) paymentFailedData.getString("label") else null
-    return PaymentFailedData(error, nodeId, invoice, label)
+    return PaymentFailedData(error, nodeId, invoice)
 }
 
 fun readableMapOf(paymentFailedData: PaymentFailedData): ReadableMap =
@@ -2127,7 +2122,6 @@ fun readableMapOf(paymentFailedData: PaymentFailedData): ReadableMap =
         "error" to paymentFailedData.error,
         "nodeId" to paymentFailedData.nodeId,
         "invoice" to paymentFailedData.invoice?.let { readableMapOf(it) },
-        "label" to paymentFailedData.label,
     )
 
 fun asPaymentFailedDataList(arr: ReadableArray): List<PaymentFailedData> {
@@ -2999,8 +2993,7 @@ fun asSendPaymentRequest(sendPaymentRequest: ReadableMap): SendPaymentRequest? {
     val bolt11 = sendPaymentRequest.getString("bolt11")!!
     val useTrampoline = sendPaymentRequest.getBoolean("useTrampoline")
     val amountMsat = if (hasNonNullKey(sendPaymentRequest, "amountMsat")) sendPaymentRequest.getDouble("amountMsat").toULong() else null
-    val label = if (hasNonNullKey(sendPaymentRequest, "label")) sendPaymentRequest.getString("label") else null
-    return SendPaymentRequest(bolt11, useTrampoline, amountMsat, label)
+    return SendPaymentRequest(bolt11, useTrampoline, amountMsat)
 }
 
 fun readableMapOf(sendPaymentRequest: SendPaymentRequest): ReadableMap =
@@ -3008,7 +3001,6 @@ fun readableMapOf(sendPaymentRequest: SendPaymentRequest): ReadableMap =
         "bolt11" to sendPaymentRequest.bolt11,
         "useTrampoline" to sendPaymentRequest.useTrampoline,
         "amountMsat" to sendPaymentRequest.amountMsat,
-        "label" to sendPaymentRequest.label,
     )
 
 fun asSendPaymentRequestList(arr: ReadableArray): List<SendPaymentRequest> {
@@ -3077,8 +3069,7 @@ fun asSendSpontaneousPaymentRequest(sendSpontaneousPaymentRequest: ReadableMap):
         } else {
             null
         }
-    val label = if (hasNonNullKey(sendSpontaneousPaymentRequest, "label")) sendSpontaneousPaymentRequest.getString("label") else null
-    return SendSpontaneousPaymentRequest(nodeId, amountMsat, extraTlvs, label)
+    return SendSpontaneousPaymentRequest(nodeId, amountMsat, extraTlvs)
 }
 
 fun readableMapOf(sendSpontaneousPaymentRequest: SendSpontaneousPaymentRequest): ReadableMap =
@@ -3086,7 +3077,6 @@ fun readableMapOf(sendSpontaneousPaymentRequest: SendSpontaneousPaymentRequest):
         "nodeId" to sendSpontaneousPaymentRequest.nodeId,
         "amountMsat" to sendSpontaneousPaymentRequest.amountMsat,
         "extraTlvs" to sendSpontaneousPaymentRequest.extraTlvs?.let { readableArrayOf(it) },
-        "label" to sendSpontaneousPaymentRequest.label,
     )
 
 fun asSendSpontaneousPaymentRequestList(arr: ReadableArray): List<SendSpontaneousPaymentRequest> {

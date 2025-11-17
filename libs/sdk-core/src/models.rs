@@ -787,7 +787,6 @@ impl PaymentDetails {
 #[derive(Default, PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
 pub struct LnPaymentDetails {
     pub payment_hash: String,
-    pub label: String,
     pub destination_pubkey: String,
     pub payment_preimage: String,
     pub keysend: bool,
@@ -901,8 +900,6 @@ pub struct SendPaymentRequest {
     pub use_trampoline: bool,
     /// The amount to pay in millisatoshis. Should only be set when `bolt11` is a zero-amount invoice.
     pub amount_msat: Option<u64>,
-    /// The external label or identifier of the [Payment]
-    pub label: Option<String>,
 }
 
 /// Represents a TLV entry for a keysend payment.
@@ -923,8 +920,6 @@ pub struct SendSpontaneousPaymentRequest {
     pub amount_msat: u64,
     // Optional extra TLVs
     pub extra_tlvs: Option<Vec<TlvEntry>>,
-    /// The external label or identifier of the [Payment]
-    pub label: Option<String>,
 }
 
 /// Represents a send payment response.

@@ -35,7 +35,6 @@ pub async fn start_event_handling(
                         // TODO: Load bolt11 from the store.
                         let bolt11 = String::new();
                         let payment = IncomingPayment {
-                            label: String::new(),
                             payment_hash: payment_hash.0.to_vec(),
                             preimage: preimage.0.to_vec(),
                             amount_msat,

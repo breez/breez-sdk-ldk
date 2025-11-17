@@ -199,7 +199,6 @@ impl NodeAPI for Ldk {
         &self,
         _bolt11: String,
         _amount_msat: Option<u64>,
-        _label: Option<String>,
     ) -> NodeResult<Payment> {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
@@ -209,7 +208,6 @@ impl NodeAPI for Ldk {
         _node_id: String,
         _amount_msat: u64,
         _extra_tlvs: Option<Vec<TlvEntry>>,
-        _label: Option<String>,
     ) -> NodeResult<Payment> {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
@@ -218,7 +216,6 @@ impl NodeAPI for Ldk {
         &self,
         _bolt11: String,
         _amount_msat: u64,
-        _label: Option<String>,
         _trampoline_node_id: Vec<u8>,
     ) -> NodeResult<Payment> {
         Err(NodeError::generic("LDK implementation not yet available"))

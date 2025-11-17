@@ -94,7 +94,6 @@ pub struct PaymentFailedData {
     pub error: String,
     pub node_id: String,
     pub invoice: Option<LNInvoice>,
-    pub label: Option<String>,
 }
 
 /// Details of an invoice that has been paid, included as payload in an emitted [BreezEvent]
@@ -313,19 +312,14 @@ impl BreezServices {
         // trampoline payment.
         let maybe_trampoline_id = self.get_trampoline_id(&req, &parsed_invoice)?;
 
-        self.persist_pending_payment(&parsed_invoice, amount_msat, req.label.clone())?;
+        self.persist_pending_payment(&parsed_invoice, amount_msat)?;
 
         // If trampoline is an option, try trampoline first.
         let trampoline_result = if let Some(trampoline_id) = maybe_trampoline_id {
             debug!("attempting trampoline payment");
             match self
                 .node_api
-                .send_trampoline_payment(
-                    parsed_invoice.bolt11.clone(),
-                    amount_msat,
-                    req.label.clone(),
-                    trampoline_id,
-                )
+                .send_trampoline_payment(parsed_invoice.bolt11.clone(), amount_msat, trampoline_id)
                 .await
             {
                 Ok(res) => Some(res),
@@ -352,11 +346,7 @@ impl BreezServices {
             None => {
                 debug!("attempting normal payment");
                 self.node_api
-                    .send_payment(
-                        parsed_invoice.bolt11.clone(),
-                        req.amount_msat,
-                        req.label.clone(),
-                    )
+                    .send_payment(parsed_invoice.bolt11.clone(), req.amount_msat)
                     .map_err(Into::into)
                     .await
             }
@@ -367,7 +357,6 @@ impl BreezServices {
             .on_payment_completed(
                 parsed_invoice.payee_pubkey.clone(),
                 Some(parsed_invoice),
-                req.label,
                 payment_res,
             )
             .await?;
@@ -416,16 +405,11 @@ impl BreezServices {
     ) -> Result<SendPaymentResponse, SendPaymentError> {
         let payment_res = self
             .node_api
-            .send_spontaneous_payment(
-                req.node_id.clone(),
-                req.amount_msat,
-                req.extra_tlvs,
-                req.label.clone(),
-            )
+            .send_spontaneous_payment(req.node_id.clone(), req.amount_msat, req.extra_tlvs)
             .map_err(Into::into)
             .await;
         let payment = self
-            .on_payment_completed(req.node_id, None, req.label, payment_res)
+            .on_payment_completed(req.node_id, None, payment_res)
             .await?;
         Ok(SendPaymentResponse { payment })
     }
@@ -457,7 +441,6 @@ impl BreezServices {
                     bolt11: cb.pr.clone(),
                     amount_msat: None,
                     use_trampoline: req.use_trampoline,
-                    label: req.payment_label,
                 };
                 let invoice = parse_invoice(cb.pr.as_str())?;
 
@@ -1269,7 +1252,6 @@ impl BreezServices {
         &self,
         invoice: &LNInvoice,
         amount_msat: u64,
-        label: Option<String>,
     ) -> Result<(), SendPaymentError> {
         self.persister.insert_or_update_payments(
             &[Payment {
@@ -1284,7 +1266,6 @@ impl BreezServices {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: invoice.payment_hash.clone(),
-                        label: label.unwrap_or_default(),
                         destination_pubkey: invoice.payee_pubkey.clone(),
                         payment_preimage: String::new(),
                         keysend: false,
@@ -1326,7 +1307,6 @@ impl BreezServices {
         &self,
         node_id: String,
         invoice: Option<LNInvoice>,
-        label: Option<String>,
         payment_res: Result<Payment, SendPaymentError>,
     ) -> Result<Payment, SendPaymentError> {
         self.do_sync(false).await?;
@@ -1350,7 +1330,6 @@ impl BreezServices {
                         error: e.to_string(),
                         node_id,
                         invoice,
-                        label,
                     },
                 })
                 .await?;
@@ -3033,7 +3012,6 @@ pub(crate) mod tests {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: "1111".to_string(),
-                        label: "".to_string(),
                         destination_pubkey: "1111".to_string(),
                         payment_preimage: "2222".to_string(),
                         keysend: false,
@@ -3064,7 +3042,6 @@ pub(crate) mod tests {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_lnurl_withdraw.to_string(),
-                        label: "".to_string(),
                         destination_pubkey: "1111".to_string(),
                         payment_preimage: "3333".to_string(),
                         keysend: false,
@@ -3095,7 +3072,6 @@ pub(crate) mod tests {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_success_action.to_string(),
-                        label: "".to_string(),
                         destination_pubkey: "123".to_string(),
                         payment_preimage: "4444".to_string(),
                         keysend: false,
@@ -3126,7 +3102,6 @@ pub(crate) mod tests {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_swap),
-                        label: "".to_string(),
                         destination_pubkey: "321".to_string(),
                         payment_preimage: "5555".to_string(),
                         keysend: false,
@@ -3157,7 +3132,6 @@ pub(crate) mod tests {
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_rev_swap),
-                        label: "".to_string(),
                         destination_pubkey: "321".to_string(),
                         payment_preimage: hex::encode(preimage_rev_swap),
                         keysend: false,

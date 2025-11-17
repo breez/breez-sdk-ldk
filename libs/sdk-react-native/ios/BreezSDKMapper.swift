@@ -1154,9 +1154,6 @@ enum BreezSDKMapper {
         guard let paymentHash = lnPaymentDetails["paymentHash"] as? String else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "paymentHash", typeName: "LnPaymentDetails"))
         }
-        guard let label = lnPaymentDetails["label"] as? String else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "label", typeName: "LnPaymentDetails"))
-        }
         guard let destinationPubkey = lnPaymentDetails["destinationPubkey"] as? String else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "destinationPubkey", typeName: "LnPaymentDetails"))
         }
@@ -1234,13 +1231,12 @@ enum BreezSDKMapper {
             pendingExpirationBlock = pendingExpirationBlockTmp
         }
 
-        return LnPaymentDetails(paymentHash: paymentHash, label: label, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, openChannelBolt11: openChannelBolt11, lnurlSuccessAction: lnurlSuccessAction, lnurlPayDomain: lnurlPayDomain, lnurlPayComment: lnurlPayComment, lnurlMetadata: lnurlMetadata, lnAddress: lnAddress, lnurlWithdrawEndpoint: lnurlWithdrawEndpoint, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo, pendingExpirationBlock: pendingExpirationBlock)
+        return LnPaymentDetails(paymentHash: paymentHash, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, openChannelBolt11: openChannelBolt11, lnurlSuccessAction: lnurlSuccessAction, lnurlPayDomain: lnurlPayDomain, lnurlPayComment: lnurlPayComment, lnurlMetadata: lnurlMetadata, lnAddress: lnAddress, lnurlWithdrawEndpoint: lnurlWithdrawEndpoint, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo, pendingExpirationBlock: pendingExpirationBlock)
     }
 
     static func dictionaryOf(lnPaymentDetails: LnPaymentDetails) -> [String: Any?] {
         return [
             "paymentHash": lnPaymentDetails.paymentHash,
-            "label": lnPaymentDetails.label,
             "destinationPubkey": lnPaymentDetails.destinationPubkey,
             "paymentPreimage": lnPaymentDetails.paymentPreimage,
             "keysend": lnPaymentDetails.keysend,
@@ -2424,15 +2420,7 @@ enum BreezSDKMapper {
             invoice = try asLnInvoice(lnInvoice: invoiceTmp)
         }
 
-        var label: String?
-        if hasNonNilKey(data: paymentFailedData, key: "label") {
-            guard let labelTmp = paymentFailedData["label"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "label"))
-            }
-            label = labelTmp
-        }
-
-        return PaymentFailedData(error: error, nodeId: nodeId, invoice: invoice, label: label)
+        return PaymentFailedData(error: error, nodeId: nodeId, invoice: invoice)
     }
 
     static func dictionaryOf(paymentFailedData: PaymentFailedData) -> [String: Any?] {
@@ -2440,7 +2428,6 @@ enum BreezSDKMapper {
             "error": paymentFailedData.error,
             "nodeId": paymentFailedData.nodeId,
             "invoice": paymentFailedData.invoice == nil ? nil : dictionaryOf(lnInvoice: paymentFailedData.invoice!),
-            "label": paymentFailedData.label == nil ? nil : paymentFailedData.label,
         ]
     }
 
@@ -3397,15 +3384,8 @@ enum BreezSDKMapper {
             }
             amountMsat = amountMsatTmp
         }
-        var label: String?
-        if hasNonNilKey(data: sendPaymentRequest, key: "label") {
-            guard let labelTmp = sendPaymentRequest["label"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "label"))
-            }
-            label = labelTmp
-        }
 
-        return SendPaymentRequest(bolt11: bolt11, useTrampoline: useTrampoline, amountMsat: amountMsat, label: label)
+        return SendPaymentRequest(bolt11: bolt11, useTrampoline: useTrampoline, amountMsat: amountMsat)
     }
 
     static func dictionaryOf(sendPaymentRequest: SendPaymentRequest) -> [String: Any?] {
@@ -3413,7 +3393,6 @@ enum BreezSDKMapper {
             "bolt11": sendPaymentRequest.bolt11,
             "useTrampoline": sendPaymentRequest.useTrampoline,
             "amountMsat": sendPaymentRequest.amountMsat == nil ? nil : sendPaymentRequest.amountMsat,
-            "label": sendPaymentRequest.label == nil ? nil : sendPaymentRequest.label,
         ]
     }
 
@@ -3478,15 +3457,7 @@ enum BreezSDKMapper {
             extraTlvs = try asTlvEntryList(arr: extraTlvsTmp)
         }
 
-        var label: String?
-        if hasNonNilKey(data: sendSpontaneousPaymentRequest, key: "label") {
-            guard let labelTmp = sendSpontaneousPaymentRequest["label"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "label"))
-            }
-            label = labelTmp
-        }
-
-        return SendSpontaneousPaymentRequest(nodeId: nodeId, amountMsat: amountMsat, extraTlvs: extraTlvs, label: label)
+        return SendSpontaneousPaymentRequest(nodeId: nodeId, amountMsat: amountMsat, extraTlvs: extraTlvs)
     }
 
     static func dictionaryOf(sendSpontaneousPaymentRequest: SendSpontaneousPaymentRequest) -> [String: Any?] {
@@ -3494,7 +3465,6 @@ enum BreezSDKMapper {
             "nodeId": sendSpontaneousPaymentRequest.nodeId,
             "amountMsat": sendSpontaneousPaymentRequest.amountMsat,
             "extraTlvs": sendSpontaneousPaymentRequest.extraTlvs == nil ? nil : arrayOf(tlvEntryList: sendSpontaneousPaymentRequest.extraTlvs!),
-            "label": sendSpontaneousPaymentRequest.label == nil ? nil : sendSpontaneousPaymentRequest.label,
         ]
     }
 
