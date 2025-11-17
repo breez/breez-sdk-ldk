@@ -1,14 +1,18 @@
 use std::sync::Arc;
 
+use ldk_node::lightning::events::PaymentFailureReason;
+use ldk_node::lightning::ln::channelmanager::PaymentId;
 use ldk_node::{Event, Node};
 use tokio::sync::{broadcast, mpsc};
 
 use crate::ldk::node_api::PreimageStore;
-use crate::node_api::IncomingPayment;
+use crate::ldk::utils::Hex;
+use crate::node_api::{IncomingPayment, NodeError, NodeResult};
 
 pub async fn start_event_handling(
     node: Arc<Node>,
     preimages: PreimageStore,
+    events_tx: broadcast::Sender<Event>,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
     mut shutdown: mpsc::Receiver<()>,
 ) {
@@ -21,6 +25,7 @@ pub async fn start_event_handling(
             },
         };
         debug!("Event: {event:?}");
+        let _ = events_tx.send(event.clone()); // Error here will mean that there are no subscribers.
 
         match event {
             Event::PaymentReceived {
@@ -86,4 +91,26 @@ pub async fn start_event_handling(
             error!("Failed to report that event was handled: {e}");
         }
     }
+}
+
+pub async fn wait_for_payment_success(
+    mut events_rx: broadcast::Receiver<Event>,
+    p_id: PaymentId,
+) -> NodeResult<()> {
+    debug!("Waiting for payment success id:{}", p_id.to_hex());
+    while let Ok(event) = events_rx.recv().await {
+        match event {
+            Event::PaymentSuccessful { payment_id, .. } if payment_id == Some(p_id) => {
+                return Ok(());
+            }
+            Event::PaymentFailed {
+                payment_id, reason, ..
+            } if payment_id == Some(p_id) => {
+                let reason = reason.unwrap_or(PaymentFailureReason::UnexpectedError);
+                return Err(NodeError::PaymentFailed(format!("{reason:?}")));
+            }
+            _ => continue,
+        }
+    }
+    Err(NodeError::generic("Node is shutting down"))
 }

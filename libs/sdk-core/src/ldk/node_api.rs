@@ -11,7 +11,8 @@ use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning_invoice::{Bolt11InvoiceDescription, Description};
 use ldk_node::lightning_types::payment::{PaymentHash, PaymentPreimage};
-use ldk_node::{Builder, Node};
+use ldk_node::payment::SendingParameters;
+use ldk_node::{Builder, CustomTlvRecord, Event, Node};
 use rand::Rng;
 use sdk_common::ensure_sdk;
 use sdk_common::invoice::parse_invoice;
@@ -27,7 +28,8 @@ use crate::bitcoin::secp256k1::Secp256k1;
 use crate::breez_services::{OpenChannelParams, Receiver};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::grpc;
-use crate::ldk::event_handling::start_event_handling;
+use crate::ldk::event_handling::{start_event_handling, wait_for_payment_success};
+use crate::ldk::node_state::convert_payment;
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
 use crate::lightning_invoice::RawBolt11Invoice;
 use crate::models::{
@@ -51,6 +53,7 @@ pub(crate) struct Ldk {
     seed: [u8; 64],
     node: Arc<Node>,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
+    events_tx: broadcast::Sender<Event>,
     preimages: PreimageStore,
     remote_lock_shutdown_tx: mpsc::Sender<()>,
 }
@@ -67,7 +70,17 @@ impl Ldk {
             NodeError::generic("Only Regtest mode is supported for now")
         );
 
-        let mut builder = Builder::new();
+        let (lsp_id, lsp_address) = get_lsp(&config)?;
+
+        // Allow anchor channels from the LSP without having on-chain funds available.
+        let ldk_node_config = ldk_node::config::Config {
+            anchor_channels_config: Some(ldk_node::config::AnchorChannelsConfig {
+                trusted_peers_no_reserve: vec![lsp_id],
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let mut builder = Builder::from_config(ldk_node_config);
 
         let mut bytes = [0u8; 64];
         bytes.copy_from_slice(seed);
@@ -79,7 +92,6 @@ impl Ldk {
         builder.set_chain_source_esplora(config.esplora_url.clone(), None);
         builder.set_gossip_source_rgs(config.rgs_url.clone());
 
-        let (lsp_id, lsp_address) = get_lsp(&config)?;
         builder.set_liquidity_source_lsps2(lsp_id, lsp_address, None);
 
         let vss_store = build_vss_store(&config, &seed, "ldk_node");
@@ -98,12 +110,14 @@ impl Ldk {
         debug!("LDK Node was built");
 
         let (incoming_payments_tx, _) = broadcast::channel(10);
+        let (events_tx, _) = broadcast::channel(10);
 
         Ok(Self {
             config,
             seed,
             node,
             incoming_payments_tx,
+            events_tx,
             preimages: PreimageStore::default(),
             remote_lock_shutdown_tx,
         })
@@ -195,21 +209,64 @@ impl NodeAPI for Ldk {
         })
     }
 
-    async fn send_payment(
-        &self,
-        _bolt11: String,
-        _amount_msat: Option<u64>,
-    ) -> NodeResult<Payment> {
-        Err(NodeError::generic("LDK implementation not yet available"))
+    async fn send_payment(&self, bolt11: String, amount_msat: Option<u64>) -> NodeResult<Payment> {
+        let invoice = ldk_node::lightning_invoice::Bolt11Invoice::from_str(&bolt11)?;
+        let payments = self.node.bolt11_payment();
+        let events = self.events_tx.subscribe(); // Subscribe before we try to send.
+        let params = Some(SendingParameters {
+            max_total_routing_fee_msat: None,
+            max_total_cltv_expiry_delta: None,
+            max_path_count: Some(3),
+            max_channel_saturation_power_of_half: None,
+        });
+        let payment_id = match amount_msat {
+            Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),
+            None => payments.send(&invoice, params),
+        }?;
+
+        wait_for_payment_success(events, payment_id).await?;
+        let payment = self
+            .node
+            .list_payments_with_filter(|p| p.id == payment_id)
+            .into_iter()
+            .next()
+            .ok_or(NodeError::generic("Failed to find payment we just sent"))?;
+        convert_payment(payment, self.node.node_id())
     }
 
     async fn send_spontaneous_payment(
         &self,
-        _node_id: String,
-        _amount_msat: u64,
-        _extra_tlvs: Option<Vec<TlvEntry>>,
+        node_id: String,
+        amount_msat: u64,
+        extra_tlvs: Option<Vec<TlvEntry>>,
     ) -> NodeResult<Payment> {
-        Err(NodeError::generic("LDK implementation not yet available"))
+        let node_id = PublicKey::from_str(&node_id)
+            .map_err(|e| NodeError::Generic(format!("Invalid public key: {e}")))?;
+
+        let events = self.events_tx.subscribe(); // Subscribe before we try to send.
+        let payments = self.node.spontaneous_payment();
+        let payment_id = match extra_tlvs {
+            Some(extra_tlvs) => {
+                let custom_tlvs = extra_tlvs
+                    .into_iter()
+                    .map(|tlv| CustomTlvRecord {
+                        type_num: tlv.field_number,
+                        value: tlv.value,
+                    })
+                    .collect();
+                payments.send_with_custom_tlvs(amount_msat, node_id, None, custom_tlvs)
+            }
+            None => payments.send(amount_msat, node_id, None),
+        }?;
+
+        wait_for_payment_success(events, payment_id).await?;
+        let payment = self
+            .node
+            .list_payments_with_filter(|p| p.id == payment_id)
+            .into_iter()
+            .next()
+            .ok_or(NodeError::generic("Failed to find payment we just sent"))?;
+        convert_payment(payment, self.node.node_id())
     }
 
     async fn send_trampoline_payment(
@@ -265,6 +322,7 @@ impl NodeAPI for Ldk {
         start_event_handling(
             Arc::clone(&self.node),
             Arc::clone(&self.preimages),
+            self.events_tx.clone(),
             self.incoming_payments_tx.clone(),
             shutdown,
         )
