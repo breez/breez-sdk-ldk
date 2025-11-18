@@ -2741,7 +2741,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_paymentPreimage = <String>::sse_decode(deserializer);
         let mut var_keysend = <bool>::sse_decode(deserializer);
         let mut var_bolt11 = <String>::sse_decode(deserializer);
-        let mut var_openChannelBolt11 = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlSuccessAction =
             <Option<crate::binding::SuccessActionProcessed>>::sse_decode(deserializer);
         let mut var_lnurlPayDomain = <Option<String>>::sse_decode(deserializer);
@@ -2759,7 +2758,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
             payment_preimage: var_paymentPreimage,
             keysend: var_keysend,
             bolt11: var_bolt11,
-            open_channel_bolt11: var_openChannelBolt11,
             lnurl_success_action: var_lnurlSuccessAction,
             lnurl_pay_domain: var_lnurlPayDomain,
             lnurl_pay_comment: var_lnurlPayComment,
@@ -5034,7 +5032,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
             self.payment_preimage.into_into_dart().into_dart(),
             self.keysend.into_into_dart().into_dart(),
             self.bolt11.into_into_dart().into_dart(),
-            self.open_channel_bolt11.into_into_dart().into_dart(),
             self.lnurl_success_action.into_into_dart().into_dart(),
             self.lnurl_pay_domain.into_into_dart().into_dart(),
             self.lnurl_pay_comment.into_into_dart().into_dart(),
@@ -7381,7 +7378,6 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <String>::sse_encode(self.payment_preimage, serializer);
         <bool>::sse_encode(self.keysend, serializer);
         <String>::sse_encode(self.bolt11, serializer);
-        <Option<String>>::sse_encode(self.open_channel_bolt11, serializer);
         <Option<crate::binding::SuccessActionProcessed>>::sse_encode(
             self.lnurl_success_action,
             serializer,
@@ -9652,7 +9648,6 @@ mod io {
                 payment_preimage: self.payment_preimage.cst_decode(),
                 keysend: self.keysend.cst_decode(),
                 bolt11: self.bolt11.cst_decode(),
-                open_channel_bolt11: self.open_channel_bolt11.cst_decode(),
                 lnurl_success_action: self.lnurl_success_action.cst_decode(),
                 lnurl_pay_domain: self.lnurl_pay_domain.cst_decode(),
                 lnurl_pay_comment: self.lnurl_pay_comment.cst_decode(),
@@ -10886,7 +10881,6 @@ mod io {
                 payment_preimage: core::ptr::null_mut(),
                 keysend: Default::default(),
                 bolt11: core::ptr::null_mut(),
-                open_channel_bolt11: core::ptr::null_mut(),
                 lnurl_success_action: core::ptr::null_mut(),
                 lnurl_pay_domain: core::ptr::null_mut(),
                 lnurl_pay_comment: core::ptr::null_mut(),
@@ -13508,7 +13502,6 @@ mod io {
         payment_preimage: *mut wire_cst_list_prim_u_8_strict,
         keysend: bool,
         bolt11: *mut wire_cst_list_prim_u_8_strict,
-        open_channel_bolt11: *mut wire_cst_list_prim_u_8_strict,
         lnurl_success_action: *mut wire_cst_success_action_processed,
         lnurl_pay_domain: *mut wire_cst_list_prim_u_8_strict,
         lnurl_pay_comment: *mut wire_cst_list_prim_u_8_strict,

@@ -417,13 +417,6 @@ impl SqliteStorage {
             payment.fee_msat = payer_amount - amount_msat;
         }
 
-        // Add the payer invoice if it exists, in case of a received payment
-        if let Some(open_channel_bolt11) = row.get(15)? {
-            if let PaymentDetails::Ln { data } = &mut payment.details {
-                data.open_channel_bolt11 = Some(open_channel_bolt11);
-            }
-        }
-
         Ok(payment)
     }
 }
@@ -642,7 +635,6 @@ mod test {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -672,7 +664,6 @@ mod test {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -702,7 +693,6 @@ mod test {
                         swap_info: Some(swap_info.clone()),
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -732,7 +722,6 @@ mod test {
                         swap_info: None,
                         reverse_swap_info: Some(rev_swap_info.clone()),
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -762,7 +751,6 @@ mod test {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -793,7 +781,6 @@ mod test {
                     swap_info: None,
                     reverse_swap_info: None,
                     pending_expiration_block: None,
-                    open_channel_bolt11: None,
                 },
             },
             metadata: None,
@@ -979,46 +966,6 @@ mod test {
         assert_eq!(retrieve_txs.len(), 1);
         assert_eq!(retrieve_txs[0].id, payment_hash_with_lnurl_withdraw);
         assert_eq!(retrieve_txs[0].metadata, Some(test_json.to_string()),);
-
-        // test open_channel_bolt11
-        storage.insert_open_channel_payment_info(
-            payment_hash_with_lnurl_withdraw,
-            150,
-            "original_invoice",
-        )?;
-
-        let open_channel_bolt11 = storage
-            .get_open_channel_bolt11_by_hash(payment_hash_with_lnurl_withdraw)?
-            .unwrap();
-        assert_eq!(open_channel_bolt11, "original_invoice");
-
-        let open_channel_bolt11 = storage.get_open_channel_bolt11_by_hash("non existing hash")?;
-        assert_eq!(open_channel_bolt11, None);
-
-        let retrieve_txs = storage.list_payments(ListPaymentsRequest {
-            filters: Some(vec![PaymentTypeFilter::Received]),
-            ..Default::default()
-        })?;
-
-        let filtered_txs: Vec<&Payment> = retrieve_txs
-            .iter()
-            .filter(|p| {
-                if let PaymentDetails::Ln { data } = &p.details {
-                    return data.open_channel_bolt11 == Some("original_invoice".to_string());
-                }
-                false
-            })
-            .collect();
-
-        assert_eq!(filtered_txs.len(), 1);
-        assert_eq!(filtered_txs[0].id, payment_hash_with_lnurl_withdraw);
-        assert!(matches!(filtered_txs[0].details, PaymentDetails::Ln { .. }));
-        if let PaymentDetails::Ln { data } = &filtered_txs[0].details {
-            assert_eq!(
-                data.open_channel_bolt11,
-                Some("original_invoice".to_string())
-            );
-        }
 
         Ok(())
     }

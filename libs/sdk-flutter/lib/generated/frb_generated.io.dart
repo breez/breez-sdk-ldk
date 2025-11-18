@@ -3169,7 +3169,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.payment_preimage = cst_encode_String(apiObj.paymentPreimage);
     wireObj.keysend = cst_encode_bool(apiObj.keysend);
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
-    wireObj.open_channel_bolt11 = cst_encode_opt_String(apiObj.openChannelBolt11);
     wireObj.lnurl_success_action = cst_encode_opt_box_autoadd_success_action_processed(
       apiObj.lnurlSuccessAction,
     );
@@ -6588,8 +6587,6 @@ final class wire_cst_ln_payment_details extends ffi.Struct {
   external bool keysend;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> bolt11;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> open_channel_bolt11;
 
   external ffi.Pointer<wire_cst_success_action_processed> lnurl_success_action;
 

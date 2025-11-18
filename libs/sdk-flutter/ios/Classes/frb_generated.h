@@ -151,7 +151,6 @@ typedef struct wire_cst_ln_payment_details {
   struct wire_cst_list_prim_u_8_strict *payment_preimage;
   bool keysend;
   struct wire_cst_list_prim_u_8_strict *bolt11;
-  struct wire_cst_list_prim_u_8_strict *open_channel_bolt11;
   struct wire_cst_success_action_processed *lnurl_success_action;
   struct wire_cst_list_prim_u_8_strict *lnurl_pay_domain;
   struct wire_cst_list_prim_u_8_strict *lnurl_pay_comment;

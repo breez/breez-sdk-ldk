@@ -161,7 +161,6 @@ impl TryFrom<IncomingPayment> for Payment {
                     swap_info: None,
                     reverse_swap_info: None,
                     pending_expiration_block: None,
-                    open_channel_bolt11: None,
                 },
             },
             metadata: None,
