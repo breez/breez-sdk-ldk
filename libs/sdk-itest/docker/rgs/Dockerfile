@@ -1,10 +1,6 @@
 ARG USER=rgs
-ARG VERSION=05d5420539261156a70bb54429119d87f56371d5
+ARG VERSION=ad079707df0735128a64ae8bfbfe7908852ebcfb
 ARG REPOSITORY=https://github.com/lightningdevkit/rapid-gossip-sync-server.git
-
-# Waiting for https://github.com/lightningdevkit/rapid-gossip-sync-server/pull/103
-ARG VERSION=10439b8151d0cb299a60f11ecd33313a095d44f8
-ARG REPOSITORY=https://github.com/andrei-21/rapid-gossip-sync-server.git
 
 FROM rust:1.86-slim-bookworm AS builder
 

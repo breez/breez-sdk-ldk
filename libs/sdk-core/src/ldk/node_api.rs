@@ -224,13 +224,7 @@ impl NodeAPI for Ldk {
             None => payments.send(&invoice, params),
         }?;
 
-        wait_for_payment_success(events, payment_id).await?;
-        let payment = self
-            .node
-            .list_payments_with_filter(|p| p.id == payment_id)
-            .into_iter()
-            .next()
-            .ok_or(NodeError::generic("Failed to find payment we just sent"))?;
+        let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
         convert_payment(payment, self.node.node_id())
     }
 
@@ -259,13 +253,7 @@ impl NodeAPI for Ldk {
             None => payments.send(amount_msat, node_id, None),
         }?;
 
-        wait_for_payment_success(events, payment_id).await?;
-        let payment = self
-            .node
-            .list_payments_with_filter(|p| p.id == payment_id)
-            .into_iter()
-            .next()
-            .ok_or(NodeError::generic("Failed to find payment we just sent"))?;
+        let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
         convert_payment(payment, self.node.node_id())
     }
 
