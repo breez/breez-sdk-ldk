@@ -1,14 +1,12 @@
-use vss_client::error::VssError;
-use vss_client::util::retry::{ExponentialBackoffRetryPolicy, MaxAttemptsRetryPolicy};
-
 use crate::backup::{BackupState, BackupTransport};
 use crate::error::{SdkError, SdkResult};
 use crate::ldk::store::{VersionedStore, VssStore};
 use crate::ldk::store_builder;
+use crate::ldk::store_builder::CustomRetryPolicy;
 use crate::Config;
 
 pub(crate) struct LdkBackupTransport {
-    store: VssStore<MaxAttemptsRetryPolicy<ExponentialBackoffRetryPolicy<VssError>>>,
+    store: VssStore<CustomRetryPolicy>,
 }
 
 impl LdkBackupTransport {

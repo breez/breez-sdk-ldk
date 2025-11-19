@@ -16,14 +16,23 @@ use tokio::runtime::Handle;
 use tokio::sync::mpsc;
 use vss_client::client::VssClient;
 use vss_client::error::VssError;
-use vss_client::util::retry::{ExponentialBackoffRetryPolicy, MaxAttemptsRetryPolicy, RetryPolicy};
+use vss_client::util::retry::{
+    ExponentialBackoffRetryPolicy, FilteredRetryPolicy, JitteredRetryPolicy,
+    MaxAttemptsRetryPolicy, MaxTotalDelayRetryPolicy, RetryPolicy,
+};
 
 use crate::ldk::store::{PreviousHolder, VssStore};
 use crate::node_api::NodeResult;
 use crate::persist::error::PersistError;
 use crate::Config;
 
-pub(crate) type CustomRetryPolicy = MaxAttemptsRetryPolicy<ExponentialBackoffRetryPolicy<VssError>>;
+pub(crate) type CustomRetryPolicy = FilteredRetryPolicy<
+    JitteredRetryPolicy<
+        MaxTotalDelayRetryPolicy<MaxAttemptsRetryPolicy<ExponentialBackoffRetryPolicy<VssError>>>,
+    >,
+    Box<dyn Fn(&VssError) -> bool + 'static + Send + Sync>,
+>;
+
 pub(crate) type LockingStore = crate::ldk::store::LockingStore<VssStore<CustomRetryPolicy>>;
 pub(crate) type MirroringStore = crate::ldk::store::MirroringStore<Arc<LockingStore>, LockingStore>;
 
@@ -41,10 +50,21 @@ pub(crate) fn build_vss_store(
         }
         _ => store_id.to_string(),
     };
-    let vss_client = VssClient::new(
-        config.vss_url.clone(),
-        ExponentialBackoffRetryPolicy::<VssError>::new(Duration::from_secs(1)).with_max_attempts(5),
-    );
+
+    let retry_policy = ExponentialBackoffRetryPolicy::new(Duration::from_secs(1))
+        .with_max_attempts(10)
+        .with_max_total_delay(Duration::from_secs(40))
+        .with_max_jitter(Duration::from_millis(10))
+        .skip_retry_on_error(Box::new(|e: &VssError| {
+            matches!(
+                e,
+                VssError::NoSuchKeyError(..)
+                    | VssError::InvalidRequestError(..)
+                    | VssError::ConflictError(..)
+            )
+        }) as _);
+
+    let vss_client = VssClient::new(config.vss_url.clone(), retry_policy);
     VssStore::new(vss_client, store_id)
 }
 
