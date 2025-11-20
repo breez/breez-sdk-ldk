@@ -223,7 +223,6 @@ impl CommandHandler {
             Commands::SendPayment {
                 bolt11,
                 amount_msat,
-                use_trampoline,
             } => {
                 let start = SystemTime::now();
                 let payment = self
@@ -231,7 +230,6 @@ impl CommandHandler {
                     .send_payment(SendPaymentRequest {
                         bolt11,
                         amount_msat,
-                        use_trampoline,
                     })
                     .await?;
                 let end = SystemTime::now();
@@ -488,7 +486,6 @@ impl CommandHandler {
                 lnurl,
                 label,
                 validate_success_url,
-                use_trampoline,
             } => match parse(&lnurl, None).await? {
                 LnUrlPay { data: pd, .. } => {
                     let prompt = format!(
@@ -503,7 +500,6 @@ impl CommandHandler {
                         .lnurl_pay(LnUrlPayRequest {
                             data: pd,
                             amount_msat: amount_msat.parse::<u64>()?,
-                            use_trampoline,
                             comment: None,
                             payment_label: label,
                             validate_success_action_url: validate_success_url,

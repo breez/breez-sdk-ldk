@@ -792,10 +792,6 @@ pub struct LnPaymentDetails {
     pub keysend: bool,
     pub bolt11: String,
 
-    /// Only set for [PaymentType::Received], payments which require to open a channel.
-    /// Represents the actual invoice paid by the sender
-    pub open_channel_bolt11: Option<String>,
-
     /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
     /// the endpoint returns a success action
     pub lnurl_success_action: Option<SuccessActionProcessed>,
@@ -894,10 +890,6 @@ pub struct ReceivePaymentResponse {
 pub struct SendPaymentRequest {
     /// The bolt11 invoice
     pub bolt11: String,
-    /// Trampoline payments outsource pathfinding to the LSP. Trampoline payments can improve
-    /// payment performance, but are generally more expensive in terms of fees and they
-    /// compromise on privacy.
-    pub use_trampoline: bool,
     /// The amount to pay in millisatoshis. Should only be set when `bolt11` is a zero-amount invoice.
     pub amount_msat: Option<u64>,
 }

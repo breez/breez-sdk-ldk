@@ -385,10 +385,6 @@ class LnPaymentDetails {
   final bool keysend;
   final String bolt11;
 
-  /// Only set for [PaymentType::Received], payments which require to open a channel.
-  /// Represents the actual invoice paid by the sender
-  final String? openChannelBolt11;
-
   /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
   /// the endpoint returns a success action
   final SuccessActionProcessed? lnurlSuccessAction;
@@ -423,7 +419,6 @@ class LnPaymentDetails {
     required this.paymentPreimage,
     required this.keysend,
     required this.bolt11,
-    this.openChannelBolt11,
     this.lnurlSuccessAction,
     this.lnurlPayDomain,
     this.lnurlPayComment,
@@ -442,7 +437,6 @@ class LnPaymentDetails {
       paymentPreimage.hashCode ^
       keysend.hashCode ^
       bolt11.hashCode ^
-      openChannelBolt11.hashCode ^
       lnurlSuccessAction.hashCode ^
       lnurlPayDomain.hashCode ^
       lnurlPayComment.hashCode ^
@@ -463,7 +457,6 @@ class LnPaymentDetails {
           paymentPreimage == other.paymentPreimage &&
           keysend == other.keysend &&
           bolt11 == other.bolt11 &&
-          openChannelBolt11 == other.openChannelBolt11 &&
           lnurlSuccessAction == other.lnurlSuccessAction &&
           lnurlPayDomain == other.lnurlPayDomain &&
           lnurlPayComment == other.lnurlPayComment &&
@@ -1371,18 +1364,13 @@ class SendPaymentRequest {
   /// The bolt11 invoice
   final String bolt11;
 
-  /// Trampoline payments outsource pathfinding to the LSP. Trampoline payments can improve
-  /// payment performance, but are generally more expensive in terms of fees and they
-  /// compromise on privacy.
-  final bool useTrampoline;
-
   /// The amount to pay in millisatoshis. Should only be set when `bolt11` is a zero-amount invoice.
   final BigInt? amountMsat;
 
-  const SendPaymentRequest({required this.bolt11, required this.useTrampoline, this.amountMsat});
+  const SendPaymentRequest({required this.bolt11, this.amountMsat});
 
   @override
-  int get hashCode => bolt11.hashCode ^ useTrampoline.hashCode ^ amountMsat.hashCode;
+  int get hashCode => bolt11.hashCode ^ amountMsat.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1390,7 +1378,6 @@ class SendPaymentRequest {
       other is SendPaymentRequest &&
           runtimeType == other.runtimeType &&
           bolt11 == other.bolt11 &&
-          useTrampoline == other.useTrampoline &&
           amountMsat == other.amountMsat;
 }
 

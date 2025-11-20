@@ -1551,7 +1551,6 @@ const _: fn() = || {
         let LnUrlPayRequest = None::<crate::binding::LnUrlPayRequest>.unwrap();
         let _: crate::binding::LnUrlPayRequestData = LnUrlPayRequest.data;
         let _: u64 = LnUrlPayRequest.amount_msat;
-        let _: bool = LnUrlPayRequest.use_trampoline;
         let _: Option<String> = LnUrlPayRequest.comment;
         let _: Option<String> = LnUrlPayRequest.payment_label;
         let _: Option<bool> = LnUrlPayRequest.validate_success_action_url;
@@ -2741,7 +2740,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_paymentPreimage = <String>::sse_decode(deserializer);
         let mut var_keysend = <bool>::sse_decode(deserializer);
         let mut var_bolt11 = <String>::sse_decode(deserializer);
-        let mut var_openChannelBolt11 = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlSuccessAction =
             <Option<crate::binding::SuccessActionProcessed>>::sse_decode(deserializer);
         let mut var_lnurlPayDomain = <Option<String>>::sse_decode(deserializer);
@@ -2759,7 +2757,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
             payment_preimage: var_paymentPreimage,
             keysend: var_keysend,
             bolt11: var_bolt11,
-            open_channel_bolt11: var_openChannelBolt11,
             lnurl_success_action: var_lnurlSuccessAction,
             lnurl_pay_domain: var_lnurlPayDomain,
             lnurl_pay_comment: var_lnurlPayComment,
@@ -2833,14 +2830,12 @@ impl SseDecode for crate::binding::LnUrlPayRequest {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_data = <crate::binding::LnUrlPayRequestData>::sse_decode(deserializer);
         let mut var_amountMsat = <u64>::sse_decode(deserializer);
-        let mut var_useTrampoline = <bool>::sse_decode(deserializer);
         let mut var_comment = <Option<String>>::sse_decode(deserializer);
         let mut var_paymentLabel = <Option<String>>::sse_decode(deserializer);
         let mut var_validateSuccessActionUrl = <Option<bool>>::sse_decode(deserializer);
         return crate::binding::LnUrlPayRequest {
             data: var_data,
             amount_msat: var_amountMsat,
-            use_trampoline: var_useTrampoline,
             comment: var_comment,
             payment_label: var_paymentLabel,
             validate_success_action_url: var_validateSuccessActionUrl,
@@ -3942,11 +3937,9 @@ impl SseDecode for crate::models::SendPaymentRequest {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_bolt11 = <String>::sse_decode(deserializer);
-        let mut var_useTrampoline = <bool>::sse_decode(deserializer);
         let mut var_amountMsat = <Option<u64>>::sse_decode(deserializer);
         return crate::models::SendPaymentRequest {
             bolt11: var_bolt11,
-            use_trampoline: var_useTrampoline,
             amount_msat: var_amountMsat,
         };
     }
@@ -5034,7 +5027,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
             self.payment_preimage.into_into_dart().into_dart(),
             self.keysend.into_into_dart().into_dart(),
             self.bolt11.into_into_dart().into_dart(),
-            self.open_channel_bolt11.into_into_dart().into_dart(),
             self.lnurl_success_action.into_into_dart().into_dart(),
             self.lnurl_pay_domain.into_into_dart().into_dart(),
             self.lnurl_pay_comment.into_into_dart().into_dart(),
@@ -5151,7 +5143,6 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::binding::LnUrlPayReques
         [
             self.0.data.into_into_dart().into_dart(),
             self.0.amount_msat.into_into_dart().into_dart(),
-            self.0.use_trampoline.into_into_dart().into_dart(),
             self.0.comment.into_into_dart().into_dart(),
             self.0.payment_label.into_into_dart().into_dart(),
             self.0
@@ -6340,7 +6331,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::SendPaymentRequest {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.bolt11.into_into_dart().into_dart(),
-            self.use_trampoline.into_into_dart().into_dart(),
             self.amount_msat.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -7381,7 +7371,6 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <String>::sse_encode(self.payment_preimage, serializer);
         <bool>::sse_encode(self.keysend, serializer);
         <String>::sse_encode(self.bolt11, serializer);
-        <Option<String>>::sse_encode(self.open_channel_bolt11, serializer);
         <Option<crate::binding::SuccessActionProcessed>>::sse_encode(
             self.lnurl_success_action,
             serializer,
@@ -7445,7 +7434,6 @@ impl SseEncode for crate::binding::LnUrlPayRequest {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <crate::binding::LnUrlPayRequestData>::sse_encode(self.data, serializer);
         <u64>::sse_encode(self.amount_msat, serializer);
-        <bool>::sse_encode(self.use_trampoline, serializer);
         <Option<String>>::sse_encode(self.comment, serializer);
         <Option<String>>::sse_encode(self.payment_label, serializer);
         <Option<bool>>::sse_encode(self.validate_success_action_url, serializer);
@@ -8284,7 +8272,6 @@ impl SseEncode for crate::models::SendPaymentRequest {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.bolt11, serializer);
-        <bool>::sse_encode(self.use_trampoline, serializer);
         <Option<u64>>::sse_encode(self.amount_msat, serializer);
     }
 }
@@ -9652,7 +9639,6 @@ mod io {
                 payment_preimage: self.payment_preimage.cst_decode(),
                 keysend: self.keysend.cst_decode(),
                 bolt11: self.bolt11.cst_decode(),
-                open_channel_bolt11: self.open_channel_bolt11.cst_decode(),
                 lnurl_success_action: self.lnurl_success_action.cst_decode(),
                 lnurl_pay_domain: self.lnurl_pay_domain.cst_decode(),
                 lnurl_pay_comment: self.lnurl_pay_comment.cst_decode(),
@@ -9714,7 +9700,6 @@ mod io {
             crate::binding::LnUrlPayRequest {
                 data: self.data.cst_decode(),
                 amount_msat: self.amount_msat.cst_decode(),
-                use_trampoline: self.use_trampoline.cst_decode(),
                 comment: self.comment.cst_decode(),
                 payment_label: self.payment_label.cst_decode(),
                 validate_success_action_url: self.validate_success_action_url.cst_decode(),
@@ -10305,7 +10290,6 @@ mod io {
         fn cst_decode(self) -> crate::models::SendPaymentRequest {
             crate::models::SendPaymentRequest {
                 bolt11: self.bolt11.cst_decode(),
-                use_trampoline: self.use_trampoline.cst_decode(),
                 amount_msat: self.amount_msat.cst_decode(),
             }
         }
@@ -10886,7 +10870,6 @@ mod io {
                 payment_preimage: core::ptr::null_mut(),
                 keysend: Default::default(),
                 bolt11: core::ptr::null_mut(),
-                open_channel_bolt11: core::ptr::null_mut(),
                 lnurl_success_action: core::ptr::null_mut(),
                 lnurl_pay_domain: core::ptr::null_mut(),
                 lnurl_pay_comment: core::ptr::null_mut(),
@@ -10962,7 +10945,6 @@ mod io {
             Self {
                 data: Default::default(),
                 amount_msat: Default::default(),
-                use_trampoline: Default::default(),
                 comment: core::ptr::null_mut(),
                 payment_label: core::ptr::null_mut(),
                 validate_success_action_url: core::ptr::null_mut(),
@@ -11673,7 +11655,6 @@ mod io {
         fn new_with_null_ptr() -> Self {
             Self {
                 bolt11: core::ptr::null_mut(),
-                use_trampoline: Default::default(),
                 amount_msat: core::ptr::null_mut(),
             }
         }
@@ -13508,7 +13489,6 @@ mod io {
         payment_preimage: *mut wire_cst_list_prim_u_8_strict,
         keysend: bool,
         bolt11: *mut wire_cst_list_prim_u_8_strict,
-        open_channel_bolt11: *mut wire_cst_list_prim_u_8_strict,
         lnurl_success_action: *mut wire_cst_success_action_processed,
         lnurl_pay_domain: *mut wire_cst_list_prim_u_8_strict,
         lnurl_pay_comment: *mut wire_cst_list_prim_u_8_strict,
@@ -13560,7 +13540,6 @@ mod io {
     pub struct wire_cst_ln_url_pay_request {
         data: wire_cst_ln_url_pay_request_data,
         amount_msat: u64,
-        use_trampoline: bool,
         comment: *mut wire_cst_list_prim_u_8_strict,
         payment_label: *mut wire_cst_list_prim_u_8_strict,
         validate_success_action_url: *mut bool,
@@ -14024,7 +14003,6 @@ mod io {
     #[derive(Clone, Copy)]
     pub struct wire_cst_send_payment_request {
         bolt11: *mut wire_cst_list_prim_u_8_strict,
-        use_trampoline: bool,
         amount_msat: *mut u64,
     }
     #[repr(C)]

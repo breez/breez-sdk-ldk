@@ -992,16 +992,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
     val paymentPreimage = lnPaymentDetails.getString("paymentPreimage")!!
     val keysend = lnPaymentDetails.getBoolean("keysend")
     val bolt11 = lnPaymentDetails.getString("bolt11")!!
-    val openChannelBolt11 =
-        if (hasNonNullKey(
-                lnPaymentDetails,
-                "openChannelBolt11",
-            )
-        ) {
-            lnPaymentDetails.getString("openChannelBolt11")
-        } else {
-            null
-        }
     val lnurlSuccessAction =
         if (hasNonNullKey(lnPaymentDetails, "lnurlSuccessAction")) {
             lnPaymentDetails.getMap("lnurlSuccessAction")?.let {
@@ -1049,7 +1039,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         paymentPreimage,
         keysend,
         bolt11,
-        openChannelBolt11,
         lnurlSuccessAction,
         lnurlPayDomain,
         lnurlPayComment,
@@ -1069,7 +1058,6 @@ fun readableMapOf(lnPaymentDetails: LnPaymentDetails): ReadableMap =
         "paymentPreimage" to lnPaymentDetails.paymentPreimage,
         "keysend" to lnPaymentDetails.keysend,
         "bolt11" to lnPaymentDetails.bolt11,
-        "openChannelBolt11" to lnPaymentDetails.openChannelBolt11,
         "lnurlSuccessAction" to lnPaymentDetails.lnurlSuccessAction?.let { readableMapOf(it) },
         "lnurlPayDomain" to lnPaymentDetails.lnurlPayDomain,
         "lnurlPayComment" to lnPaymentDetails.lnurlPayComment,
@@ -1199,7 +1187,6 @@ fun asLnUrlPayRequest(lnUrlPayRequest: ReadableMap): LnUrlPayRequest? {
             arrayOf(
                 "data",
                 "amountMsat",
-                "useTrampoline",
             ),
         )
     ) {
@@ -1207,7 +1194,6 @@ fun asLnUrlPayRequest(lnUrlPayRequest: ReadableMap): LnUrlPayRequest? {
     }
     val data = lnUrlPayRequest.getMap("data")?.let { asLnUrlPayRequestData(it) }!!
     val amountMsat = lnUrlPayRequest.getDouble("amountMsat").toULong()
-    val useTrampoline = lnUrlPayRequest.getBoolean("useTrampoline")
     val comment = if (hasNonNullKey(lnUrlPayRequest, "comment")) lnUrlPayRequest.getString("comment") else null
     val paymentLabel = if (hasNonNullKey(lnUrlPayRequest, "paymentLabel")) lnUrlPayRequest.getString("paymentLabel") else null
     val validateSuccessActionUrl =
@@ -1220,14 +1206,13 @@ fun asLnUrlPayRequest(lnUrlPayRequest: ReadableMap): LnUrlPayRequest? {
         } else {
             null
         }
-    return LnUrlPayRequest(data, amountMsat, useTrampoline, comment, paymentLabel, validateSuccessActionUrl)
+    return LnUrlPayRequest(data, amountMsat, comment, paymentLabel, validateSuccessActionUrl)
 }
 
 fun readableMapOf(lnUrlPayRequest: LnUrlPayRequest): ReadableMap =
     readableMapOf(
         "data" to readableMapOf(lnUrlPayRequest.data),
         "amountMsat" to lnUrlPayRequest.amountMsat,
-        "useTrampoline" to lnUrlPayRequest.useTrampoline,
         "comment" to lnUrlPayRequest.comment,
         "paymentLabel" to lnUrlPayRequest.paymentLabel,
         "validateSuccessActionUrl" to lnUrlPayRequest.validateSuccessActionUrl,
@@ -2984,22 +2969,19 @@ fun asSendPaymentRequest(sendPaymentRequest: ReadableMap): SendPaymentRequest? {
             sendPaymentRequest,
             arrayOf(
                 "bolt11",
-                "useTrampoline",
             ),
         )
     ) {
         return null
     }
     val bolt11 = sendPaymentRequest.getString("bolt11")!!
-    val useTrampoline = sendPaymentRequest.getBoolean("useTrampoline")
     val amountMsat = if (hasNonNullKey(sendPaymentRequest, "amountMsat")) sendPaymentRequest.getDouble("amountMsat").toULong() else null
-    return SendPaymentRequest(bolt11, useTrampoline, amountMsat)
+    return SendPaymentRequest(bolt11, amountMsat)
 }
 
 fun readableMapOf(sendPaymentRequest: SendPaymentRequest): ReadableMap =
     readableMapOf(
         "bolt11" to sendPaymentRequest.bolt11,
-        "useTrampoline" to sendPaymentRequest.useTrampoline,
         "amountMsat" to sendPaymentRequest.amountMsat,
     )
 

@@ -118,7 +118,6 @@ async fn test_node_receive_payments() {
     let payment = services
         .send_payment(SendPaymentRequest {
             bolt11,
-            use_trampoline: false,
             amount_msat: None,
         })
         .await
@@ -144,7 +143,6 @@ async fn test_node_receive_payments() {
     let payment = services
         .send_payment(SendPaymentRequest {
             bolt11,
-            use_trampoline: false,
             amount_msat: Some(amount.to_msat()),
         })
         .await

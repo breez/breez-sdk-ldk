@@ -307,50 +307,14 @@ impl BreezServices {
             return Err(SendPaymentError::AlreadyPaid);
         }
 
-        // If there is an lsp, the invoice route hint does not contain the
-        // lsp in the hint, and trampoline payments are requested, attempt a
-        // trampoline payment.
-        let maybe_trampoline_id = self.get_trampoline_id(&req, &parsed_invoice)?;
-
         self.persist_pending_payment(&parsed_invoice, amount_msat)?;
 
-        // If trampoline is an option, try trampoline first.
-        let trampoline_result = if let Some(trampoline_id) = maybe_trampoline_id {
-            debug!("attempting trampoline payment");
-            match self
-                .node_api
-                .send_trampoline_payment(parsed_invoice.bolt11.clone(), amount_msat, trampoline_id)
-                .await
-            {
-                Ok(res) => Some(res),
-                Err(e) => {
-                    if e.to_string().contains("missing balance") {
-                        debug!("trampoline payment failed due to insufficient balance: {e:?}");
-                        return Err(SendPaymentError::InsufficientBalance {
-                            err: "Trampoline payment failed".into(),
-                        });
-                    }
-
-                    warn!("trampoline payment failed: {e:?}");
-                    None
-                }
-            }
-        } else {
-            debug!("not attempting trampoline payment");
-            None
-        };
-
-        // If trampoline failed or didn't happen, fall back to regular payment.
-        let payment_res = match trampoline_result {
-            Some(res) => Ok(res),
-            None => {
-                debug!("attempting normal payment");
-                self.node_api
-                    .send_payment(parsed_invoice.bolt11.clone(), req.amount_msat)
-                    .map_err(Into::into)
-                    .await
-            }
-        };
+        debug!("attempting normal payment");
+        let payment_res = self
+            .node_api
+            .send_payment(parsed_invoice.bolt11.clone(), req.amount_msat)
+            .map_err(Into::into)
+            .await;
 
         debug!("payment returned {payment_res:?}");
         let payment = self
@@ -361,41 +325,6 @@ impl BreezServices {
             )
             .await?;
         Ok(SendPaymentResponse { payment })
-    }
-
-    fn get_trampoline_id(
-        &self,
-        req: &SendPaymentRequest,
-        invoice: &LNInvoice,
-    ) -> Result<Option<Vec<u8>>, SendPaymentError> {
-        // If trampoline is turned off, return immediately
-        if !req.use_trampoline {
-            return Ok(None);
-        }
-
-        // Get the persisted LSP id. If no LSP, return early.
-        let lsp_pubkey = match self.persister.get_lsp_pubkey()? {
-            Some(lsp_pubkey) => lsp_pubkey,
-            None => return Ok(None),
-        };
-
-        // If the LSP is in the routing hint, don't use trampoline, but rather
-        // pay directly to the destination.
-        if invoice.routing_hints.iter().any(|hint| {
-            hint.hops
-                .last()
-                .map(|hop| hop.src_node_id == lsp_pubkey)
-                .unwrap_or(false)
-        }) {
-            return Ok(None);
-        }
-
-        // If ended up here, this payment will attempt trampoline.
-        Ok(Some(hex::decode(lsp_pubkey).map_err(|_| {
-            SendPaymentError::Generic {
-                err: "failed to decode lsp pubkey".to_string(),
-            }
-        })?))
     }
 
     /// Pay directly to a node id using keysend
@@ -440,7 +369,6 @@ impl BreezServices {
                 let pay_req = SendPaymentRequest {
                     bolt11: cb.pr.clone(),
                     amount_msat: None,
-                    use_trampoline: req.use_trampoline,
                 };
                 let invoice = parse_invoice(cb.pr.as_str())?;
 
@@ -1279,7 +1207,6 @@ impl BreezServices {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -3025,7 +2952,6 @@ pub(crate) mod tests {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -3055,7 +2981,6 @@ pub(crate) mod tests {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -3085,7 +3010,6 @@ pub(crate) mod tests {
                         swap_info: None,
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -3115,7 +3039,6 @@ pub(crate) mod tests {
                         swap_info: Some(swap_info.clone()),
                         reverse_swap_info: None,
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,
@@ -3145,7 +3068,6 @@ pub(crate) mod tests {
                         swap_info: None,
                         reverse_swap_info: Some(rev_swap_info.clone()),
                         pending_expiration_block: None,
-                        open_channel_bolt11: None,
                     },
                 },
                 metadata: None,

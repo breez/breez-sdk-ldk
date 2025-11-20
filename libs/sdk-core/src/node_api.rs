@@ -161,7 +161,6 @@ impl TryFrom<IncomingPayment> for Payment {
                     swap_info: None,
                     reverse_swap_info: None,
                     pending_expiration_block: None,
-                    open_channel_bolt11: None,
                 },
             },
             metadata: None,
@@ -195,12 +194,6 @@ pub trait NodeAPI: Send + Sync {
         node_id: String,
         amount_msat: u64,
         extra_tlvs: Option<Vec<TlvEntry>>,
-    ) -> NodeResult<Payment>;
-    async fn send_trampoline_payment(
-        &self,
-        bolt11: String,
-        amount_msat: u64,
-        trampoline_node_id: Vec<u8>,
     ) -> NodeResult<Payment>;
     async fn node_id(&self) -> NodeResult<String>;
 

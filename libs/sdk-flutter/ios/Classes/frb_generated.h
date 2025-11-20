@@ -151,7 +151,6 @@ typedef struct wire_cst_ln_payment_details {
   struct wire_cst_list_prim_u_8_strict *payment_preimage;
   bool keysend;
   struct wire_cst_list_prim_u_8_strict *bolt11;
-  struct wire_cst_list_prim_u_8_strict *open_channel_bolt11;
   struct wire_cst_success_action_processed *lnurl_success_action;
   struct wire_cst_list_prim_u_8_strict *lnurl_pay_domain;
   struct wire_cst_list_prim_u_8_strict *lnurl_pay_comment;
@@ -423,7 +422,6 @@ typedef struct wire_cst_ln_url_pay_request_data {
 typedef struct wire_cst_ln_url_pay_request {
   struct wire_cst_ln_url_pay_request_data data;
   uint64_t amount_msat;
-  bool use_trampoline;
   struct wire_cst_list_prim_u_8_strict *comment;
   struct wire_cst_list_prim_u_8_strict *payment_label;
   bool *validate_success_action_url;
@@ -527,7 +525,6 @@ typedef struct wire_cst_report_issue_request {
 
 typedef struct wire_cst_send_payment_request {
   struct wire_cst_list_prim_u_8_strict *bolt11;
-  bool use_trampoline;
   uint64_t *amount_msat;
 } wire_cst_send_payment_request;
 

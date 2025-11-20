@@ -186,7 +186,6 @@ export interface LnPaymentDetails {
     paymentPreimage: string
     keysend: boolean
     bolt11: string
-    openChannelBolt11?: string
     lnurlSuccessAction?: SuccessActionProcessed
     lnurlPayDomain?: string
     lnurlPayComment?: string
@@ -217,7 +216,6 @@ export interface LnUrlPayErrorData {
 export interface LnUrlPayRequest {
     data: LnUrlPayRequestData
     amountMsat: number
-    useTrampoline: boolean
     comment?: string
     paymentLabel?: string
     validateSuccessActionUrl?: boolean
@@ -511,7 +509,6 @@ export interface RouteHintHop {
 
 export interface SendPaymentRequest {
     bolt11: string
-    useTrampoline: boolean
     amountMsat?: number
 }
 
