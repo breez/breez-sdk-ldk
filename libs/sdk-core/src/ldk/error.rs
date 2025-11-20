@@ -1,3 +1,4 @@
+use ldk_node::lightning_invoice::ParseOrSemanticError;
 use sdk_common::prelude::InvoiceError;
 
 use crate::node_api::NodeError;
@@ -83,5 +84,11 @@ impl From<ldk_node::NodeError> for NodeError {
             ldk_node::NodeError::LiquiditySourceUnavailable => generic(err),
             ldk_node::NodeError::LiquidityFeeTooHigh => generic(err),
         }
+    }
+}
+
+impl From<ParseOrSemanticError> for NodeError {
+    fn from(err: ParseOrSemanticError) -> Self {
+        InvoiceError::Validation(err.to_string()).into()
     }
 }

@@ -1,6 +1,7 @@
 use breez_sdk_core::{BreezEvent, EventListener};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc;
+use tracing::info;
 
 pub struct EventListenerImpl {
     tx: mpsc::Sender<BreezEvent>,
@@ -18,7 +19,7 @@ impl EventListenerImpl {
 
 impl EventListener for EventListenerImpl {
     fn on_event(&self, e: BreezEvent) {
-        println!("Event: {e:?}");
+        info!("Event: {e:?}");
         tokio::task::block_in_place(|| self.handle.block_on(self.tx.send(e))).unwrap();
     }
 }

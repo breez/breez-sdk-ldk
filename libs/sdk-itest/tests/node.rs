@@ -1,8 +1,10 @@
 mod event_listener;
 
+use bitcoin::Amount;
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, NodeConfig,
-    ReceivePaymentRequest,
+    BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, LnPaymentDetails,
+    NodeConfig, PaymentDetails, ReceivePaymentRequest, SendPaymentRequest,
+    SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -11,6 +13,7 @@ use sdk_itest::wait_for;
 use testdir::testdir;
 use tokio::sync::mpsc;
 use tokio::try_join;
+use tracing::info;
 
 use crate::event_listener::EventListenerImpl;
 
@@ -28,12 +31,12 @@ async fn test_node_receive_payments() {
         env.rgs()
     )
     .unwrap();
-    println!("Esplora is running: {}", esplora.external_endpoint());
-    println!("Mempool is running: {}", mempool.external_endpoint());
-    println!("    VSS is running: {}", vss.external_endpoint());
-    println!("    LSP is running: {lsp}");
-    println!("    LND is running");
-    println!("    RGS is running: {}", rgs.external_endpoint());
+    info!("Esplora is running: {}", esplora.external_endpoint());
+    info!("Mempool is running: {}", mempool.external_endpoint());
+    info!("    VSS is running: {}", vss.external_endpoint());
+    info!("    LSP is running: {lsp}");
+    info!("    LND is running");
+    info!("    RGS is running: {}", rgs.external_endpoint());
 
     let node_config = NodeConfig::Greenlight {
         config: GreenlightNodeConfig {
@@ -62,7 +65,7 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
 
-    println!("Waiting for BreezEvent::Synced...");
+    info!("Waiting for BreezEvent::Synced...");
     assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
 
     // Receiving a JIT payment.
@@ -78,10 +81,10 @@ async fn test_node_receive_payments() {
     let opening_fee_msat = response.opening_fee_msat.unwrap_or_default();
     assert_eq!(opening_fee_msat, 1_000_000);
     let bolt11 = response.ln_invoice.bolt11;
-    println!("Invoice created: {bolt11}");
+    info!("Invoice created: {bolt11}");
 
     lnd.pay(bolt11).await.unwrap();
-    println!("Waiting for BreezEvent::InvoicePaid...");
+    info!("Waiting for BreezEvent::InvoicePaid...");
     wait_for!(matches!(
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
@@ -101,15 +104,103 @@ async fn test_node_receive_payments() {
         .unwrap();
     assert_eq!(response.opening_fee_msat, None);
     let bolt11 = response.ln_invoice.bolt11;
-    println!("Invoice created: {bolt11}");
+    info!("Invoice created: {bolt11}");
     lnd.pay(bolt11).await.unwrap();
-    println!("Waiting for BreezEvent::InvoicePaid...");
+    info!("Waiting for BreezEvent::InvoicePaid...");
     wait_for!(matches!(
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
 
+    // Paying BOLT-11 invoice.
+    let amount = Amount::from_sat(1000);
+    let bolt11 = lnd.receive(&amount).await.unwrap();
+    let payment = services
+        .send_payment(SendPaymentRequest {
+            bolt11,
+            use_trampoline: false,
+            amount_msat: None,
+        })
+        .await
+        .unwrap()
+        .payment;
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::Ln {
+            data: LnPaymentDetails { keysend: false, .. }
+        }
+    ));
+    info!("Waiting for BreezEvent::PaymentSucceed...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::PaymentSucceed { .. })
+    ));
+
+    // Paying open amount BOLT-11 invoice.
+    let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
+    let amount = Amount::from_sat(1100);
+    let payment = services
+        .send_payment(SendPaymentRequest {
+            bolt11,
+            use_trampoline: false,
+            amount_msat: Some(amount.to_msat()),
+        })
+        .await
+        .unwrap()
+        .payment;
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::Ln {
+            data: LnPaymentDetails { keysend: false, .. }
+        }
+    ));
+    info!("Waiting for BreezEvent::PaymentSucceed...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::PaymentSucceed { .. })
+    ));
+
+    // Sending spontaneous payment.
+    let lnd_id = lnd.get_id().await.unwrap();
+    let amount = Amount::from_sat(1200);
+    let payment = services
+        .send_spontaneous_payment(SendSpontaneousPaymentRequest {
+            node_id: lnd_id,
+            amount_msat: amount.to_msat(),
+            extra_tlvs: None,
+        })
+        .await
+        .unwrap()
+        .payment;
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::Ln {
+            data: LnPaymentDetails { keysend: true, .. }
+        }
+    ));
+    info!("Waiting for BreezEvent::PaymentSucceed...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::PaymentSucceed { .. })
+    ));
+
     services.disconnect().await.unwrap();
     drop(services);
     assert!(events.is_closed());
+}
+
+trait Msats {
+    fn to_msat(&self) -> u64;
+}
+
+impl Msats for Amount {
+    fn to_msat(&self) -> u64 {
+        self.to_sat() * 1000
+    }
 }

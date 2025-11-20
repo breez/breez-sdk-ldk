@@ -1,14 +1,20 @@
 use std::sync::Arc;
 
+use ldk_node::lightning::events::PaymentFailureReason;
+use ldk_node::lightning::ln::channelmanager::PaymentId;
+use ldk_node::payment::PaymentDetails;
 use ldk_node::{Event, Node};
 use tokio::sync::{broadcast, mpsc};
+use tokio::time::error::Elapsed;
+use tokio::time::{timeout, Duration};
 
 use crate::ldk::node_api::PreimageStore;
-use crate::node_api::IncomingPayment;
+use crate::node_api::{IncomingPayment, NodeError, NodeResult};
 
 pub async fn start_event_handling(
     node: Arc<Node>,
     preimages: PreimageStore,
+    events_tx: broadcast::Sender<Event>,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
     mut shutdown: mpsc::Receiver<()>,
 ) {
@@ -21,6 +27,7 @@ pub async fn start_event_handling(
             },
         };
         debug!("Event: {event:?}");
+        let _ = events_tx.send(event.clone()); // Error here will mean that there are no subscribers.
 
         match event {
             Event::PaymentReceived {
@@ -86,4 +93,37 @@ pub async fn start_event_handling(
             error!("Failed to report that event was handled: {e}");
         }
     }
+}
+
+pub async fn wait_for_payment_success(
+    node: &Node,
+    mut events_rx: broadcast::Receiver<Event>,
+    p_id: PaymentId,
+) -> NodeResult<PaymentDetails> {
+    debug!("Waiting for payment success id:{p_id}");
+    timeout(Duration::from_secs(30), async {
+        while let Ok(event) = events_rx.recv().await {
+            match event {
+                Event::PaymentSuccessful { payment_id, .. } if payment_id == Some(p_id) => {
+                    return node
+                        .list_payments_with_filter(|p| p.id == p_id)
+                        .into_iter()
+                        .next()
+                        .ok_or(NodeError::generic("Failed to find payment we just sent"));
+                }
+                Event::PaymentFailed {
+                    payment_id, reason, ..
+                } if payment_id == Some(p_id) => {
+                    let reason = reason.unwrap_or(PaymentFailureReason::UnexpectedError);
+                    return Err(NodeError::PaymentFailed(format!("{reason:?}")));
+                }
+                _ => continue,
+            }
+        }
+        Err(NodeError::generic("Node is shutting down"))
+    })
+    .await
+    .map_err(|_elapsed: Elapsed| {
+        NodeError::PaymentFailed("Timeout waiting for payment success".to_string())
+    })?
 }
