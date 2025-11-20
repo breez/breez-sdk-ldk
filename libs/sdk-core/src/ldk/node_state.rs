@@ -116,8 +116,7 @@ fn ln_payment_details(
         destination_pubkey,
         payment_preimage: preimage.as_ref().map(Hex::to_hex).unwrap_or_default(),
         keysend,
-        bolt11: String::new(),     // TODO: Put it.
-        open_channel_bolt11: None, // TODO: What should we put here?
+        bolt11: String::new(), // TODO: Put it.
         ..Default::default()
     }
 }

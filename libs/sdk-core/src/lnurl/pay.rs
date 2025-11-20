@@ -304,7 +304,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -349,7 +348,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -384,7 +382,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -422,7 +419,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -475,7 +471,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -510,7 +505,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -553,7 +547,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -615,7 +608,6 @@ pub(crate) mod tests {
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: Some(true),
-                use_trampoline: false,
             })
             .await;
         // An invalid Success Action URL results in an error
@@ -651,7 +643,6 @@ pub(crate) mod tests {
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: Some(false),
-                use_trampoline: false,
             })
             .await?
         {
@@ -740,7 +731,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,
@@ -830,7 +820,6 @@ pub(crate) mod tests {
             .lnurl_pay(LnUrlPayRequest {
                 data: pay_req,
                 amount_msat: user_amount_msat,
-                use_trampoline: false,
                 comment: Some(comment),
                 payment_label: None,
                 validate_success_action_url: None,

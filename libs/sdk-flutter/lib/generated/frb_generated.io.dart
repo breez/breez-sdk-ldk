@@ -3228,7 +3228,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void cst_api_fill_to_wire_ln_url_pay_request(LnUrlPayRequest apiObj, wire_cst_ln_url_pay_request wireObj) {
     cst_api_fill_to_wire_ln_url_pay_request_data(apiObj.data, wireObj.data);
     wireObj.amount_msat = cst_encode_u_64(apiObj.amountMsat);
-    wireObj.use_trampoline = cst_encode_bool(apiObj.useTrampoline);
     wireObj.comment = cst_encode_opt_String(apiObj.comment);
     wireObj.payment_label = cst_encode_opt_String(apiObj.paymentLabel);
     wireObj.validate_success_action_url = cst_encode_opt_box_autoadd_bool(apiObj.validateSuccessActionUrl);
@@ -3745,7 +3744,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wire_cst_send_payment_request wireObj,
   ) {
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
-    wireObj.use_trampoline = cst_encode_bool(apiObj.useTrampoline);
     wireObj.amount_msat = cst_encode_opt_box_autoadd_u_64(apiObj.amountMsat);
   }
 
@@ -6993,9 +6991,6 @@ final class wire_cst_ln_url_pay_request extends ffi.Struct {
   @ffi.Uint64()
   external int amount_msat;
 
-  @ffi.Bool()
-  external bool use_trampoline;
-
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> comment;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_label;
@@ -7151,9 +7146,6 @@ final class wire_cst_report_issue_request extends ffi.Struct {
 
 final class wire_cst_send_payment_request extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> bolt11;
-
-  @ffi.Bool()
-  external bool use_trampoline;
 
   external ffi.Pointer<ffi.Uint64> amount_msat;
 }

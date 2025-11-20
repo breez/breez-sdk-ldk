@@ -257,15 +257,6 @@ impl NodeAPI for Ldk {
         convert_payment(payment, self.node.node_id())
     }
 
-    async fn send_trampoline_payment(
-        &self,
-        _bolt11: String,
-        _amount_msat: u64,
-        _trampoline_node_id: Vec<u8>,
-    ) -> NodeResult<Payment> {
-        Err(NodeError::generic("LDK implementation not yet available"))
-    }
-
     async fn node_id(&self) -> NodeResult<String> {
         Ok(self.node.node_id().to_string())
     }

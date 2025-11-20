@@ -1364,18 +1364,13 @@ class SendPaymentRequest {
   /// The bolt11 invoice
   final String bolt11;
 
-  /// Trampoline payments outsource pathfinding to the LSP. Trampoline payments can improve
-  /// payment performance, but are generally more expensive in terms of fees and they
-  /// compromise on privacy.
-  final bool useTrampoline;
-
   /// The amount to pay in millisatoshis. Should only be set when `bolt11` is a zero-amount invoice.
   final BigInt? amountMsat;
 
-  const SendPaymentRequest({required this.bolt11, required this.useTrampoline, this.amountMsat});
+  const SendPaymentRequest({required this.bolt11, this.amountMsat});
 
   @override
-  int get hashCode => bolt11.hashCode ^ useTrampoline.hashCode ^ amountMsat.hashCode;
+  int get hashCode => bolt11.hashCode ^ amountMsat.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1383,7 +1378,6 @@ class SendPaymentRequest {
       other is SendPaymentRequest &&
           runtimeType == other.runtimeType &&
           bolt11 == other.bolt11 &&
-          useTrampoline == other.useTrampoline &&
           amountMsat == other.amountMsat;
 }
 

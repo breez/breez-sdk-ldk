@@ -46,10 +46,6 @@ pub(crate) enum Commands {
 
         #[clap(name = "amount_msat", short = 'a', long = "amt")]
         amount_msat: Option<u64>,
-
-        /// If use_trampoline is set, trampoline payments will be attempted.
-        #[clap(long, action)]
-        use_trampoline: bool,
     },
 
     /// [pay] Send a spontaneous (keysend) payment
@@ -90,10 +86,6 @@ pub(crate) enum Commands {
         /// Validates the success action URL
         #[clap(name = "validate_success_url", short = 'v', long = "validate")]
         validate_success_url: Option<bool>,
-
-        /// If use_trampoline is set, trampoline payments will be attempted.
-        #[clap(long, action)]
-        use_trampoline: bool,
     },
 
     /// [lnurl] Withdraw using lnurl withdraw

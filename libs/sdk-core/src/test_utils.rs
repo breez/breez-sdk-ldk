@@ -361,16 +361,6 @@ impl NodeAPI for MockNodeAPI {
         Ok(payment)
     }
 
-    async fn send_trampoline_payment(
-        &self,
-        bolt11: String,
-        _amount_msat: u64,
-        _trampoline_id: Vec<u8>,
-    ) -> NodeResult<Payment> {
-        let payment = self.add_dummy_payment_for(bolt11, None, None).await?;
-        Ok(payment)
-    }
-
     async fn send_spontaneous_payment(
         &self,
         _node_id: String,
