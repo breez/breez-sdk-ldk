@@ -3,8 +3,8 @@ mod event_listener;
 use bitcoin::Amount;
 use breez_sdk_core::{
     BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, LnPaymentDetails,
-    NodeConfig, PaymentDetails, ReceivePaymentRequest, SendPaymentRequest,
-    SendSpontaneousPaymentRequest,
+    NodeConfig, PaymentDetails, ReceivePaymentRequest, RedeemOnchainFundsRequest,
+    SendPaymentRequest, SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -22,7 +22,8 @@ use crate::event_listener::EventListenerImpl;
 #[test_log::test]
 async fn test_node_receive_payments() {
     let env = Environment::default();
-    let (esplora, mempool, vss, lsp, lnd, rgs) = try_join!(
+    let (bitcoind, esplora, mempool, vss, lsp, lnd, rgs) = try_join!(
+        env.bitcoind(),
         env.esplora_api(),
         env.mempool_api(),
         env.vss_api(),
@@ -187,6 +188,42 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::PaymentSucceed { .. })
     ));
+
+    // Close channels.
+    let tip = services.node_info().unwrap().block_height;
+    services.close_lsp_channels().await.unwrap();
+    let block_numers = 6;
+    bitcoind.generate_blocks(block_numers).await.unwrap();
+    info!("Waiting for BreezEvent::NewBlock...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::NewBlock { block }) if block == tip + block_numers
+    ));
+    let node_info = services.node_info().unwrap();
+    assert_eq!(node_info.channels_balance_msat, 0);
+    assert_eq!(node_info.pending_onchain_balance_msat, 0);
+    assert_eq!(node_info.onchain_balance_msat, 5707000);
+
+    // Redeem funds.
+    let address = bitcoind.get_new_address().await.unwrap();
+    let request = RedeemOnchainFundsRequest {
+        to_address: address.to_string(),
+        sat_per_vbyte: 2,
+    };
+    info!("Redeeming on-chain funds to {address}");
+    services.redeem_onchain_funds(request).await.unwrap();
+    bitcoind.generate_blocks(1).await.unwrap();
+    info!("Waiting for BreezEvent::NewBlock...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::NewBlock { .. })
+    ));
+    let node_info = services.node_info().unwrap();
+    assert_eq!(node_info.channels_balance_msat, 0);
+    assert_eq!(node_info.pending_onchain_balance_msat, 0);
+    assert_eq!(node_info.onchain_balance_msat, 0);
+    let balance = bitcoind.get_address_balance(&address).await.unwrap();
+    assert!(balance.to_sat() > 5400);
 
     services.disconnect().await.unwrap();
     drop(services);
