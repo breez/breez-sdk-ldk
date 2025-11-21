@@ -30,6 +30,7 @@ use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::grpc;
 use crate::ldk::event_handling::{start_event_handling, wait_for_payment_success};
 use crate::ldk::node_state::convert_payment;
+use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
 use crate::lightning_invoice::RawBolt11Invoice;
 use crate::models::{
@@ -62,7 +63,7 @@ impl Ldk {
     pub async fn build(
         config: Config,
         seed: &[u8],
-        _restore_only: Option<bool>,
+        restore_only: Option<bool>,
     ) -> NodeResult<Self> {
         debug!("Building LDK Node");
         ensure_sdk!(
@@ -103,11 +104,22 @@ impl Ldk {
             build_mirroring_store(&config.working_dir, vss_store, remote_lock_shutdown_rx).await?;
         let kv_store: KVStore = Arc::new(mirroring_store);
 
+        let restore_state_tracker = RestoreStateTracker::new(Arc::clone(&kv_store));
+        let was_initialized = restore_state_tracker.is_initialized()?;
+        if restore_only.unwrap_or(false) && !was_initialized {
+            return Err(NodeError::RestoreOnly(
+                "restore_only requested but no persisted node state was found".to_string(),
+            ));
+        }
+
         let node = builder
             .build_with_store(kv_store)
             .map_err(|e| NodeError::Generic(format!("Fail to build LDK Node: {e}")))?;
         let node = Arc::new(node);
         debug!("LDK Node was built");
+        if !was_initialized {
+            restore_state_tracker.mark_initialized()?;
+        }
 
         let (incoming_payments_tx, _) = broadcast::channel(10);
         let (events_tx, _) = broadcast::channel(10);
