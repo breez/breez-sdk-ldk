@@ -111,6 +111,11 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
+    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    assert_eq!(
+        balance_msat,
+        huge_amount_msat - opening_fee_msat + small_amount_msat
+    );
 
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
