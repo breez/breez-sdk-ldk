@@ -1,3 +1,4 @@
+use ldk_node::bitcoin::io::Error as IOError;
 use ldk_node::lightning_invoice::ParseOrSemanticError;
 use sdk_common::prelude::InvoiceError;
 
@@ -90,5 +91,11 @@ impl From<ldk_node::NodeError> for NodeError {
 impl From<ParseOrSemanticError> for NodeError {
     fn from(err: ParseOrSemanticError) -> Self {
         InvoiceError::Validation(err.to_string()).into()
+    }
+}
+
+impl From<IOError> for NodeError {
+    fn from(err: IOError) -> Self {
+        PersistError::Generic(format!("Persistence IO error: {err}")).into()
     }
 }
