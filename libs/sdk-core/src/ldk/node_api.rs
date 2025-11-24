@@ -1,10 +1,11 @@
 use core::str::FromStr;
 use std::collections::HashSet;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
+use hex::ToHex;
 use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
@@ -46,8 +47,14 @@ use crate::{
     SyncResponse, TlvEntry,
 };
 
-pub(crate) type PreimageStore = Arc<Mutex<std::collections::HashMap<PaymentHash, PaymentPreimage>>>;
-type KVStore = Arc<dyn ldk_node::lightning::util::persist::KVStore + Sync + Send>;
+pub(crate) type KVStore = Arc<dyn ldk_node::lightning::util::persist::KVStore + Sync + Send>;
+
+pub(crate) const PREIMAGES_PRIMARY_NS: &str = "preimages";
+pub(crate) const PREIMAGES_SECONDARY_NS: &str = "";
+
+pub(crate) fn preimage_store_key(payment_hash: &PaymentHash) -> String {
+    payment_hash.0.encode_hex()
+}
 
 pub(crate) struct Ldk {
     config: Config,
@@ -55,7 +62,7 @@ pub(crate) struct Ldk {
     node: Arc<Node>,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
     events_tx: broadcast::Sender<Event>,
-    preimages: PreimageStore,
+    kv_store: KVStore,
     remote_lock_shutdown_tx: mpsc::Sender<()>,
 }
 
@@ -113,7 +120,7 @@ impl Ldk {
         }
 
         let node = builder
-            .build_with_store(kv_store)
+            .build_with_store(Arc::clone(&kv_store))
             .map_err(|e| NodeError::Generic(format!("Fail to build LDK Node: {e}")))?;
         let node = Arc::new(node);
         debug!("LDK Node was built");
@@ -130,7 +137,7 @@ impl Ldk {
             node,
             incoming_payments_tx,
             events_tx,
-            preimages: PreimageStore::default(),
+            kv_store,
             remote_lock_shutdown_tx,
         })
     }
@@ -157,15 +164,13 @@ impl Ldk {
         let preimage =
             preimage.unwrap_or_else(|| PaymentPreimage(rand::thread_rng().gen::<[u8; 32]>()));
         let payment_hash: PaymentHash = preimage.into();
-        // TODO: Store preimage in the mirroring store.
-        match self.preimages.lock().unwrap().entry(payment_hash) {
-            std::collections::hash_map::Entry::Occupied(_) => {
-                return Err(NodeError::InvoicePreimageAlreadyExists(
-                    "Failed to create invoice, preimage already exists".to_string(),
-                ));
-            }
-            std::collections::hash_map::Entry::Vacant(entry) => entry.insert(preimage),
-        };
+        let key = preimage_store_key(&payment_hash);
+        self.kv_store.write(
+            PREIMAGES_PRIMARY_NS,
+            PREIMAGES_SECONDARY_NS,
+            &key,
+            &preimage.0,
+        )?;
 
         let payments = self.node.bolt11_payment();
         let invoice = match opening_fee_msat {
@@ -312,8 +317,8 @@ impl NodeAPI for Ldk {
         debug!("Starting event handling");
         start_event_handling(
             Arc::clone(&self.node),
-            Arc::clone(&self.preimages),
             self.events_tx.clone(),
+            Arc::clone(&self.kv_store),
             self.incoming_payments_tx.clone(),
             shutdown,
         )
