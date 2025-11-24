@@ -1,6 +1,7 @@
 mod event_listener;
 
 use bitcoin::Amount;
+use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
     BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, LnPaymentDetails,
     NodeConfig, PaymentDetails, ReceivePaymentRequest, SendPaymentRequest,
@@ -53,9 +54,23 @@ async fn test_node_receive_payments() {
     config.lsps2_address = lsp;
 
     let seed = rand::rng().random::<[u8; 64]>().to_vec();
+    {
+        info!("Starting a fresh node with restore_only=Some(true)");
+        let req = ConnectRequest {
+            config: config.clone(),
+            seed: seed.clone(),
+            restore_only: Some(true),
+        };
+
+        let (tx, _) = mpsc::channel(100);
+        let services = BreezServices::connect(req, Box::new(EventListenerImpl::new(tx))).await;
+        assert!(matches!(services, Err(ConnectError::RestoreOnly { .. })));
+    }
+
+    info!("Starting a fresh node with restore_only=None");
     let req = ConnectRequest {
-        config,
-        seed,
+        config: config.clone(),
+        seed: seed.clone(),
         restore_only: None,
     };
 
@@ -188,6 +203,20 @@ async fn test_node_receive_payments() {
         Some(BreezEvent::PaymentSucceed { .. })
     ));
 
+    services.disconnect().await.unwrap();
+    drop(services);
+    assert!(events.is_closed());
+
+    info!("Restoring a node with restore_only=Some(true)");
+    let req = ConnectRequest {
+        config,
+        seed,
+        restore_only: Some(true),
+    };
+    let (tx, events) = mpsc::channel(100);
+    let services = BreezServices::connect(req, Box::new(EventListenerImpl::new(tx)))
+        .await
+        .unwrap();
     services.disconnect().await.unwrap();
     drop(services);
     assert!(events.is_closed());
