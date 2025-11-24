@@ -3,6 +3,7 @@ use crate::error::{SdkError, SdkResult};
 use crate::ldk::store::{VersionedStore, VssStore};
 use crate::ldk::store_builder;
 use crate::ldk::store_builder::CustomRetryPolicy;
+use crate::node_api::NodeResult;
 use crate::Config;
 
 pub(crate) struct LdkBackupTransport {
@@ -12,9 +13,9 @@ pub(crate) struct LdkBackupTransport {
 impl LdkBackupTransport {
     const KEY: &str = "backup";
 
-    pub fn new(config: &Config, seed: &[u8]) -> Self {
-        let store = store_builder::build_vss_store(config, seed, "backups");
-        Self { store }
+    pub fn new(config: &Config, seed: &[u8]) -> NodeResult<Self> {
+        let store = store_builder::build_vss_store(config, seed, "backups")?;
+        Ok(Self { store })
     }
 }
 
