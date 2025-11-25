@@ -55,7 +55,7 @@ impl From<&Node> for NodeState {
 
 pub fn convert_payment(
     payment: ldk_node::payment::PaymentDetails,
-    local_node_id: PublicKey,
+    local_node_id: &PublicKey,
 ) -> Result<Payment, NodeError> {
     let lsp_fee_msat = match payment.kind {
         ldk_node::payment::PaymentKind::Bolt11Jit {
@@ -81,7 +81,7 @@ pub fn convert_payment(
 
 fn to_payment_details(
     payment: &ldk_node::payment::PaymentDetails,
-    local_node_id: PublicKey,
+    local_node_id: &PublicKey,
 ) -> Result<PaymentDetails, NodeError> {
     let destination_pubkey = match payment.direction {
         ldk_node::payment::PaymentDirection::Inbound => local_node_id.to_string(),

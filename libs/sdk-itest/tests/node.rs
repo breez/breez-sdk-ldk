@@ -4,7 +4,7 @@ use bitcoin::Amount;
 use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
     BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, LnPaymentDetails,
-    NodeConfig, PaymentDetails, ReceivePaymentRequest, SendPaymentRequest,
+    NodeConfig, PaymentDetails, PaymentType, ReceivePaymentRequest, SendPaymentRequest,
     SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
@@ -106,6 +106,12 @@ async fn test_node_receive_payments() {
     ));
     let balance_msat = services.node_info().unwrap().channels_balance_msat;
     assert_eq!(balance_msat, huge_amount_msat - opening_fee_msat);
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 1);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.amount_msat, huge_amount_msat - opening_fee_msat);
+    assert_eq!(payment.fee_msat, opening_fee_msat);
+    assert_eq!(payment.payment_type, PaymentType::Received);
 
     // Receiving a normal payment.
     let small_amount_msat = 10_000;
@@ -126,6 +132,14 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
+    info!("Waiting for BreezEvent::Synced...");
+    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 2);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.amount_msat, small_amount_msat);
+    assert_eq!(payment.fee_msat, 0);
+    assert_eq!(payment.payment_type, PaymentType::Received);
 
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
@@ -151,6 +165,12 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::PaymentSucceed { .. })
     ));
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 3);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert_eq!(payment.payment_type, PaymentType::Sent);
 
     // Paying open amount BOLT-11 invoice.
     let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
@@ -176,6 +196,12 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::PaymentSucceed { .. })
     ));
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 4);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert_eq!(payment.payment_type, PaymentType::Sent);
 
     // Sending spontaneous payment.
     let lnd_id = lnd.get_id().await.unwrap();
@@ -201,6 +227,18 @@ async fn test_node_receive_payments() {
     wait_for!(matches!(
         events.recv().await,
         Some(BreezEvent::PaymentSucceed { .. })
+    ));
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 5);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.amount_msat, amount.to_msat());
+    assert_eq!(payment.fee_msat, 1000);
+    assert_eq!(payment.payment_type, PaymentType::Sent);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::Ln {
+            data: LnPaymentDetails { keysend: true, .. }
+        }
     ));
 
     services.disconnect().await.unwrap();
