@@ -1,4 +1,5 @@
 use ldk_node::bitcoin::secp256k1::PublicKey;
+use ldk_node::LightningBalance::ClaimableOnChannelClose;
 use ldk_node::{Node, PendingSweepBalance};
 
 use crate::ldk::utils::Hex;
@@ -33,11 +34,23 @@ impl From<&Node> for NodeState {
             .flat_map(|c| c.unspendable_punishment_reserve)
             .sum();
         let inbound_capacity_msats = channels.iter().map(|c| c.inbound_capacity_msat).sum();
+        let inbound_htlcs_msat: u64 = balances
+            .lightning_balances
+            .iter()
+            .filter_map(|b| match b {
+                ClaimableOnChannelClose {
+                    inbound_claiming_htlc_rounded_msat,
+                    ..
+                } => Some(inbound_claiming_htlc_rounded_msat),
+                _ => None,
+            })
+            .sum();
 
         Self {
             id: node.node_id().to_string(),
             block_height: node.status().current_best_block.height,
-            channels_balance_msat: balances.total_lightning_balance_sats * 1000,
+            channels_balance_msat: balances.total_lightning_balance_sats * 1000
+                + inbound_htlcs_msat,
             onchain_balance_msat: balances.total_onchain_balance_sats * 1000,
             pending_onchain_balance_msat: pending_onchain_balance_sats * 1000,
             utxos: Vec::new(), // Not available in LDK Node.
