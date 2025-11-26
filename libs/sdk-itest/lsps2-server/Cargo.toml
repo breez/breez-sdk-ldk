@@ -7,7 +7,7 @@ edition = "2024"
 anyhow = "1.0.98"
 axum = "0.7"
 env_logger = "0.11.8"
-ldk-node = { git = "https://github.com/andrei-21/ldk-node", branch = "lsp-prototype" }
+ldk-node = { git = "https://github.com/andrei-21/ldk-node", branch = "lsp-prototype-v0.7" }
 log = "0.4.27"
 serde = { version = "1.0.226", features = ["derive"] }
 tokio = { version = "1.46.0", features = ["full"] }

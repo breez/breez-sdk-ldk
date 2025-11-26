@@ -173,6 +173,7 @@ fn build() -> Result<Node> {
         max_client_to_self_delay: 10000,
         min_payment_size_msat: 1_000_000,
         max_payment_size_msat: 100_000_000,
+        client_trusts_lsp: false,
     };
     builder.set_liquidity_provider_lsps2(service_config);
 

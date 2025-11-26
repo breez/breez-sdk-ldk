@@ -84,6 +84,10 @@ impl From<ldk_node::NodeError> for NodeError {
 
             ldk_node::NodeError::LiquiditySourceUnavailable => generic(err),
             ldk_node::NodeError::LiquidityFeeTooHigh => generic(err),
+
+            ldk_node::NodeError::ChannelSplicingFailed => generic(err),
+            ldk_node::NodeError::InvalidBlindedPaths => generic(err),
+            ldk_node::NodeError::AsyncPaymentServicesDisabled => generic(err),
         }
     }
 }
