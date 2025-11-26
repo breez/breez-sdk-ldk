@@ -216,12 +216,18 @@ impl NodeAPI for Ldk {
         _sync_state: Option<Value>,
         _match_local_balance: bool,
     ) -> NodeResult<SyncResponse> {
-        // TODO: Complete.
+        self.node.sync_wallets()?;
         let node = &*self.node;
+        let local_node_id = node.node_id();
+        let payments = node
+            .list_payments()
+            .into_iter()
+            .map(|p| convert_payment(p, &local_node_id))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(SyncResponse {
             sync_state: Value::Null,
             node_state: node.into(),
-            payments: Vec::new(),
+            payments,
             channels: Vec::new(),
         })
     }
@@ -242,7 +248,7 @@ impl NodeAPI for Ldk {
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, self.node.node_id())
+        convert_payment(payment, &self.node.node_id())
     }
 
     async fn send_spontaneous_payment(
@@ -271,7 +277,7 @@ impl NodeAPI for Ldk {
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, self.node.node_id())
+        convert_payment(payment, &self.node.node_id())
     }
 
     async fn node_id(&self) -> NodeResult<String> {
