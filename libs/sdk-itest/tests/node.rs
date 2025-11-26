@@ -251,10 +251,12 @@ async fn test_node_receive_payments() {
         seed,
         restore_only: Some(true),
     };
-    let (tx, events) = mpsc::channel(100);
+    let (tx, mut events) = mpsc::channel(100);
     let services = BreezServices::connect(req, Box::new(EventListenerImpl::new(tx)))
         .await
         .unwrap();
+    info!("Waiting for BreezEvent::Synced...");
+    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
     services.disconnect().await.unwrap();
     drop(services);
     assert!(events.is_closed());
