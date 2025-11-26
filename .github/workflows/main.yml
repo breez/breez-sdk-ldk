@@ -68,8 +68,9 @@ jobs:
             echo "No changes in git status"
           fi
   
-  sdk-itest:
-    name: Integration Tests
+
+  build-docker-images:
+    name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -79,13 +80,49 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/.buildx-cache
-          key: ${{ runner.os }}-buildx4
+          key: ${{ runner.os }}-buildx-sdk-itest-images
+          restore-keys: |
+            ${{ runner.os }}-buildx-sdk-itest-images
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             network=host
+
+      - name: Build sdk-itest images
+        working-directory: libs/sdk-itest
+        run: |
+          docker buildx create --use --driver docker-container || true
+          cd docker/vss
+          docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/vss --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/vss,mode=max --load . -t vss:latest
+          cd ../..
+          cd docker/rgs
+          docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/rgs --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/rgs,mode=max --load . -t rgs:latest
+          cd ../..
+          cd lsps2-server
+          docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/lsps2 --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/lsps2,mode=max --load . -t lsps2-server:latest -f ../docker/lsps2-server/Dockerfile
+
+      - name: Save docker images
+        run: |
+          mkdir -p ${{ runner.temp }}/sdk-itest-images
+          docker save vss:latest -o ${{ runner.temp }}/sdk-itest-images/vss.tar
+          docker save rgs:latest -o ${{ runner.temp }}/sdk-itest-images/rgs.tar
+          docker save lsps2-server:latest -o ${{ runner.temp }}/sdk-itest-images/lsps2-server.tar
+
+      - name: Upload docker images
+        uses: actions/upload-artifact@v5
+        with:
+          name: sdk-itest-images
+          path: ${{ runner.temp }}/sdk-itest-images
+
+  sdk-itest:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build-docker-images
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Install rust
         run: |
@@ -102,13 +139,17 @@ jobs:
           version: "27.2"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build sdk-itest images
-        working-directory: libs/sdk-itest
+      - name: Download docker images
+        uses: actions/download-artifact@v5
+        with:
+          name: sdk-itest-images
+          path: ${{ runner.temp }}/sdk-itest-images
+
+      - name: Load docker images
         run: |
-          docker buildx create --use --driver docker-container || true
-          cd docker/vss && docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/vss --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/vss,mode=max --load . -t vss:latest && cd ../../
-          cd docker/rgs && docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/rgs --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/rgs,mode=max --load . -t rgs:latest && cd ../../
-          cd lsps2-server && docker buildx build --cache-from type=local,src=${{ runner.temp }}/.buildx-cache/lsps2 --cache-to type=local,dest=${{ runner.temp }}/.buildx-cache/lsps2,mode=max --load . -t lsps2-server:latest -f ../docker/lsps2-server/Dockerfile
+          docker load -i ${{ runner.temp }}/sdk-itest-images/vss.tar
+          docker load -i ${{ runner.temp }}/sdk-itest-images/rgs.tar
+          docker load -i ${{ runner.temp }}/sdk-itest-images/lsps2-server.tar
 
       - name: Run sdk-itest tests
         working-directory: libs/sdk-itest
