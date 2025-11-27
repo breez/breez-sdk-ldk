@@ -858,7 +858,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic 0.11.0",
- "vss-client",
+ "vss-client-ng",
 ]
 
 [[package]]
@@ -1001,6 +1001,12 @@ name = "cfg_aliases"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+
+[[package]]
+name = "chacha20-poly1305"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b4b0fc281743d80256607bd65e8beedc42cb0787ea119c85b81b4c0eab85e5f"
 
 [[package]]
 name = "chrono"
@@ -2633,7 +2639,7 @@ dependencies = [
  "lightning-transaction-sync",
  "lightning-types",
  "log",
- "prost 0.11.9",
+ "prost 0.11.6",
  "rand 0.8.5",
  "reqwest 0.12.18",
  "rusqlite",
@@ -2674,7 +2680,7 @@ dependencies = [
  "lightning-transaction-sync",
  "lightning-types",
  "log",
- "prost 0.11.9",
+ "prost 0.11.6",
  "rand 0.8.5",
  "reqwest 0.12.18",
  "rusqlite",
@@ -3694,9 +3700,9 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.11.9"
+version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
+checksum = "21dc42e00223fc37204bd4aa177e69420c604ca4a183209a8f9de30c6d934698"
 dependencies = [
  "bytes",
  "prost-derive 0.11.9",
@@ -3752,9 +3758,9 @@ dependencies = [
 
 [[package]]
 name = "prost-build"
-version = "0.11.9"
+version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "119533552c9a7ffacc21e099c24a0ac8bb19c2a2a3f363de84cd9b844feab270"
+checksum = "a3f8ad728fb08fe212df3c05169e940fbb6d9d16a877ddde14644a983ba2012e"
 dependencies = [
  "bytes",
  "heck 0.4.1",
@@ -3764,8 +3770,8 @@ dependencies = [
  "multimap 0.8.3",
  "petgraph 0.6.5",
  "prettyplease 0.1.25",
- "prost 0.11.9",
- "prost-types 0.11.9",
+ "prost 0.11.6",
+ "prost-types 0.11.6",
  "regex",
  "syn 1.0.109",
  "tempfile",
@@ -3903,11 +3909,12 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.11.9"
+version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
+checksum = "a5e0526209433e96d83d750dd81a99118edbc55739e7e61a46764fd2ad537788"
 dependencies = [
- "prost 0.11.9",
+ "bytes",
+ "prost 0.11.6",
 ]
 
 [[package]]
@@ -4221,7 +4228,9 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
+ "futures-channel",
  "futures-core",
+ "futures-util",
  "h2 0.4.12",
  "http 1.3.1",
  "http-body 1.0.1",
@@ -6293,14 +6302,30 @@ dependencies = [
  "base64 0.21.7",
  "bitcoin",
  "bitcoin_hashes 0.14.0",
- "prost 0.11.9",
- "prost-build 0.11.9",
+ "prost 0.11.6",
+ "prost-build 0.11.6",
  "rand 0.8.5",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "vss-client-ng"
+version = "0.4.0"
+source = "git+https://github.com/lightningdevkit/vss-client?rev=5934149a0ba75867eb364661bfe15e2d36ce8b88#5934149a0ba75867eb364661bfe15e2d36ce8b88"
+dependencies = [
+ "async-trait",
+ "base64 0.22.1",
+ "bitcoin_hashes 0.14.0",
+ "chacha20-poly1305",
+ "prost 0.11.6",
+ "prost-build 0.11.6",
+ "rand 0.8.5",
+ "reqwest 0.12.18",
+ "tokio",
 ]
 
 [[package]]
