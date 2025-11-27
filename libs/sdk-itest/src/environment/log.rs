@@ -30,14 +30,10 @@ impl TracingConsumer {
 impl LogConsumer for TracingConsumer {
     fn accept<'a>(&'a self, record: &'a LogFrame) -> BoxFuture<'a, ()> {
         async move {
-            match record {
-                LogFrame::StdOut(bytes) => {
-                    tracing::debug!("{}", self.format_message(&String::from_utf8_lossy(bytes)));
-                }
-                LogFrame::StdErr(bytes) => {
-                    tracing::debug!("{}", self.format_message(&String::from_utf8_lossy(bytes)));
-                }
-            }
+            tracing::debug!(
+                "{}",
+                self.format_message(&String::from_utf8_lossy(record.bytes()))
+            );
         }
         .boxed()
     }
