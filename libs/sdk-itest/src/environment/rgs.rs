@@ -59,7 +59,7 @@ impl Rgs {
             .with_env_var("RAPID_GOSSIP_SYNC_SERVER_DB_PASSWORD", "postgres")
             .with_env_var("RAPID_GOSSIP_SYNC_SERVER_DB_USER", "postgres")
             .with_env_var("RAPID_GOSSIP_SYNC_SERVER_NETWORK", "regtest")
-            .with_startup_timeout(Duration::from_secs(120)) // Wating for the second channel update takes time...
+            .with_startup_timeout(Duration::from_secs(180)) // Wating for the second channel update takes time...
             .start()
             .await?;
 

@@ -168,9 +168,9 @@ async fn test_node_receive_payments() {
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 3);
     let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
-    assert_eq!(payment.payment_type, PaymentType::Sent);
 
     // Paying open amount BOLT-11 invoice.
     let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
@@ -199,9 +199,9 @@ async fn test_node_receive_payments() {
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 4);
     let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
-    assert_eq!(payment.payment_type, PaymentType::Sent);
 
     // Sending spontaneous payment.
     let lnd_id = lnd.get_id().await.unwrap();
@@ -231,9 +231,9 @@ async fn test_node_receive_payments() {
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 5);
     let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
-    assert_eq!(payment.payment_type, PaymentType::Sent);
     assert!(matches!(
         payment.details,
         PaymentDetails::Ln {

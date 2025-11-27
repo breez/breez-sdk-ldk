@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use ldk_node::lightning::events::PaymentFailureReason;
 use ldk_node::lightning::ln::channelmanager::PaymentId;
+use ldk_node::lightning::util::persist::KVStoreSync;
 use ldk_node::lightning_types::payment::PaymentPreimage;
 use ldk_node::payment::PaymentDetails;
 use ldk_node::{Event, Node};
@@ -41,9 +42,15 @@ pub async fn start_event_handling(
                 ..
             } => {
                 let key = preimage_store_key(&payment_hash);
-                match kv_store.read(PREIMAGES_PRIMARY_NS, PREIMAGES_SECONDARY_NS, &key) {
+                match KVStoreSync::read(
+                    kv_store.as_ref(),
+                    PREIMAGES_PRIMARY_NS,
+                    PREIMAGES_SECONDARY_NS,
+                    &key,
+                ) {
                     Ok(preimage) => {
-                        if let Err(err) = kv_store.remove(
+                        if let Err(err) = KVStoreSync::remove(
+                            kv_store.as_ref(),
                             PREIMAGES_PRIMARY_NS,
                             PREIMAGES_SECONDARY_NS,
                             &key,
@@ -81,7 +88,8 @@ pub async fn start_event_handling(
                 ..
             } => {
                 let key = preimage_store_key(&payment_hash);
-                let preimage = match kv_store.read(
+                let preimage = match KVStoreSync::read(
+                    kv_store.as_ref(),
                     PREIMAGES_PRIMARY_NS,
                     PREIMAGES_SECONDARY_NS,
                     &key,
@@ -119,6 +127,9 @@ pub async fn start_event_handling(
             Event::ChannelPending { .. } => (),
             Event::ChannelReady { .. } => (),
             Event::ChannelClosed { .. } => (),
+
+            Event::SplicePending { .. } => (),
+            Event::SpliceFailed { .. } => (),
         }
 
         if let Err(e) = node.event_handled() {

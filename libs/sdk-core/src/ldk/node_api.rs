@@ -10,10 +10,13 @@ use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::lightning::ln::msgs::SocketAddress;
+use ldk_node::lightning::routing::router::{
+    RouteParametersConfig, DEFAULT_MAX_TOTAL_CLTV_EXPIRY_DELTA,
+};
+use ldk_node::lightning::util::persist::KVStoreSync;
 use ldk_node::lightning_invoice::{Bolt11InvoiceDescription, Description};
 use ldk_node::lightning_types::payment::{PaymentHash, PaymentPreimage};
-use ldk_node::payment::SendingParameters;
-use ldk_node::{Builder, CustomTlvRecord, Event, Node};
+use ldk_node::{Builder, CustomTlvRecord, DynStore, Event, Node};
 use rand::Rng;
 use sdk_common::ensure_sdk;
 use sdk_common::invoice::parse_invoice;
@@ -47,7 +50,7 @@ use crate::{
     SyncResponse, TlvEntry,
 };
 
-pub(crate) type KVStore = Arc<dyn ldk_node::lightning::util::persist::KVStore + Sync + Send>;
+pub(crate) type KVStore = Arc<DynStore>;
 
 pub(crate) const PREIMAGES_PRIMARY_NS: &str = "preimages";
 pub(crate) const PREIMAGES_SECONDARY_NS: &str = "";
@@ -165,11 +168,12 @@ impl Ldk {
             preimage.unwrap_or_else(|| PaymentPreimage(rand::thread_rng().gen::<[u8; 32]>()));
         let payment_hash: PaymentHash = preimage.into();
         let key = preimage_store_key(&payment_hash);
-        self.kv_store.write(
+        KVStoreSync::write(
+            self.kv_store.as_ref(),
             PREIMAGES_PRIMARY_NS,
             PREIMAGES_SECONDARY_NS,
             &key,
-            &preimage.0,
+            preimage.0.to_vec(),
         )?;
 
         let payments = self.node.bolt11_payment();
@@ -236,11 +240,11 @@ impl NodeAPI for Ldk {
         let invoice = ldk_node::lightning_invoice::Bolt11Invoice::from_str(&bolt11)?;
         let payments = self.node.bolt11_payment();
         let events = self.events_tx.subscribe(); // Subscribe before we try to send.
-        let params = Some(SendingParameters {
+        let params = Some(RouteParametersConfig {
             max_total_routing_fee_msat: None,
-            max_total_cltv_expiry_delta: None,
-            max_path_count: Some(3),
-            max_channel_saturation_power_of_half: None,
+            max_total_cltv_expiry_delta: DEFAULT_MAX_TOTAL_CLTV_EXPIRY_DELTA,
+            max_path_count: 3,
+            max_channel_saturation_power_of_half: 2,
         });
         let payment_id = match amount_msat {
             Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),

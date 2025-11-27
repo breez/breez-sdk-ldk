@@ -1,8 +1,11 @@
+use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 
 use ldk_node::bitcoin::io::ErrorKind;
 use ldk_node::lightning::io;
-use ldk_node::lightning::util::persist::KVStore;
+use ldk_node::lightning::util::async_poll::AsyncResult;
+use ldk_node::lightning::util::persist::{KVStore, KVStoreSync};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Connection, Error as SqlError, OptionalExtension};
@@ -43,6 +46,7 @@ pub struct MirroringStore<S: Deref<Target = T>, T: VersionedStore + Send + Sync>
     handle: Handle,
     remote_client: S,
     pool: Pool<SqliteConnectionManager>,
+    key_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
 }
 
 impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> MirroringStore<S, T> {
@@ -90,11 +94,17 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> MirroringStore<S, T>
             handle,
             pool,
             remote_client: remote,
+            key_locks: Default::default(),
         })
+    }
+
+    fn key_lock(&self, full_key: String) -> Arc<Mutex<()>> {
+        let mut locks = self.key_locks.lock().unwrap();
+        Arc::clone(locks.entry(full_key).or_default())
     }
 }
 
-impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for MirroringStore<S, T> {
+impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStoreSync for MirroringStore<S, T> {
     fn read(&self, primary_ns: &str, secondary_ns: &str, key: &str) -> io::Result<Vec<u8>> {
         let conn = self.pool.get().map_err(other)?;
         conn.query_row(
@@ -112,9 +122,12 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         primary_ns: &str,
         secondary_ns: &str,
         key: &str,
-        value: &[u8],
+        value: Vec<u8>,
     ) -> io::Result<()> {
         let full_key = format!("{primary_ns}/{secondary_ns}/{key}");
+        let mutex = self.key_lock(full_key.clone());
+        let _lock = mutex.lock().unwrap();
+
         debug!("Writing {full_key} {} bytes", value.len());
         let conn = self.pool.get().map_err(other)?;
 
@@ -151,10 +164,11 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         };
 
         tokio::task::block_in_place(|| {
-            self.handle.block_on(
-                self.remote_client
-                    .put(full_key, value.to_vec(), next_version),
-            )
+            self.handle.block_on(self.remote_client.put(
+                full_key.clone(),
+                value.to_vec(),
+                next_version,
+            ))
         })
         .map_err(other)?;
 
@@ -163,6 +177,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
             params![primary_ns, secondary_ns, key],
         ).map_err(other)?;
 
+        debug!("Wrote {full_key}");
         Ok(())
     }
 
@@ -173,6 +188,11 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         key: &str,
         _lazy: bool,
     ) -> io::Result<()> {
+        let full_key = format!("{primary_ns}/{secondary_ns}/{key}");
+        let mutex = self.key_lock(full_key.clone());
+        let _lock = mutex.lock().unwrap();
+        debug!("Removing {full_key}");
+
         let conn = self.pool.get().map_err(other)?;
 
         conn.execute(
@@ -181,9 +201,11 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         )
         .map_err(other)?;
 
-        let full_key = format!("{primary_ns}/{secondary_ns}/{key}");
-        tokio::task::block_in_place(|| self.handle.block_on(self.remote_client.delete(full_key)))
-            .map_err(other)?;
+        tokio::task::block_in_place(|| {
+            self.handle
+                .block_on(self.remote_client.delete(full_key.clone()))
+        })
+        .map_err(other)?;
 
         conn.execute(
             "DELETE FROM store WHERE primary_ns = ?1 AND secondary_ns = ?2 AND key = ?3",
@@ -191,6 +213,7 @@ impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for Mirrorin
         )
         .map_err(other)?;
 
+        debug!("Removed {full_key}");
         Ok(())
     }
 
@@ -298,6 +321,49 @@ where
     io::Error::new(ErrorKind::Other, err)
 }
 
+impl<S: Deref<Target = T>, T: VersionedStore + Send + Sync> KVStore for MirroringStore<S, T> {
+    fn read(
+        &self,
+        primary_ns: &str,
+        secondary_ns: &str,
+        key: &str,
+    ) -> AsyncResult<'static, Vec<u8>, io::Error> {
+        let result = KVStoreSync::read(self, primary_ns, secondary_ns, key);
+        Box::pin(async move { result })
+    }
+
+    fn write(
+        &self,
+        primary_ns: &str,
+        secondary_ns: &str,
+        key: &str,
+        buf: Vec<u8>,
+    ) -> AsyncResult<'static, (), io::Error> {
+        let result = KVStoreSync::write(self, primary_ns, secondary_ns, key, buf);
+        Box::pin(async move { result })
+    }
+
+    fn remove(
+        &self,
+        primary_ns: &str,
+        secondary_ns: &str,
+        key: &str,
+        lazy: bool,
+    ) -> AsyncResult<'static, (), io::Error> {
+        let result = KVStoreSync::remove(self, primary_ns, secondary_ns, key, lazy);
+        Box::pin(async move { result })
+    }
+
+    fn list(
+        &self,
+        primary_ns: &str,
+        secondary_ns: &str,
+    ) -> AsyncResult<'static, Vec<String>, io::Error> {
+        let result = KVStoreSync::list(self, primary_ns, secondary_ns);
+        Box::pin(async move { result })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -327,19 +393,24 @@ mod tests {
         .unwrap();
 
         // Write, read, list values, remove.
-        let list = store.list("ns", "sub").unwrap();
+        let list = KVStoreSync::list(&store, "ns", "sub").unwrap();
         assert!(list.is_empty());
 
-        store.write("ns", "sub", "key", b"value").unwrap();
-        store
-            .write("ns", "sub", "to_remove", b"to_remove_value")
-            .unwrap();
-        store.remove("ns", "sub", "to_remove", false).unwrap();
-        store.remove("ns", "sub", "does_not_exist", false).unwrap();
+        KVStoreSync::write(&store, "ns", "sub", "key", b"value".to_vec()).unwrap();
+        KVStoreSync::write(
+            &store,
+            "ns",
+            "sub",
+            "to_remove",
+            b"to_remove_value".to_vec(),
+        )
+        .unwrap();
+        KVStoreSync::remove(&store, "ns", "sub", "to_remove", false).unwrap();
+        KVStoreSync::remove(&store, "ns", "sub", "does_not_exist", false).unwrap();
 
-        let list = store.list("ns", "sub").unwrap();
+        let list = KVStoreSync::list(&store, "ns", "sub").unwrap();
         assert_eq!(list, vec!["key".to_string()]);
-        let value = store.read("ns", "sub", "key").unwrap();
+        let value = KVStoreSync::read(&store, "ns", "sub", "key").unwrap();
         assert_eq!(value, b"value");
 
         // Load a new instance.
@@ -352,23 +423,23 @@ mod tests {
         .await
         .unwrap();
         // Data was loaded from remote.
-        let list = store.list("ns", "sub").unwrap();
+        let list = KVStoreSync::list(&store, "ns", "sub").unwrap();
         assert_eq!(list, vec!["key".to_string()]);
-        let value = store.read("ns", "sub", "key").unwrap();
+        let value = KVStoreSync::read(&store, "ns", "sub", "key").unwrap();
         assert_eq!(value, b"value");
 
         // Update the value, write a new value..
-        store.write("ns", "sub", "key", b"value2").unwrap();
-        store.write("ns2", "sub2", "key2", b"value22").unwrap();
-        let list = store.list("ns", "sub").unwrap();
+        KVStoreSync::write(&store, "ns", "sub", "key", b"value2".to_vec()).unwrap();
+        KVStoreSync::write(&store, "ns2", "sub2", "key2", b"value22".to_vec()).unwrap();
+        let list = KVStoreSync::list(&store, "ns", "sub").unwrap();
         assert_eq!(list, vec!["key".to_string()]);
-        let value = store.read("ns", "sub", "key").unwrap();
+        let value = KVStoreSync::read(&store, "ns", "sub", "key").unwrap();
         assert_eq!(value, b"value2");
-        let value = store.read("ns2", "sub2", "key2").unwrap();
+        let value = KVStoreSync::read(&store, "ns2", "sub2", "key2").unwrap();
         assert_eq!(value, b"value22");
 
         // No removed key.
-        let err = store.read("ns", "sub", "to_remove").unwrap_err();
+        let err = KVStoreSync::read(&store, "ns", "sub", "to_remove").unwrap_err();
         assert_eq!(err.kind(), ErrorKind::NotFound);
     }
 
@@ -390,12 +461,11 @@ mod tests {
         .unwrap();
 
         // Try to write - should fail due to remote error.
-        let err = store
-            .write("ns", "sub", "key_dirty", b"value_dirty")
+        let err = KVStoreSync::write(&store, "ns", "sub", "key_dirty", b"value_dirty".to_vec())
             .unwrap_err();
         assert_eq!(err.kind(), ErrorKind::Other);
         // Dirty data is stored locally, though.
-        let value = store.read("ns", "sub", "key_dirty").unwrap();
+        let value = KVStoreSync::read(&store, "ns", "sub", "key_dirty").unwrap();
         assert_eq!(value, b"value_dirty");
 
         {
@@ -408,7 +478,7 @@ mod tests {
             )
             .await
             .unwrap();
-            let err = store.read("ns", "sub", "key_dirty").unwrap_err();
+            let err = KVStoreSync::read(&store, "ns", "sub", "key_dirty").unwrap_err();
             assert_eq!(err.kind(), ErrorKind::NotFound);
         }
 
@@ -429,7 +499,7 @@ mod tests {
             )
             .await
             .unwrap();
-            let err = store.read("ns", "sub", "key_dirty").unwrap_err();
+            let err = KVStoreSync::read(&store, "ns", "sub", "key_dirty").unwrap_err();
             assert_eq!(err.kind(), ErrorKind::NotFound);
         }
 
@@ -451,7 +521,7 @@ mod tests {
             )
             .await
             .unwrap();
-            let value = store.read("ns", "sub", "key_dirty").unwrap();
+            let value = KVStoreSync::read(&store, "ns", "sub", "key_dirty").unwrap();
             assert_eq!(value, b"value_dirty");
             // Data was uploaded to remote.
             let data = mock_store.data.lock().unwrap();
@@ -478,22 +548,19 @@ mod tests {
             .await
             .unwrap();
 
-            store
-                .write("ns", "sub", "key_to_remove", b"remove_me")
+            KVStoreSync::write(&store, "ns", "sub", "key_to_remove", b"remove_me".to_vec())
                 .unwrap();
-            let value = store.read("ns", "sub", "key_to_remove").unwrap();
+            let value = KVStoreSync::read(&store, "ns", "sub", "key_to_remove").unwrap();
             assert_eq!(value, b"remove_me");
 
             // Simulate remote delete failure.
-            let err = store
-                .remove("ns", "sub", "key_to_remove", false)
-                .unwrap_err();
+            let err = KVStoreSync::remove(&store, "ns", "sub", "key_to_remove", false).unwrap_err();
             assert_eq!(err.kind(), ErrorKind::Other);
 
             // Locally, the key is tombstoned: not listed, not readable.
-            let list = store.list("ns", "sub").unwrap();
+            let list = KVStoreSync::list(&store, "ns", "sub").unwrap();
             assert!(!list.contains(&"key_to_remove".to_string()));
-            let err = store.read("ns", "sub", "key_to_remove").unwrap_err();
+            let err = KVStoreSync::read(&store, "ns", "sub", "key_to_remove").unwrap_err();
             assert_eq!(err.kind(), ErrorKind::NotFound);
             let dirty_local_db = create_in_memory_db();
             clone_data(
@@ -513,11 +580,10 @@ mod tests {
             )
             .await
             .unwrap();
-            let list_remote = store_remote_first.list("ns", "sub").unwrap();
+            let list_remote = KVStoreSync::list(&store_remote_first, "ns", "sub").unwrap();
             assert!(list_remote.contains(&"key_to_remove".to_string()));
-            let value_remote = store_remote_first
-                .read("ns", "sub", "key_to_remove")
-                .unwrap();
+            let value_remote =
+                KVStoreSync::read(&store_remote_first, "ns", "sub", "key_to_remove").unwrap();
             assert_eq!(value_remote, b"remove_me");
         }
 
@@ -539,11 +605,9 @@ mod tests {
             assert!(!data.contains_key("ns/sub/key_to_remove"));
             drop(data);
 
-            let err = store_cleanup
-                .read("ns", "sub", "key_to_remove")
-                .unwrap_err();
+            let err = KVStoreSync::read(&store_cleanup, "ns", "sub", "key_to_remove").unwrap_err();
             assert_eq!(err.kind(), ErrorKind::NotFound);
-            let list = store_cleanup.list("ns", "sub").unwrap();
+            let list = KVStoreSync::list(&store_cleanup, "ns", "sub").unwrap();
             assert!(!list.contains(&"key_to_remove".to_string()));
         }
     }
