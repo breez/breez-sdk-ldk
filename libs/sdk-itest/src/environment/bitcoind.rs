@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use anyhow::{Result, anyhow, bail, ensure};
+use anyhow::{Error, Result, anyhow, bail, ensure};
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::{Address, Amount, Denomination, Network, Txid};
 use reqwest::Client;
@@ -39,6 +39,11 @@ pub struct Bitcoind {
 struct RpcResponse<T> {
     result: Option<T>,
     error: Option<Value>,
+}
+
+#[derive(Deserialize)]
+struct ListUnspentEntry {
+    amount: f64,
 }
 
 impl Bitcoind {
@@ -146,15 +151,15 @@ impl Bitcoind {
         Ok(())
     }
 
-    async fn get_new_address(&self) -> Result<Address> {
+    pub async fn get_new_address(&self) -> Result<Address> {
         self.rpc_call::<String>("getnewaddress", &[json!("mining"), json!("bech32")])
             .await?
             .parse::<Address<NetworkUnchecked>>()?
             .require_network(Network::Regtest)
-            .map_err(anyhow::Error::msg)
+            .map_err(Error::msg)
     }
 
-    pub async fn generate_blocks(&self, count: u64) -> Result<Vec<String>> {
+    pub async fn generate_blocks(&self, count: u32) -> Result<Vec<String>> {
         let address = self.mining_address.to_string();
         self.rpc_call::<Vec<String>>("generatetoaddress", &[json!(count), json!(address)])
             .await
@@ -168,7 +173,25 @@ impl Bitcoind {
         )
         .await?
         .parse()
-        .map_err(anyhow::Error::msg)
+        .map_err(Error::msg)
+    }
+
+    pub async fn get_address_balance(&self, address: &Address) -> Result<Amount> {
+        let entries = self
+            .rpc_call::<Vec<ListUnspentEntry>>(
+                "listunspent",
+                &[json!(0), json!(9999999), json!([address.to_string()])],
+            )
+            .await?;
+
+        let balance = entries
+            .iter()
+            .map(|entry| Amount::from_btc(entry.amount).map_err(Error::msg))
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .sum();
+
+        Ok(balance)
     }
 
     async fn rpc_call<T: for<'de> Deserialize<'de>>(
