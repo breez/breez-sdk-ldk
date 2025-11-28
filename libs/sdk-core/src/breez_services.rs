@@ -550,11 +550,6 @@ impl BreezServices {
         }
     }
 
-    /// Retrieve the decrypted credentials from the node.
-    pub async fn node_credentials(&self) -> SdkResult<Option<NodeCredentials>> {
-        Ok(self.node_api.node_credentials().await?)
-    }
-
     /// Retrieve the node state from the persistent storage.
     ///
     /// Fail if it could not be retrieved or if `None` was found.
@@ -1295,15 +1290,11 @@ impl BreezServices {
     }
 
     /// Get the full default config for a specific environment type
-    pub fn default_config(
-        env_type: EnvironmentType,
-        api_key: String,
-        node_config: NodeConfig,
-    ) -> Config {
+    pub fn default_config(env_type: EnvironmentType, api_key: String) -> Config {
         match env_type {
-            EnvironmentType::Production => Config::production(api_key, node_config),
-            EnvironmentType::Staging => Config::staging(api_key, node_config),
-            EnvironmentType::Regtest => Config::regtest(api_key, node_config),
+            EnvironmentType::Production => Config::production(api_key),
+            EnvironmentType::Staging => Config::staging(api_key),
+            EnvironmentType::Regtest => Config::regtest(api_key),
         }
     }
 

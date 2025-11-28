@@ -142,7 +142,6 @@ class Config {
 
   /// Maps to the CLN `exemptfee` config when paying invoices (`lightning-pay`)
   final BigInt exemptfeeMsat;
-  final NodeConfig nodeConfig;
 
   const Config({
     required this.breezserver,
@@ -159,7 +158,6 @@ class Config {
     this.apiKey,
     required this.maxfeePercent,
     required this.exemptfeeMsat,
-    required this.nodeConfig,
   });
 
   @override
@@ -177,8 +175,7 @@ class Config {
       defaultLspId.hashCode ^
       apiKey.hashCode ^
       maxfeePercent.hashCode ^
-      exemptfeeMsat.hashCode ^
-      nodeConfig.hashCode;
+      exemptfeeMsat.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -198,8 +195,7 @@ class Config {
           defaultLspId == other.defaultLspId &&
           apiKey == other.apiKey &&
           maxfeePercent == other.maxfeePercent &&
-          exemptfeeMsat == other.exemptfeeMsat &&
-          nodeConfig == other.nodeConfig;
+          exemptfeeMsat == other.exemptfeeMsat;
 }
 
 /// Represents a configure node request.
@@ -244,58 +240,6 @@ class ConnectRequest {
 
 /// Indicates the different kinds of supported environments for [crate::BreezServices].
 enum EnvironmentType { Production, Staging, Regtest }
-
-/// Client-specific credentials to connect to and manage a Greenlight node in the cloud
-class GreenlightCredentials {
-  final Uint8List developerKey;
-  final Uint8List developerCert;
-
-  const GreenlightCredentials({required this.developerKey, required this.developerCert});
-
-  @override
-  int get hashCode => developerKey.hashCode ^ developerCert.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GreenlightCredentials &&
-          runtimeType == other.runtimeType &&
-          developerKey == other.developerKey &&
-          developerCert == other.developerCert;
-}
-
-/// Device credentials used to authenticate to Greenlight with the current device.
-class GreenlightDeviceCredentials {
-  final Uint8List device;
-
-  const GreenlightDeviceCredentials({required this.device});
-
-  @override
-  int get hashCode => device.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GreenlightDeviceCredentials && runtimeType == other.runtimeType && device == other.device;
-}
-
-class GreenlightNodeConfig {
-  final GreenlightCredentials? partnerCredentials;
-  final String? inviteCode;
-
-  const GreenlightNodeConfig({this.partnerCredentials, this.inviteCode});
-
-  @override
-  int get hashCode => partnerCredentials.hashCode ^ inviteCode.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GreenlightNodeConfig &&
-          runtimeType == other.runtimeType &&
-          partnerCredentials == other.partnerCredentials &&
-          inviteCode == other.inviteCode;
-}
 
 /// Indicates the different service health check statuses.
 enum HealthCheckStatus { Operational, Maintenance, ServiceDisruption }
@@ -505,21 +449,6 @@ class MetadataFilter {
           runtimeType == other.runtimeType &&
           jsonPath == other.jsonPath &&
           jsonValue == other.jsonValue;
-}
-
-@freezed
-sealed class NodeConfig with _$NodeConfig {
-  const NodeConfig._();
-
-  const factory NodeConfig.greenlight({required GreenlightNodeConfig config}) = NodeConfig_Greenlight;
-}
-
-@freezed
-sealed class NodeCredentials with _$NodeCredentials {
-  const NodeCredentials._();
-
-  const factory NodeCredentials.greenlight({required GreenlightDeviceCredentials credentials}) =
-      NodeCredentials_Greenlight;
 }
 
 /// The node state of a Greenlight LN node running in the cloud.

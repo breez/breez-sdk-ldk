@@ -431,12 +431,8 @@ enum BreezSDKMapper {
         guard let exemptfeeMsat = config["exemptfeeMsat"] as? UInt64 else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "exemptfeeMsat", typeName: "Config"))
         }
-        guard let nodeConfigTmp = config["nodeConfig"] as? [String: Any?] else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "nodeConfig", typeName: "Config"))
-        }
-        let nodeConfig = try asNodeConfig(nodeConfig: nodeConfigTmp)
 
-        return Config(breezserver: breezserver, chainnotifierUrl: chainnotifierUrl, mempoolspaceUrl: mempoolspaceUrl, esploraUrl: esploraUrl, vssUrl: vssUrl, rgsUrl: rgsUrl, lsps2Address: lsps2Address, workingDir: workingDir, network: network, paymentTimeoutSec: paymentTimeoutSec, defaultLspId: defaultLspId, apiKey: apiKey, maxfeePercent: maxfeePercent, exemptfeeMsat: exemptfeeMsat, nodeConfig: nodeConfig)
+        return Config(breezserver: breezserver, chainnotifierUrl: chainnotifierUrl, mempoolspaceUrl: mempoolspaceUrl, esploraUrl: esploraUrl, vssUrl: vssUrl, rgsUrl: rgsUrl, lsps2Address: lsps2Address, workingDir: workingDir, network: network, paymentTimeoutSec: paymentTimeoutSec, defaultLspId: defaultLspId, apiKey: apiKey, maxfeePercent: maxfeePercent, exemptfeeMsat: exemptfeeMsat)
     }
 
     static func dictionaryOf(config: Config) -> [String: Any?] {
@@ -455,7 +451,6 @@ enum BreezSDKMapper {
             "apiKey": config.apiKey == nil ? nil : config.apiKey,
             "maxfeePercent": config.maxfeePercent,
             "exemptfeeMsat": config.exemptfeeMsat,
-            "nodeConfig": dictionaryOf(nodeConfig: config.nodeConfig),
         ]
     }
 
@@ -656,113 +651,6 @@ enum BreezSDKMapper {
 
     static func arrayOf(fiatCurrencyList: [FiatCurrency]) -> [Any] {
         return fiatCurrencyList.map { v -> [String: Any?] in return dictionaryOf(fiatCurrency: v) }
-    }
-
-    static func asGreenlightCredentials(greenlightCredentials: [String: Any?]) throws -> GreenlightCredentials {
-        guard let developerKey = greenlightCredentials["developerKey"] as? [UInt8] else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "developerKey", typeName: "GreenlightCredentials"))
-        }
-        guard let developerCert = greenlightCredentials["developerCert"] as? [UInt8] else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "developerCert", typeName: "GreenlightCredentials"))
-        }
-
-        return GreenlightCredentials(developerKey: developerKey, developerCert: developerCert)
-    }
-
-    static func dictionaryOf(greenlightCredentials: GreenlightCredentials) -> [String: Any?] {
-        return [
-            "developerKey": greenlightCredentials.developerKey,
-            "developerCert": greenlightCredentials.developerCert,
-        ]
-    }
-
-    static func asGreenlightCredentialsList(arr: [Any]) throws -> [GreenlightCredentials] {
-        var list = [GreenlightCredentials]()
-        for value in arr {
-            if let val = value as? [String: Any?] {
-                var greenlightCredentials = try asGreenlightCredentials(greenlightCredentials: val)
-                list.append(greenlightCredentials)
-            } else {
-                throw SdkError.Generic(message: errUnexpectedType(typeName: "GreenlightCredentials"))
-            }
-        }
-        return list
-    }
-
-    static func arrayOf(greenlightCredentialsList: [GreenlightCredentials]) -> [Any] {
-        return greenlightCredentialsList.map { v -> [String: Any?] in return dictionaryOf(greenlightCredentials: v) }
-    }
-
-    static func asGreenlightDeviceCredentials(greenlightDeviceCredentials: [String: Any?]) throws -> GreenlightDeviceCredentials {
-        guard let device = greenlightDeviceCredentials["device"] as? [UInt8] else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "device", typeName: "GreenlightDeviceCredentials"))
-        }
-
-        return GreenlightDeviceCredentials(device: device)
-    }
-
-    static func dictionaryOf(greenlightDeviceCredentials: GreenlightDeviceCredentials) -> [String: Any?] {
-        return [
-            "device": greenlightDeviceCredentials.device,
-        ]
-    }
-
-    static func asGreenlightDeviceCredentialsList(arr: [Any]) throws -> [GreenlightDeviceCredentials] {
-        var list = [GreenlightDeviceCredentials]()
-        for value in arr {
-            if let val = value as? [String: Any?] {
-                var greenlightDeviceCredentials = try asGreenlightDeviceCredentials(greenlightDeviceCredentials: val)
-                list.append(greenlightDeviceCredentials)
-            } else {
-                throw SdkError.Generic(message: errUnexpectedType(typeName: "GreenlightDeviceCredentials"))
-            }
-        }
-        return list
-    }
-
-    static func arrayOf(greenlightDeviceCredentialsList: [GreenlightDeviceCredentials]) -> [Any] {
-        return greenlightDeviceCredentialsList.map { v -> [String: Any?] in return dictionaryOf(greenlightDeviceCredentials: v) }
-    }
-
-    static func asGreenlightNodeConfig(greenlightNodeConfig: [String: Any?]) throws -> GreenlightNodeConfig {
-        var partnerCredentials: GreenlightCredentials?
-        if let partnerCredentialsTmp = greenlightNodeConfig["partnerCredentials"] as? [String: Any?] {
-            partnerCredentials = try asGreenlightCredentials(greenlightCredentials: partnerCredentialsTmp)
-        }
-
-        var inviteCode: String?
-        if hasNonNilKey(data: greenlightNodeConfig, key: "inviteCode") {
-            guard let inviteCodeTmp = greenlightNodeConfig["inviteCode"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "inviteCode"))
-            }
-            inviteCode = inviteCodeTmp
-        }
-
-        return GreenlightNodeConfig(partnerCredentials: partnerCredentials, inviteCode: inviteCode)
-    }
-
-    static func dictionaryOf(greenlightNodeConfig: GreenlightNodeConfig) -> [String: Any?] {
-        return [
-            "partnerCredentials": greenlightNodeConfig.partnerCredentials == nil ? nil : dictionaryOf(greenlightCredentials: greenlightNodeConfig.partnerCredentials!),
-            "inviteCode": greenlightNodeConfig.inviteCode == nil ? nil : greenlightNodeConfig.inviteCode,
-        ]
-    }
-
-    static func asGreenlightNodeConfigList(arr: [Any]) throws -> [GreenlightNodeConfig] {
-        var list = [GreenlightNodeConfig]()
-        for value in arr {
-            if let val = value as? [String: Any?] {
-                var greenlightNodeConfig = try asGreenlightNodeConfig(greenlightNodeConfig: val)
-                list.append(greenlightNodeConfig)
-            } else {
-                throw SdkError.Generic(message: errUnexpectedType(typeName: "GreenlightNodeConfig"))
-            }
-        }
-        return list
-    }
-
-    static func arrayOf(greenlightNodeConfigList: [GreenlightNodeConfig]) -> [Any] {
-        return greenlightNodeConfigList.map { v -> [String: Any?] in return dictionaryOf(greenlightNodeConfig: v) }
     }
 
     static func asInvoicePaidDetails(invoicePaidDetails: [String: Any?]) throws -> InvoicePaidDetails {
@@ -4864,92 +4752,6 @@ enum BreezSDKMapper {
                 list.append(network)
             } else {
                 throw SdkError.Generic(message: errUnexpectedType(typeName: "Network"))
-            }
-        }
-        return list
-    }
-
-    static func asNodeConfig(nodeConfig: [String: Any?]) throws -> NodeConfig {
-        let type = nodeConfig["type"] as! String
-        if type == "greenlight" {
-            guard let configTmp = nodeConfig["config"] as? [String: Any?] else {
-                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "config", typeName: "NodeConfig"))
-            }
-            let _config = try asGreenlightNodeConfig(greenlightNodeConfig: configTmp)
-
-            return NodeConfig.greenlight(config: _config)
-        }
-
-        throw SdkError.Generic(message: "Unexpected type \(type) for enum NodeConfig")
-    }
-
-    static func dictionaryOf(nodeConfig: NodeConfig) -> [String: Any?] {
-        switch nodeConfig {
-        case let .greenlight(
-            config
-        ):
-            return [
-                "type": "greenlight",
-                "config": dictionaryOf(greenlightNodeConfig: config),
-            ]
-        }
-    }
-
-    static func arrayOf(nodeConfigList: [NodeConfig]) -> [Any] {
-        return nodeConfigList.map { v -> [String: Any?] in return dictionaryOf(nodeConfig: v) }
-    }
-
-    static func asNodeConfigList(arr: [Any]) throws -> [NodeConfig] {
-        var list = [NodeConfig]()
-        for value in arr {
-            if let val = value as? [String: Any?] {
-                var nodeConfig = try asNodeConfig(nodeConfig: val)
-                list.append(nodeConfig)
-            } else {
-                throw SdkError.Generic(message: errUnexpectedType(typeName: "NodeConfig"))
-            }
-        }
-        return list
-    }
-
-    static func asNodeCredentials(nodeCredentials: [String: Any?]) throws -> NodeCredentials {
-        let type = nodeCredentials["type"] as! String
-        if type == "greenlight" {
-            guard let credentialsTmp = nodeCredentials["credentials"] as? [String: Any?] else {
-                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "credentials", typeName: "NodeCredentials"))
-            }
-            let _credentials = try asGreenlightDeviceCredentials(greenlightDeviceCredentials: credentialsTmp)
-
-            return NodeCredentials.greenlight(credentials: _credentials)
-        }
-
-        throw SdkError.Generic(message: "Unexpected type \(type) for enum NodeCredentials")
-    }
-
-    static func dictionaryOf(nodeCredentials: NodeCredentials) -> [String: Any?] {
-        switch nodeCredentials {
-        case let .greenlight(
-            credentials
-        ):
-            return [
-                "type": "greenlight",
-                "credentials": dictionaryOf(greenlightDeviceCredentials: credentials),
-            ]
-        }
-    }
-
-    static func arrayOf(nodeCredentialsList: [NodeCredentials]) -> [Any] {
-        return nodeCredentialsList.map { v -> [String: Any?] in return dictionaryOf(nodeCredentials: v) }
-    }
-
-    static func asNodeCredentialsList(arr: [Any]) throws -> [NodeCredentials] {
-        var list = [NodeCredentials]()
-        for value in arr {
-            if let val = value as? [String: Any?] {
-                var nodeCredentials = try asNodeCredentials(nodeCredentials: val)
-                list.append(nodeCredentials)
-            } else {
-                throw SdkError.Generic(message: errUnexpectedType(typeName: "NodeCredentials"))
             }
         }
         return list

@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1202170102;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -205939826;
 
 // Section: executor
 
@@ -322,7 +322,6 @@ fn wire__crate__binding__default_config_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     env_type: impl CstDecode<crate::models::EnvironmentType>,
     api_key: impl CstDecode<String>,
-    node_config: impl CstDecode<crate::models::NodeConfig>,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
@@ -333,13 +332,11 @@ fn wire__crate__binding__default_config_impl(
         move || {
             let api_env_type = env_type.cst_decode();
             let api_api_key = api_key.cst_decode();
-            let api_node_config = node_config.cst_decode();
             move |context| {
                 transform_result_dco::<_, _, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok(crate::binding::default_config(
                         api_env_type,
                         api_api_key,
-                        api_node_config,
                     ))?;
                     Ok(output_ok)
                 })())
@@ -768,27 +765,6 @@ fn wire__crate__binding__mnemonic_to_seed_impl(
                 transform_result_dco::<_, _, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::binding::mnemonic_to_seed(api_phrase)?;
-                        Ok(output_ok)
-                    })(),
-                )
-            }
-        },
-    )
-}
-fn wire__crate__binding__node_credentials_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "node_credentials",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            move |context| {
-                transform_result_dco::<_, _, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::binding::node_credentials()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -2154,7 +2130,6 @@ impl SseDecode for crate::models::Config {
         let mut var_apiKey = <Option<String>>::sse_decode(deserializer);
         let mut var_maxfeePercent = <f64>::sse_decode(deserializer);
         let mut var_exemptfeeMsat = <u64>::sse_decode(deserializer);
-        let mut var_nodeConfig = <crate::models::NodeConfig>::sse_decode(deserializer);
         return crate::models::Config {
             breezserver: var_breezserver,
             chainnotifier_url: var_chainnotifierUrl,
@@ -2170,7 +2145,6 @@ impl SseDecode for crate::models::Config {
             api_key: var_apiKey,
             maxfee_percent: var_maxfeePercent,
             exemptfee_msat: var_exemptfeeMsat,
-            node_config: var_nodeConfig,
         };
     }
 }
@@ -2250,39 +2224,6 @@ impl SseDecode for crate::binding::FiatCurrency {
         return crate::binding::FiatCurrency {
             id: var_id,
             info: var_info,
-        };
-    }
-}
-
-impl SseDecode for crate::models::GreenlightCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_developerKey = <Vec<u8>>::sse_decode(deserializer);
-        let mut var_developerCert = <Vec<u8>>::sse_decode(deserializer);
-        return crate::models::GreenlightCredentials {
-            developer_key: var_developerKey,
-            developer_cert: var_developerCert,
-        };
-    }
-}
-
-impl SseDecode for crate::models::GreenlightDeviceCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_device = <Vec<u8>>::sse_decode(deserializer);
-        return crate::models::GreenlightDeviceCredentials { device: var_device };
-    }
-}
-
-impl SseDecode for crate::models::GreenlightNodeConfig {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_partnerCredentials =
-            <Option<crate::models::GreenlightCredentials>>::sse_decode(deserializer);
-        let mut var_inviteCode = <Option<String>>::sse_decode(deserializer);
-        return crate::models::GreenlightNodeConfig {
-            partner_credentials: var_partnerCredentials,
-            invite_code: var_inviteCode,
         };
     }
 }
@@ -3080,42 +3021,6 @@ impl SseDecode for crate::binding::Network {
     }
 }
 
-impl SseDecode for crate::models::NodeConfig {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut tag_ = <i32>::sse_decode(deserializer);
-        match tag_ {
-            0 => {
-                let mut var_config =
-                    <crate::models::GreenlightNodeConfig>::sse_decode(deserializer);
-                return crate::models::NodeConfig::Greenlight { config: var_config };
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-
-impl SseDecode for crate::models::NodeCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut tag_ = <i32>::sse_decode(deserializer);
-        match tag_ {
-            0 => {
-                let mut var_credentials =
-                    <crate::models::GreenlightDeviceCredentials>::sse_decode(deserializer);
-                return crate::models::NodeCredentials::Greenlight {
-                    credentials: var_credentials,
-                };
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-
 impl SseDecode for crate::models::NodeState {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3250,19 +3155,6 @@ impl SseDecode for Option<bool> {
     }
 }
 
-impl SseDecode for Option<crate::models::GreenlightCredentials> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        if (<bool>::sse_decode(deserializer)) {
-            return Some(<crate::models::GreenlightCredentials>::sse_decode(
-                deserializer,
-            ));
-        } else {
-            return None;
-        }
-    }
-}
-
 impl SseDecode for Option<i64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3290,17 +3182,6 @@ impl SseDecode for Option<crate::lsp::LspInformation> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::lsp::LspInformation>::sse_decode(deserializer));
-        } else {
-            return None;
-        }
-    }
-}
-
-impl SseDecode for Option<crate::models::NodeCredentials> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        if (<bool>::sse_decode(deserializer)) {
-            return Some(<crate::models::NodeCredentials>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -4611,7 +4492,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::Config {
             self.api_key.into_into_dart().into_dart(),
             self.maxfee_percent.into_into_dart().into_dart(),
             self.exemptfee_msat.into_into_dart().into_dart(),
-            self.node_config.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4725,65 +4605,6 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::binding::FiatCurrency>>
 {
     fn into_into_dart(self) -> FrbWrapper<crate::binding::FiatCurrency> {
         self.into()
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::models::GreenlightCredentials {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [
-            self.developer_key.into_into_dart().into_dart(),
-            self.developer_cert.into_into_dart().into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::models::GreenlightCredentials
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::models::GreenlightCredentials>
-    for crate::models::GreenlightCredentials
-{
-    fn into_into_dart(self) -> crate::models::GreenlightCredentials {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::models::GreenlightDeviceCredentials {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [self.device.into_into_dart().into_dart()].into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::models::GreenlightDeviceCredentials
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::models::GreenlightDeviceCredentials>
-    for crate::models::GreenlightDeviceCredentials
-{
-    fn into_into_dart(self) -> crate::models::GreenlightDeviceCredentials {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::models::GreenlightNodeConfig {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [
-            self.partner_credentials.into_into_dart().into_dart(),
-            self.invite_code.into_into_dart().into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::models::GreenlightNodeConfig
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::models::GreenlightNodeConfig>
-    for crate::models::GreenlightNodeConfig
-{
-    fn into_into_dart(self) -> crate::models::GreenlightNodeConfig {
-        self
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -5476,49 +5297,6 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::binding::Network>>
 {
     fn into_into_dart(self) -> FrbWrapper<crate::binding::Network> {
         self.into()
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::models::NodeConfig {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            crate::models::NodeConfig::Greenlight { config } => {
-                [0.into_dart(), config.into_into_dart().into_dart()].into_dart()
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::models::NodeConfig {}
-impl flutter_rust_bridge::IntoIntoDart<crate::models::NodeConfig> for crate::models::NodeConfig {
-    fn into_into_dart(self) -> crate::models::NodeConfig {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::models::NodeCredentials {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            crate::models::NodeCredentials::Greenlight { credentials } => {
-                [0.into_dart(), credentials.into_into_dart().into_dart()].into_dart()
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::models::NodeCredentials
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::models::NodeCredentials>
-    for crate::models::NodeCredentials
-{
-    fn into_into_dart(self) -> crate::models::NodeCredentials {
-        self
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -6924,7 +6702,6 @@ impl SseEncode for crate::models::Config {
         <Option<String>>::sse_encode(self.api_key, serializer);
         <f64>::sse_encode(self.maxfee_percent, serializer);
         <u64>::sse_encode(self.exemptfee_msat, serializer);
-        <crate::models::NodeConfig>::sse_encode(self.node_config, serializer);
     }
 }
 
@@ -6986,32 +6763,6 @@ impl SseEncode for crate::binding::FiatCurrency {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
         <crate::binding::CurrencyInfo>::sse_encode(self.info, serializer);
-    }
-}
-
-impl SseEncode for crate::models::GreenlightCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Vec<u8>>::sse_encode(self.developer_key, serializer);
-        <Vec<u8>>::sse_encode(self.developer_cert, serializer);
-    }
-}
-
-impl SseEncode for crate::models::GreenlightDeviceCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Vec<u8>>::sse_encode(self.device, serializer);
-    }
-}
-
-impl SseEncode for crate::models::GreenlightNodeConfig {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Option<crate::models::GreenlightCredentials>>::sse_encode(
-            self.partner_credentials,
-            serializer,
-        );
-        <Option<String>>::sse_encode(self.invite_code, serializer);
     }
 }
 
@@ -7614,36 +7365,6 @@ impl SseEncode for crate::binding::Network {
     }
 }
 
-impl SseEncode for crate::models::NodeConfig {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        match self {
-            crate::models::NodeConfig::Greenlight { config } => {
-                <i32>::sse_encode(0, serializer);
-                <crate::models::GreenlightNodeConfig>::sse_encode(config, serializer);
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-
-impl SseEncode for crate::models::NodeCredentials {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        match self {
-            crate::models::NodeCredentials::Greenlight { credentials } => {
-                <i32>::sse_encode(0, serializer);
-                <crate::models::GreenlightDeviceCredentials>::sse_encode(credentials, serializer);
-            }
-            _ => {
-                unimplemented!("");
-            }
-        }
-    }
-}
-
 impl SseEncode for crate::models::NodeState {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -7737,16 +7458,6 @@ impl SseEncode for Option<bool> {
     }
 }
 
-impl SseEncode for Option<crate::models::GreenlightCredentials> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <bool>::sse_encode(self.is_some(), serializer);
-        if let Some(value) = self {
-            <crate::models::GreenlightCredentials>::sse_encode(value, serializer);
-        }
-    }
-}
-
 impl SseEncode for Option<i64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -7773,16 +7484,6 @@ impl SseEncode for Option<crate::lsp::LspInformation> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::lsp::LspInformation>::sse_encode(value, serializer);
-        }
-    }
-}
-
-impl SseEncode for Option<crate::models::NodeCredentials> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <bool>::sse_encode(self.is_some(), serializer);
-        if let Some(value) = self {
-            <crate::models::NodeCredentials>::sse_encode(value, serializer);
         }
     }
 }
@@ -8743,29 +8444,6 @@ mod io {
             CstDecode::<crate::models::ConnectRequest>::cst_decode(*wrap).into()
         }
     }
-    impl CstDecode<crate::models::GreenlightCredentials> for *mut wire_cst_greenlight_credentials {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightCredentials {
-            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
-            CstDecode::<crate::models::GreenlightCredentials>::cst_decode(*wrap).into()
-        }
-    }
-    impl CstDecode<crate::models::GreenlightDeviceCredentials>
-        for *mut wire_cst_greenlight_device_credentials
-    {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightDeviceCredentials {
-            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
-            CstDecode::<crate::models::GreenlightDeviceCredentials>::cst_decode(*wrap).into()
-        }
-    }
-    impl CstDecode<crate::models::GreenlightNodeConfig> for *mut wire_cst_greenlight_node_config {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightNodeConfig {
-            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
-            CstDecode::<crate::models::GreenlightNodeConfig>::cst_decode(*wrap).into()
-        }
-    }
     impl CstDecode<i64> for *mut i64 {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> i64 {
@@ -8895,20 +8573,6 @@ mod io {
         fn cst_decode(self) -> crate::binding::MessageSuccessActionData {
             let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
             CstDecode::<crate::binding::MessageSuccessActionData>::cst_decode(*wrap).into()
-        }
-    }
-    impl CstDecode<crate::models::NodeConfig> for *mut wire_cst_node_config {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::NodeConfig {
-            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
-            CstDecode::<crate::models::NodeConfig>::cst_decode(*wrap).into()
-        }
-    }
-    impl CstDecode<crate::models::NodeCredentials> for *mut wire_cst_node_credentials {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::NodeCredentials {
-            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
-            CstDecode::<crate::models::NodeCredentials>::cst_decode(*wrap).into()
         }
     }
     impl CstDecode<crate::models::OpenChannelFeeRequest> for *mut wire_cst_open_channel_fee_request {
@@ -9222,7 +8886,6 @@ mod io {
                 api_key: self.api_key.cst_decode(),
                 maxfee_percent: self.maxfee_percent.cst_decode(),
                 exemptfee_msat: self.exemptfee_msat.cst_decode(),
-                node_config: self.node_config.cst_decode(),
             }
         }
     }
@@ -9264,34 +8927,6 @@ mod io {
             crate::binding::FiatCurrency {
                 id: self.id.cst_decode(),
                 info: self.info.cst_decode(),
-            }
-        }
-    }
-    impl CstDecode<crate::models::GreenlightCredentials> for wire_cst_greenlight_credentials {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightCredentials {
-            crate::models::GreenlightCredentials {
-                developer_key: self.developer_key.cst_decode(),
-                developer_cert: self.developer_cert.cst_decode(),
-            }
-        }
-    }
-    impl CstDecode<crate::models::GreenlightDeviceCredentials>
-        for wire_cst_greenlight_device_credentials
-    {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightDeviceCredentials {
-            crate::models::GreenlightDeviceCredentials {
-                device: self.device.cst_decode(),
-            }
-        }
-    }
-    impl CstDecode<crate::models::GreenlightNodeConfig> for wire_cst_greenlight_node_config {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::GreenlightNodeConfig {
-            crate::models::GreenlightNodeConfig {
-                partner_credentials: self.partner_credentials.cst_decode(),
-                invite_code: self.invite_code.cst_decode(),
             }
         }
     }
@@ -9873,34 +9508,6 @@ mod io {
             crate::models::MetadataFilter {
                 json_path: self.json_path.cst_decode(),
                 json_value: self.json_value.cst_decode(),
-            }
-        }
-    }
-    impl CstDecode<crate::models::NodeConfig> for wire_cst_node_config {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::NodeConfig {
-            match self.tag {
-                0 => {
-                    let ans = unsafe { self.kind.Greenlight };
-                    crate::models::NodeConfig::Greenlight {
-                        config: ans.config.cst_decode(),
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-    }
-    impl CstDecode<crate::models::NodeCredentials> for wire_cst_node_credentials {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> crate::models::NodeCredentials {
-            match self.tag {
-                0 => {
-                    let ans = unsafe { self.kind.Greenlight };
-                    crate::models::NodeCredentials::Greenlight {
-                        credentials: ans.credentials.cst_decode(),
-                    }
-                }
-                _ => unreachable!(),
             }
         }
     }
@@ -10643,7 +10250,6 @@ mod io {
                 api_key: core::ptr::null_mut(),
                 maxfee_percent: Default::default(),
                 exemptfee_msat: Default::default(),
-                node_config: Default::default(),
             }
         }
     }
@@ -10705,44 +10311,6 @@ mod io {
         }
     }
     impl Default for wire_cst_fiat_currency {
-        fn default() -> Self {
-            Self::new_with_null_ptr()
-        }
-    }
-    impl NewWithNullPtr for wire_cst_greenlight_credentials {
-        fn new_with_null_ptr() -> Self {
-            Self {
-                developer_key: core::ptr::null_mut(),
-                developer_cert: core::ptr::null_mut(),
-            }
-        }
-    }
-    impl Default for wire_cst_greenlight_credentials {
-        fn default() -> Self {
-            Self::new_with_null_ptr()
-        }
-    }
-    impl NewWithNullPtr for wire_cst_greenlight_device_credentials {
-        fn new_with_null_ptr() -> Self {
-            Self {
-                device: core::ptr::null_mut(),
-            }
-        }
-    }
-    impl Default for wire_cst_greenlight_device_credentials {
-        fn default() -> Self {
-            Self::new_with_null_ptr()
-        }
-    }
-    impl NewWithNullPtr for wire_cst_greenlight_node_config {
-        fn new_with_null_ptr() -> Self {
-            Self {
-                partner_credentials: core::ptr::null_mut(),
-                invite_code: core::ptr::null_mut(),
-            }
-        }
-    }
-    impl Default for wire_cst_greenlight_node_config {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -11140,32 +10708,6 @@ mod io {
         }
     }
     impl Default for wire_cst_metadata_filter {
-        fn default() -> Self {
-            Self::new_with_null_ptr()
-        }
-    }
-    impl NewWithNullPtr for wire_cst_node_config {
-        fn new_with_null_ptr() -> Self {
-            Self {
-                tag: -1,
-                kind: NodeConfigKind { nil__: () },
-            }
-        }
-    }
-    impl Default for wire_cst_node_config {
-        fn default() -> Self {
-            Self::new_with_null_ptr()
-        }
-    }
-    impl NewWithNullPtr for wire_cst_node_credentials {
-        fn new_with_null_ptr() -> Self {
-            Self {
-                tag: -1,
-                kind: NodeCredentialsKind { nil__: () },
-            }
-        }
-    }
-    impl Default for wire_cst_node_credentials {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -11950,9 +11492,8 @@ mod io {
         port_: i64,
         env_type: i32,
         api_key: *mut wire_cst_list_prim_u_8_strict,
-        node_config: *mut wire_cst_node_config,
     ) {
-        wire__crate__binding__default_config_impl(port_, env_type, api_key, node_config)
+        wire__crate__binding__default_config_impl(port_, env_type, api_key)
     }
 
     #[unsafe(no_mangle)]
@@ -12082,11 +11623,6 @@ mod io {
         phrase: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__binding__mnemonic_to_seed_impl(port_, phrase)
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_wire__crate__binding__node_credentials(port_: i64) {
-        wire__crate__binding__node_credentials_impl(port_)
     }
 
     #[unsafe(no_mangle)]
@@ -12390,30 +11926,6 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_greenlight_credentials(
-    ) -> *mut wire_cst_greenlight_credentials {
-        flutter_rust_bridge::for_generated::new_leak_box_ptr(
-            wire_cst_greenlight_credentials::new_with_null_ptr(),
-        )
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_greenlight_device_credentials(
-    ) -> *mut wire_cst_greenlight_device_credentials {
-        flutter_rust_bridge::for_generated::new_leak_box_ptr(
-            wire_cst_greenlight_device_credentials::new_with_null_ptr(),
-        )
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_greenlight_node_config(
-    ) -> *mut wire_cst_greenlight_node_config {
-        flutter_rust_bridge::for_generated::new_leak_box_ptr(
-            wire_cst_greenlight_node_config::new_with_null_ptr(),
-        )
-    }
-
-    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_i_64(value: i64) -> *mut i64 {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(value)
     }
@@ -12548,22 +12060,6 @@ mod io {
     ) -> *mut wire_cst_message_success_action_data {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(
             wire_cst_message_success_action_data::new_with_null_ptr(),
-        )
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_node_config() -> *mut wire_cst_node_config
-    {
-        flutter_rust_bridge::for_generated::new_leak_box_ptr(
-            wire_cst_node_config::new_with_null_ptr(),
-        )
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_node_credentials(
-    ) -> *mut wire_cst_node_credentials {
-        flutter_rust_bridge::for_generated::new_leak_box_ptr(
-            wire_cst_node_credentials::new_with_null_ptr(),
         )
     }
 
@@ -13192,7 +12688,6 @@ mod io {
         api_key: *mut wire_cst_list_prim_u_8_strict,
         maxfee_percent: f64,
         exemptfee_msat: u64,
-        node_config: wire_cst_node_config,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -13222,23 +12717,6 @@ mod io {
     pub struct wire_cst_fiat_currency {
         id: *mut wire_cst_list_prim_u_8_strict,
         info: wire_cst_currency_info,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_greenlight_credentials {
-        developer_key: *mut wire_cst_list_prim_u_8_strict,
-        developer_cert: *mut wire_cst_list_prim_u_8_strict,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_greenlight_device_credentials {
-        device: *mut wire_cst_list_prim_u_8_strict,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_greenlight_node_config {
-        partner_credentials: *mut wire_cst_greenlight_credentials,
-        invite_code: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -13686,40 +13164,6 @@ mod io {
     pub struct wire_cst_metadata_filter {
         json_path: *mut wire_cst_list_prim_u_8_strict,
         json_value: *mut wire_cst_list_prim_u_8_strict,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_node_config {
-        tag: i32,
-        kind: NodeConfigKind,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub union NodeConfigKind {
-        Greenlight: wire_cst_NodeConfig_Greenlight,
-        nil__: (),
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_NodeConfig_Greenlight {
-        config: *mut wire_cst_greenlight_node_config,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_node_credentials {
-        tag: i32,
-        kind: NodeCredentialsKind,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub union NodeCredentialsKind {
-        Greenlight: wire_cst_NodeCredentials_Greenlight,
-        nil__: (),
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct wire_cst_NodeCredentials_Greenlight {
-        credentials: *mut wire_cst_greenlight_device_credentials,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]

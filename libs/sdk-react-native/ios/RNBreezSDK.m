@@ -24,7 +24,6 @@ RCT_EXTERN_METHOD(
 RCT_EXTERN_METHOD(
     defaultConfig: (NSString*)envType
     apiKey: (NSString*)apiKey
-    nodeConfig: (NSDictionary*)nodeConfig
     resolve: (RCTPromiseResolveBlock)resolve
     reject: (RCTPromiseRejectBlock)reject
 )
@@ -102,11 +101,6 @@ RCT_EXTERN_METHOD(
 RCT_EXTERN_METHOD(
     reportIssue: (NSDictionary*)req
     resolve: (RCTPromiseResolveBlock)resolve
-    reject: (RCTPromiseRejectBlock)reject
-)
-
-RCT_EXTERN_METHOD(
-    nodeCredentials: (RCTPromiseResolveBlock)resolve
     reject: (RCTPromiseRejectBlock)reject
 )
 

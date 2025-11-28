@@ -120,29 +120,6 @@ enum Network {
     "Regtest",
 };
 
-dictionary GreenlightCredentials {
-    sequence<u8> developer_key;
-    sequence<u8> developer_cert;
-};
-
-dictionary GreenlightDeviceCredentials {
-    sequence<u8> device;
-};
-
-[Enum]
-interface NodeCredentials {
-    Greenlight(GreenlightDeviceCredentials credentials);
-};
-
-dictionary GreenlightNodeConfig {
-    GreenlightCredentials? partner_credentials;
-    string? invite_code;
-};
-
-[Enum]
-interface NodeConfig {
-    Greenlight(GreenlightNodeConfig config);
-};
 
 dictionary Config {
     string breezserver;
@@ -159,7 +136,6 @@ dictionary Config {
     string? api_key;
     f64 maxfee_percent;
     u64 exemptfee_msat;
-    NodeConfig node_config;
 };
 
 dictionary RouteHint {
@@ -875,9 +851,6 @@ interface BlockingBreezServices {
    void report_issue(ReportIssueRequest req);
 
    [Throws=SdkError]
-   NodeCredentials? node_credentials();
-
-   [Throws=SdkError]
    NodeState node_info();
 
    [Throws=SdkError]
@@ -1015,7 +988,7 @@ namespace breez_sdk {
  [Throws=SdkError]
  sequence<u8> mnemonic_to_seed(string phrase);
 
- Config default_config(EnvironmentType env_type, string api_key, NodeConfig node_config);
+ Config default_config(EnvironmentType env_type, string api_key);
 
  [Throws=SdkError]
  StaticBackupResponse static_backup(StaticBackupRequest req);

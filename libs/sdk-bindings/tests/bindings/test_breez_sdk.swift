@@ -18,7 +18,7 @@ class LogStreamListener: LogStream {
 do {
     try setLogStream(logStream: LogStreamListener());
     let seed = try mnemonicToSeed(phrase: "repeat hawk combine screen network rhythm ritual social neither casual volcano powder");
-    let config = breez_sdk.defaultConfig(envType: EnvironmentType.production, apiKey: "code", nodeConfig: NodeConfig.greenlight(config: GreenlightNodeConfig(partnerCredentials: nil, inviteCode: nil)));
+    let config = breez_sdk.defaultConfig(envType: EnvironmentType.production, apiKey: "code");
     let connectRequest = ConnectRequest(config: config, seed: seed)
     let sdkServices = try connect(req: connectRequest, listener: SDKListener());    
     let nodeInfo = try sdkServices.nodeInfo();

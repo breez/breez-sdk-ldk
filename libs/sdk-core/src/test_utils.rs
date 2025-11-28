@@ -53,7 +53,7 @@ use crate::swap_out::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReve
 use crate::swap_out::error::{ReverseSwapError, ReverseSwapResult};
 use crate::{
     parse_invoice, BuyBitcoinProvider, Config, CustomMessage, LNInvoice, MaxChannelAmount,
-    NodeCredentials, OpeningFeeParamsMenu, PaymentResponse, PrepareRedeemOnchainFundsRequest,
+    OpeningFeeParamsMenu, PaymentResponse, PrepareRedeemOnchainFundsRequest,
     PrepareRedeemOnchainFundsResponse, ReceivePaymentRequest, ReverseSwapPairInfo, RouteHint,
     RouteHintHop, SwapInfo,
 };
@@ -310,10 +310,6 @@ pub struct MockNodeAPI {
 
 #[tonic::async_trait]
 impl NodeAPI for MockNodeAPI {
-    async fn node_credentials(&self) -> NodeResult<Option<NodeCredentials>> {
-        Err(NodeError::Generic("Not implemented".to_string()))
-    }
-
     async fn configure_node(&self, _close_to_address: Option<String>) -> NodeResult<()> {
         Ok(())
     }
@@ -759,15 +755,7 @@ pub fn create_test_config() -> crate::models::Config {
     let mut conf = Config {
         default_lsp_id: Some(String::from("03cea51f-b654-4fb0-8e82-eca137f236a0")),
         chainnotifier_url: "http://test-chainnotifier.local".to_string(),
-        ..Config::production(
-            "".into(),
-            crate::NodeConfig::Greenlight {
-                config: crate::GreenlightNodeConfig {
-                    partner_credentials: None,
-                    invite_code: None,
-                },
-            },
-        )
+        ..Config::production("".into())
     };
     conf.working_dir = get_test_working_dir();
     conf

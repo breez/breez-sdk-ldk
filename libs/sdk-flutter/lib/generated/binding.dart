@@ -27,9 +27,6 @@ Future<bool> isInitialized() => BreezSdkBindings.instance.api.crateBindingIsInit
 /// See [BreezServices::sync]
 Future<void> sync() => BreezSdkBindings.instance.api.crateBindingSync();
 
-/// See [BreezServices::node_credentials]
-Future<NodeCredentials?> nodeCredentials() => BreezSdkBindings.instance.api.crateBindingNodeCredentials();
-
 /// See [BreezServices::node_info]
 Future<NodeState> nodeInfo() => BreezSdkBindings.instance.api.crateBindingNodeInfo();
 
@@ -53,15 +50,8 @@ Future<Uint8List> mnemonicToSeed({required String phrase}) =>
     BreezSdkBindings.instance.api.crateBindingMnemonicToSeed(phrase: phrase);
 
 /// See [BreezServices::default_config]
-Future<Config> defaultConfig({
-  required EnvironmentType envType,
-  required String apiKey,
-  required NodeConfig nodeConfig,
-}) => BreezSdkBindings.instance.api.crateBindingDefaultConfig(
-  envType: envType,
-  apiKey: apiKey,
-  nodeConfig: nodeConfig,
-);
+Future<Config> defaultConfig({required EnvironmentType envType, required String apiKey}) =>
+    BreezSdkBindings.instance.api.crateBindingDefaultConfig(envType: envType, apiKey: apiKey);
 
 /// See [BreezServices::static_backup]
 Future<StaticBackupResponse> staticBackup({required StaticBackupRequest req}) =>

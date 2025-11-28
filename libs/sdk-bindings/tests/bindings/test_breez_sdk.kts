@@ -18,7 +18,7 @@ class LogStreamListener: breez_sdk.LogStream {
 try {
     breez_sdk.setLogStream(LogStreamListener());
     var seed = breez_sdk.mnemonicToSeed("repeat hawk combine screen network rhythm ritual social neither casual volcano powder");
-    var config = breez_sdk.defaultConfig(breez_sdk.EnvironmentType.PRODUCTION, "code", breez_sdk.NodeConfig.Greenlight(breez_sdk.GreenlightNodeConfig(null, null)))
+    var config = breez_sdk.defaultConfig(breez_sdk.EnvironmentType.PRODUCTION, "code")
     var connectRequest = breez_sdk.ConnectRequest(config, seed)
     var sdkServices = breez_sdk.connect(connectRequest, SDKListener());    
     var nodeInfo = sdkServices.nodeInfo();

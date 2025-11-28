@@ -357,7 +357,6 @@ fun asConfig(config: ReadableMap): Config? {
                 "paymentTimeoutSec",
                 "maxfeePercent",
                 "exemptfeeMsat",
-                "nodeConfig",
             ),
         )
     ) {
@@ -377,7 +376,6 @@ fun asConfig(config: ReadableMap): Config? {
     val apiKey = if (hasNonNullKey(config, "apiKey")) config.getString("apiKey") else null
     val maxfeePercent = config.getDouble("maxfeePercent")
     val exemptfeeMsat = config.getDouble("exemptfeeMsat").toULong()
-    val nodeConfig = config.getMap("nodeConfig")?.let { asNodeConfig(it) }!!
     return Config(
         breezserver,
         chainnotifierUrl,
@@ -393,7 +391,6 @@ fun asConfig(config: ReadableMap): Config? {
         apiKey,
         maxfeePercent,
         exemptfeeMsat,
-        nodeConfig,
     )
 }
 
@@ -413,7 +410,6 @@ fun readableMapOf(config: Config): ReadableMap =
         "apiKey" to config.apiKey,
         "maxfeePercent" to config.maxfeePercent,
         "exemptfeeMsat" to config.exemptfeeMsat,
-        "nodeConfig" to readableMapOf(config.nodeConfig),
     )
 
 fun asConfigList(arr: ReadableArray): List<Config> {
@@ -571,110 +567,6 @@ fun asFiatCurrencyList(arr: ReadableArray): List<FiatCurrency> {
     for (value in arr.toArrayList()) {
         when (value) {
             is ReadableMap -> list.add(asFiatCurrency(value)!!)
-            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
-        }
-    }
-    return list
-}
-
-fun asGreenlightCredentials(greenlightCredentials: ReadableMap): GreenlightCredentials? {
-    if (!validateMandatoryFields(
-            greenlightCredentials,
-            arrayOf(
-                "developerKey",
-                "developerCert",
-            ),
-        )
-    ) {
-        return null
-    }
-    val developerKey = greenlightCredentials.getArray("developerKey")?.let { asUByteList(it) }!!
-    val developerCert = greenlightCredentials.getArray("developerCert")?.let { asUByteList(it) }!!
-    return GreenlightCredentials(developerKey, developerCert)
-}
-
-fun readableMapOf(greenlightCredentials: GreenlightCredentials): ReadableMap =
-    readableMapOf(
-        "developerKey" to readableArrayOf(greenlightCredentials.developerKey),
-        "developerCert" to readableArrayOf(greenlightCredentials.developerCert),
-    )
-
-fun asGreenlightCredentialsList(arr: ReadableArray): List<GreenlightCredentials> {
-    val list = ArrayList<GreenlightCredentials>()
-    for (value in arr.toArrayList()) {
-        when (value) {
-            is ReadableMap -> list.add(asGreenlightCredentials(value)!!)
-            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
-        }
-    }
-    return list
-}
-
-fun asGreenlightDeviceCredentials(greenlightDeviceCredentials: ReadableMap): GreenlightDeviceCredentials? {
-    if (!validateMandatoryFields(
-            greenlightDeviceCredentials,
-            arrayOf(
-                "device",
-            ),
-        )
-    ) {
-        return null
-    }
-    val device = greenlightDeviceCredentials.getArray("device")?.let { asUByteList(it) }!!
-    return GreenlightDeviceCredentials(device)
-}
-
-fun readableMapOf(greenlightDeviceCredentials: GreenlightDeviceCredentials): ReadableMap =
-    readableMapOf(
-        "device" to readableArrayOf(greenlightDeviceCredentials.device),
-    )
-
-fun asGreenlightDeviceCredentialsList(arr: ReadableArray): List<GreenlightDeviceCredentials> {
-    val list = ArrayList<GreenlightDeviceCredentials>()
-    for (value in arr.toArrayList()) {
-        when (value) {
-            is ReadableMap -> list.add(asGreenlightDeviceCredentials(value)!!)
-            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
-        }
-    }
-    return list
-}
-
-fun asGreenlightNodeConfig(greenlightNodeConfig: ReadableMap): GreenlightNodeConfig? {
-    if (!validateMandatoryFields(
-            greenlightNodeConfig,
-            arrayOf(),
-        )
-    ) {
-        return null
-    }
-    val partnerCredentials =
-        if (hasNonNullKey(
-                greenlightNodeConfig,
-                "partnerCredentials",
-            )
-        ) {
-            greenlightNodeConfig.getMap("partnerCredentials")?.let {
-                asGreenlightCredentials(it)
-            }
-        } else {
-            null
-        }
-    val inviteCode = if (hasNonNullKey(greenlightNodeConfig, "inviteCode")) greenlightNodeConfig.getString("inviteCode") else null
-    return GreenlightNodeConfig(partnerCredentials, inviteCode)
-}
-
-fun readableMapOf(greenlightNodeConfig: GreenlightNodeConfig): ReadableMap =
-    readableMapOf(
-        "partnerCredentials" to greenlightNodeConfig.partnerCredentials?.let { readableMapOf(it) },
-        "inviteCode" to greenlightNodeConfig.inviteCode,
-    )
-
-fun asGreenlightNodeConfigList(arr: ReadableArray): List<GreenlightNodeConfig> {
-    val list = ArrayList<GreenlightNodeConfig>()
-    for (value in arr.toArrayList()) {
-        when (value) {
-            is ReadableMap -> list.add(asGreenlightNodeConfig(value)!!)
             else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }
@@ -4011,70 +3903,6 @@ fun asNetworkList(arr: ReadableArray): List<Network> {
     for (value in arr.toArrayList()) {
         when (value) {
             is String -> list.add(asNetwork(value)!!)
-            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
-        }
-    }
-    return list
-}
-
-fun asNodeConfig(nodeConfig: ReadableMap): NodeConfig? {
-    val type = nodeConfig.getString("type")
-
-    if (type == "greenlight") {
-        val config = nodeConfig.getMap("config")?.let { asGreenlightNodeConfig(it) }!!
-        return NodeConfig.Greenlight(config)
-    }
-    return null
-}
-
-fun readableMapOf(nodeConfig: NodeConfig): ReadableMap? {
-    val map = Arguments.createMap()
-    when (nodeConfig) {
-        is NodeConfig.Greenlight -> {
-            pushToMap(map, "type", "greenlight")
-            pushToMap(map, "config", readableMapOf(nodeConfig.config))
-        }
-    }
-    return map
-}
-
-fun asNodeConfigList(arr: ReadableArray): List<NodeConfig> {
-    val list = ArrayList<NodeConfig>()
-    for (value in arr.toArrayList()) {
-        when (value) {
-            is ReadableMap -> list.add(asNodeConfig(value)!!)
-            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
-        }
-    }
-    return list
-}
-
-fun asNodeCredentials(nodeCredentials: ReadableMap): NodeCredentials? {
-    val type = nodeCredentials.getString("type")
-
-    if (type == "greenlight") {
-        val credentials = nodeCredentials.getMap("credentials")?.let { asGreenlightDeviceCredentials(it) }!!
-        return NodeCredentials.Greenlight(credentials)
-    }
-    return null
-}
-
-fun readableMapOf(nodeCredentials: NodeCredentials): ReadableMap? {
-    val map = Arguments.createMap()
-    when (nodeCredentials) {
-        is NodeCredentials.Greenlight -> {
-            pushToMap(map, "type", "greenlight")
-            pushToMap(map, "credentials", readableMapOf(nodeCredentials.credentials))
-        }
-    }
-    return map
-}
-
-fun asNodeCredentialsList(arr: ReadableArray): List<NodeCredentials> {
-    val list = ArrayList<NodeCredentials>()
-    for (value in arr.toArrayList()) {
-        when (value) {
-            is ReadableMap -> list.add(asNodeCredentials(value)!!)
             else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }

@@ -45,7 +45,7 @@ use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
 use crate::{
-    CustomMessage, LspInformation, MaxChannelAmount, NodeCredentials, Payment, PaymentResponse,
+    CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
     PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHint, RouteHintHop,
     SyncResponse, TlvEntry,
 };
@@ -193,10 +193,6 @@ impl Ldk {
 
 #[tonic::async_trait]
 impl NodeAPI for Ldk {
-    async fn node_credentials(&self) -> NodeResult<Option<NodeCredentials>> {
-        Ok(None)
-    }
-
     async fn configure_node(&self, _close_to_address: Option<String>) -> NodeResult<()> {
         Err(NodeError::generic("LDK implementation not yet available"))
     }

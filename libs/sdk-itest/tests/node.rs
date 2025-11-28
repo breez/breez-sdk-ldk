@@ -3,9 +3,8 @@ mod event_listener;
 use bitcoin::Amount;
 use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, GreenlightNodeConfig, LnPaymentDetails,
-    NodeConfig, PaymentDetails, PaymentType, ReceivePaymentRequest, SendPaymentRequest,
-    SendSpontaneousPaymentRequest,
+    BreezEvent, BreezServices, Config, ConnectRequest, LnPaymentDetails, PaymentDetails,
+    PaymentType, ReceivePaymentRequest, SendPaymentRequest, SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -39,13 +38,7 @@ async fn test_node_receive_payments() {
     info!("    LND is running");
     info!("    RGS is running: {}", rgs.external_endpoint());
 
-    let node_config = NodeConfig::Greenlight {
-        config: GreenlightNodeConfig {
-            partner_credentials: None,
-            invite_code: None,
-        },
-    };
-    let mut config = Config::regtest(String::new(), node_config);
+    let mut config = Config::regtest(String::new());
     config.working_dir = testdir!().to_string_lossy().to_string();
     config.mempoolspace_url = Some(mempool.external_endpoint());
     config.esplora_url = esplora.external_endpoint();

@@ -99,15 +99,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   ConnectRequest dco_decode_box_autoadd_connect_request(dynamic raw);
 
   @protected
-  GreenlightCredentials dco_decode_box_autoadd_greenlight_credentials(dynamic raw);
-
-  @protected
-  GreenlightDeviceCredentials dco_decode_box_autoadd_greenlight_device_credentials(dynamic raw);
-
-  @protected
-  GreenlightNodeConfig dco_decode_box_autoadd_greenlight_node_config(dynamic raw);
-
-  @protected
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
@@ -160,12 +151,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   MessageSuccessActionData dco_decode_box_autoadd_message_success_action_data(dynamic raw);
-
-  @protected
-  NodeConfig dco_decode_box_autoadd_node_config(dynamic raw);
-
-  @protected
-  NodeCredentials dco_decode_box_autoadd_node_credentials(dynamic raw);
 
   @protected
   OpenChannelFeeRequest dco_decode_box_autoadd_open_channel_fee_request(dynamic raw);
@@ -289,15 +274,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   FiatCurrency dco_decode_fiat_currency(dynamic raw);
-
-  @protected
-  GreenlightCredentials dco_decode_greenlight_credentials(dynamic raw);
-
-  @protected
-  GreenlightDeviceCredentials dco_decode_greenlight_device_credentials(dynamic raw);
-
-  @protected
-  GreenlightNodeConfig dco_decode_greenlight_node_config(dynamic raw);
 
   @protected
   HealthCheckStatus dco_decode_health_check_status(dynamic raw);
@@ -447,12 +423,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   Network dco_decode_network(dynamic raw);
 
   @protected
-  NodeConfig dco_decode_node_config(dynamic raw);
-
-  @protected
-  NodeCredentials dco_decode_node_credentials(dynamic raw);
-
-  @protected
   NodeState dco_decode_node_state(dynamic raw);
 
   @protected
@@ -480,9 +450,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
 
   @protected
-  GreenlightCredentials? dco_decode_opt_box_autoadd_greenlight_credentials(dynamic raw);
-
-  @protected
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
 
   @protected
@@ -490,9 +457,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LspInformation? dco_decode_opt_box_autoadd_lsp_information(dynamic raw);
-
-  @protected
-  NodeCredentials? dco_decode_opt_box_autoadd_node_credentials(dynamic raw);
 
   @protected
   OpeningFeeParams? dco_decode_opt_box_autoadd_opening_fee_params(dynamic raw);
@@ -774,17 +738,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   ConnectRequest sse_decode_box_autoadd_connect_request(SseDeserializer deserializer);
 
   @protected
-  GreenlightCredentials sse_decode_box_autoadd_greenlight_credentials(SseDeserializer deserializer);
-
-  @protected
-  GreenlightDeviceCredentials sse_decode_box_autoadd_greenlight_device_credentials(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  GreenlightNodeConfig sse_decode_box_autoadd_greenlight_node_config(SseDeserializer deserializer);
-
-  @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
@@ -837,12 +790,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   MessageSuccessActionData sse_decode_box_autoadd_message_success_action_data(SseDeserializer deserializer);
-
-  @protected
-  NodeConfig sse_decode_box_autoadd_node_config(SseDeserializer deserializer);
-
-  @protected
-  NodeCredentials sse_decode_box_autoadd_node_credentials(SseDeserializer deserializer);
 
   @protected
   OpenChannelFeeRequest sse_decode_box_autoadd_open_channel_fee_request(SseDeserializer deserializer);
@@ -974,15 +921,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   FiatCurrency sse_decode_fiat_currency(SseDeserializer deserializer);
-
-  @protected
-  GreenlightCredentials sse_decode_greenlight_credentials(SseDeserializer deserializer);
-
-  @protected
-  GreenlightDeviceCredentials sse_decode_greenlight_device_credentials(SseDeserializer deserializer);
-
-  @protected
-  GreenlightNodeConfig sse_decode_greenlight_node_config(SseDeserializer deserializer);
 
   @protected
   HealthCheckStatus sse_decode_health_check_status(SseDeserializer deserializer);
@@ -1132,12 +1070,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   Network sse_decode_network(SseDeserializer deserializer);
 
   @protected
-  NodeConfig sse_decode_node_config(SseDeserializer deserializer);
-
-  @protected
-  NodeCredentials sse_decode_node_credentials(SseDeserializer deserializer);
-
-  @protected
   NodeState sse_decode_node_state(SseDeserializer deserializer);
 
   @protected
@@ -1165,9 +1097,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
-  GreenlightCredentials? sse_decode_opt_box_autoadd_greenlight_credentials(SseDeserializer deserializer);
-
-  @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
@@ -1175,9 +1104,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LspInformation? sse_decode_opt_box_autoadd_lsp_information(SseDeserializer deserializer);
-
-  @protected
-  NodeCredentials? sse_decode_opt_box_autoadd_node_credentials(SseDeserializer deserializer);
 
   @protected
   OpeningFeeParams? sse_decode_opt_box_autoadd_opening_fee_params(SseDeserializer deserializer);
@@ -1538,36 +1464,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
-  ffi.Pointer<wire_cst_greenlight_credentials> cst_encode_box_autoadd_greenlight_credentials(
-    GreenlightCredentials raw,
-  ) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    final ptr = wire.cst_new_box_autoadd_greenlight_credentials();
-    cst_api_fill_to_wire_greenlight_credentials(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_cst_greenlight_device_credentials> cst_encode_box_autoadd_greenlight_device_credentials(
-    GreenlightDeviceCredentials raw,
-  ) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    final ptr = wire.cst_new_box_autoadd_greenlight_device_credentials();
-    cst_api_fill_to_wire_greenlight_device_credentials(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_cst_greenlight_node_config> cst_encode_box_autoadd_greenlight_node_config(
-    GreenlightNodeConfig raw,
-  ) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    final ptr = wire.cst_new_box_autoadd_greenlight_node_config();
-    cst_api_fill_to_wire_greenlight_node_config(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
   ffi.Pointer<ffi.Int64> cst_encode_box_autoadd_i_64(PlatformInt64 raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return wire.cst_new_box_autoadd_i_64(cst_encode_i_64(raw));
@@ -1726,22 +1622,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ptr = wire.cst_new_box_autoadd_message_success_action_data();
     cst_api_fill_to_wire_message_success_action_data(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_cst_node_config> cst_encode_box_autoadd_node_config(NodeConfig raw) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    final ptr = wire.cst_new_box_autoadd_node_config();
-    cst_api_fill_to_wire_node_config(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_cst_node_credentials> cst_encode_box_autoadd_node_credentials(NodeCredentials raw) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    final ptr = wire.cst_new_box_autoadd_node_credentials();
-    cst_api_fill_to_wire_node_credentials(raw, ptr.ref);
     return ptr;
   }
 
@@ -2203,14 +2083,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
-  ffi.Pointer<wire_cst_greenlight_credentials> cst_encode_opt_box_autoadd_greenlight_credentials(
-    GreenlightCredentials? raw,
-  ) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    return raw == null ? ffi.nullptr : cst_encode_box_autoadd_greenlight_credentials(raw);
-  }
-
-  @protected
   ffi.Pointer<ffi.Int64> cst_encode_opt_box_autoadd_i_64(PlatformInt64? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? ffi.nullptr : cst_encode_box_autoadd_i_64(raw);
@@ -2226,12 +2098,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   ffi.Pointer<wire_cst_lsp_information> cst_encode_opt_box_autoadd_lsp_information(LspInformation? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? ffi.nullptr : cst_encode_box_autoadd_lsp_information(raw);
-  }
-
-  @protected
-  ffi.Pointer<wire_cst_node_credentials> cst_encode_opt_box_autoadd_node_credentials(NodeCredentials? raw) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    return raw == null ? ffi.nullptr : cst_encode_box_autoadd_node_credentials(raw);
   }
 
   @protected
@@ -2491,30 +2357,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
-  void cst_api_fill_to_wire_box_autoadd_greenlight_credentials(
-    GreenlightCredentials apiObj,
-    ffi.Pointer<wire_cst_greenlight_credentials> wireObj,
-  ) {
-    cst_api_fill_to_wire_greenlight_credentials(apiObj, wireObj.ref);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_box_autoadd_greenlight_device_credentials(
-    GreenlightDeviceCredentials apiObj,
-    ffi.Pointer<wire_cst_greenlight_device_credentials> wireObj,
-  ) {
-    cst_api_fill_to_wire_greenlight_device_credentials(apiObj, wireObj.ref);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_box_autoadd_greenlight_node_config(
-    GreenlightNodeConfig apiObj,
-    ffi.Pointer<wire_cst_greenlight_node_config> wireObj,
-  ) {
-    cst_api_fill_to_wire_greenlight_node_config(apiObj, wireObj.ref);
-  }
-
-  @protected
   void cst_api_fill_to_wire_box_autoadd_invoice_paid_details(
     InvoicePaidDetails apiObj,
     ffi.Pointer<wire_cst_invoice_paid_details> wireObj,
@@ -2645,22 +2487,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     ffi.Pointer<wire_cst_message_success_action_data> wireObj,
   ) {
     cst_api_fill_to_wire_message_success_action_data(apiObj, wireObj.ref);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_box_autoadd_node_config(
-    NodeConfig apiObj,
-    ffi.Pointer<wire_cst_node_config> wireObj,
-  ) {
-    cst_api_fill_to_wire_node_config(apiObj, wireObj.ref);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_box_autoadd_node_credentials(
-    NodeCredentials apiObj,
-    ffi.Pointer<wire_cst_node_credentials> wireObj,
-  ) {
-    cst_api_fill_to_wire_node_credentials(apiObj, wireObj.ref);
   }
 
   @protected
@@ -2968,7 +2794,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.api_key = cst_encode_opt_String(apiObj.apiKey);
     wireObj.maxfee_percent = cst_encode_f_64(apiObj.maxfeePercent);
     wireObj.exemptfee_msat = cst_encode_u_64(apiObj.exemptfeeMsat);
-    cst_api_fill_to_wire_node_config(apiObj.nodeConfig, wireObj.node_config);
   }
 
   @protected
@@ -3001,34 +2826,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void cst_api_fill_to_wire_fiat_currency(FiatCurrency apiObj, wire_cst_fiat_currency wireObj) {
     wireObj.id = cst_encode_String(apiObj.id);
     cst_api_fill_to_wire_currency_info(apiObj.info, wireObj.info);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_greenlight_credentials(
-    GreenlightCredentials apiObj,
-    wire_cst_greenlight_credentials wireObj,
-  ) {
-    wireObj.developer_key = cst_encode_list_prim_u_8_strict(apiObj.developerKey);
-    wireObj.developer_cert = cst_encode_list_prim_u_8_strict(apiObj.developerCert);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_greenlight_device_credentials(
-    GreenlightDeviceCredentials apiObj,
-    wire_cst_greenlight_device_credentials wireObj,
-  ) {
-    wireObj.device = cst_encode_list_prim_u_8_strict(apiObj.device);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_greenlight_node_config(
-    GreenlightNodeConfig apiObj,
-    wire_cst_greenlight_node_config wireObj,
-  ) {
-    wireObj.partner_credentials = cst_encode_opt_box_autoadd_greenlight_credentials(
-      apiObj.partnerCredentials,
-    );
-    wireObj.invite_code = cst_encode_opt_String(apiObj.inviteCode);
   }
 
   @protected
@@ -3384,26 +3181,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void cst_api_fill_to_wire_metadata_filter(MetadataFilter apiObj, wire_cst_metadata_filter wireObj) {
     wireObj.json_path = cst_encode_String(apiObj.jsonPath);
     wireObj.json_value = cst_encode_String(apiObj.jsonValue);
-  }
-
-  @protected
-  void cst_api_fill_to_wire_node_config(NodeConfig apiObj, wire_cst_node_config wireObj) {
-    if (apiObj is NodeConfig_Greenlight) {
-      var pre_config = cst_encode_box_autoadd_greenlight_node_config(apiObj.config);
-      wireObj.tag = 0;
-      wireObj.kind.Greenlight.config = pre_config;
-      return;
-    }
-  }
-
-  @protected
-  void cst_api_fill_to_wire_node_credentials(NodeCredentials apiObj, wire_cst_node_credentials wireObj) {
-    if (apiObj is NodeCredentials_Greenlight) {
-      var pre_credentials = cst_encode_box_autoadd_greenlight_device_credentials(apiObj.credentials);
-      wireObj.tag = 0;
-      wireObj.kind.Greenlight.credentials = pre_credentials;
-      return;
-    }
   }
 
   @protected
@@ -4036,18 +3813,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_box_autoadd_connect_request(ConnectRequest self, SseSerializer serializer);
 
   @protected
-  void sse_encode_box_autoadd_greenlight_credentials(GreenlightCredentials self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_box_autoadd_greenlight_device_credentials(
-    GreenlightDeviceCredentials self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_box_autoadd_greenlight_node_config(GreenlightNodeConfig self, SseSerializer serializer);
-
-  @protected
   void sse_encode_box_autoadd_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
@@ -4109,12 +3874,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     MessageSuccessActionData self,
     SseSerializer serializer,
   );
-
-  @protected
-  void sse_encode_box_autoadd_node_config(NodeConfig self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_box_autoadd_node_credentials(NodeCredentials self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_open_channel_fee_request(OpenChannelFeeRequest self, SseSerializer serializer);
@@ -4256,15 +4015,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_fiat_currency(FiatCurrency self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_greenlight_credentials(GreenlightCredentials self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_greenlight_device_credentials(GreenlightDeviceCredentials self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_greenlight_node_config(GreenlightNodeConfig self, SseSerializer serializer);
 
   @protected
   void sse_encode_health_check_status(HealthCheckStatus self, SseSerializer serializer);
@@ -4417,12 +4167,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_network(Network self, SseSerializer serializer);
 
   @protected
-  void sse_encode_node_config(NodeConfig self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_node_credentials(NodeCredentials self, SseSerializer serializer);
-
-  @protected
   void sse_encode_node_state(NodeState self, SseSerializer serializer);
 
   @protected
@@ -4453,12 +4197,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
 
   @protected
-  void sse_encode_opt_box_autoadd_greenlight_credentials(
-    GreenlightCredentials? self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_opt_box_autoadd_i_64(PlatformInt64? self, SseSerializer serializer);
 
   @protected
@@ -4466,9 +4204,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_opt_box_autoadd_lsp_information(LspInformation? self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_opt_box_autoadd_node_credentials(NodeCredentials? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_opening_fee_params(OpeningFeeParams? self, SseSerializer serializer);
@@ -4874,26 +4609,18 @@ class BreezSdkBindingsWire implements BaseWire {
     int port_,
     int env_type,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> api_key,
-    ffi.Pointer<wire_cst_node_config> node_config,
   ) {
-    return _wire__crate__binding__default_config(port_, env_type, api_key, node_config);
+    return _wire__crate__binding__default_config(port_, env_type, api_key);
   }
 
   late final _wire__crate__binding__default_configPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(
-            ffi.Int64,
-            ffi.Int32,
-            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-            ffi.Pointer<wire_cst_node_config>,
-          )
+          ffi.Void Function(ffi.Int64, ffi.Int32, ffi.Pointer<wire_cst_list_prim_u_8_strict>)
         >
       >('frbgen_breez_sdk_wire__crate__binding__default_config');
   late final _wire__crate__binding__default_config = _wire__crate__binding__default_configPtr
-      .asFunction<
-        void Function(int, int, ffi.Pointer<wire_cst_list_prim_u_8_strict>, ffi.Pointer<wire_cst_node_config>)
-      >();
+      .asFunction<void Function(int, int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__binding__disconnect(int port_) {
     return _wire__crate__binding__disconnect(port_);
@@ -5114,17 +4841,6 @@ class BreezSdkBindingsWire implements BaseWire {
       );
   late final _wire__crate__binding__mnemonic_to_seed = _wire__crate__binding__mnemonic_to_seedPtr
       .asFunction<void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
-
-  void wire__crate__binding__node_credentials(int port_) {
-    return _wire__crate__binding__node_credentials(port_);
-  }
-
-  late final _wire__crate__binding__node_credentialsPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
-        'frbgen_breez_sdk_wire__crate__binding__node_credentials',
-      );
-  late final _wire__crate__binding__node_credentials = _wire__crate__binding__node_credentialsPtr
-      .asFunction<void Function(int)>();
 
   void wire__crate__binding__node_info(int port_) {
     return _wire__crate__binding__node_info(port_);
@@ -5613,40 +5329,6 @@ class BreezSdkBindingsWire implements BaseWire {
   late final _cst_new_box_autoadd_connect_request = _cst_new_box_autoadd_connect_requestPtr
       .asFunction<ffi.Pointer<wire_cst_connect_request> Function()>();
 
-  ffi.Pointer<wire_cst_greenlight_credentials> cst_new_box_autoadd_greenlight_credentials() {
-    return _cst_new_box_autoadd_greenlight_credentials();
-  }
-
-  late final _cst_new_box_autoadd_greenlight_credentialsPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_greenlight_credentials> Function()>>(
-        'frbgen_breez_sdk_cst_new_box_autoadd_greenlight_credentials',
-      );
-  late final _cst_new_box_autoadd_greenlight_credentials = _cst_new_box_autoadd_greenlight_credentialsPtr
-      .asFunction<ffi.Pointer<wire_cst_greenlight_credentials> Function()>();
-
-  ffi.Pointer<wire_cst_greenlight_device_credentials> cst_new_box_autoadd_greenlight_device_credentials() {
-    return _cst_new_box_autoadd_greenlight_device_credentials();
-  }
-
-  late final _cst_new_box_autoadd_greenlight_device_credentialsPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_greenlight_device_credentials> Function()>>(
-        'frbgen_breez_sdk_cst_new_box_autoadd_greenlight_device_credentials',
-      );
-  late final _cst_new_box_autoadd_greenlight_device_credentials =
-      _cst_new_box_autoadd_greenlight_device_credentialsPtr
-          .asFunction<ffi.Pointer<wire_cst_greenlight_device_credentials> Function()>();
-
-  ffi.Pointer<wire_cst_greenlight_node_config> cst_new_box_autoadd_greenlight_node_config() {
-    return _cst_new_box_autoadd_greenlight_node_config();
-  }
-
-  late final _cst_new_box_autoadd_greenlight_node_configPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_greenlight_node_config> Function()>>(
-        'frbgen_breez_sdk_cst_new_box_autoadd_greenlight_node_config',
-      );
-  late final _cst_new_box_autoadd_greenlight_node_config = _cst_new_box_autoadd_greenlight_node_configPtr
-      .asFunction<ffi.Pointer<wire_cst_greenlight_node_config> Function()>();
-
   ffi.Pointer<ffi.Int64> cst_new_box_autoadd_i_64(int value) {
     return _cst_new_box_autoadd_i_64(value);
   }
@@ -5847,28 +5529,6 @@ class BreezSdkBindingsWire implements BaseWire {
   late final _cst_new_box_autoadd_message_success_action_data =
       _cst_new_box_autoadd_message_success_action_dataPtr
           .asFunction<ffi.Pointer<wire_cst_message_success_action_data> Function()>();
-
-  ffi.Pointer<wire_cst_node_config> cst_new_box_autoadd_node_config() {
-    return _cst_new_box_autoadd_node_config();
-  }
-
-  late final _cst_new_box_autoadd_node_configPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_node_config> Function()>>(
-        'frbgen_breez_sdk_cst_new_box_autoadd_node_config',
-      );
-  late final _cst_new_box_autoadd_node_config = _cst_new_box_autoadd_node_configPtr
-      .asFunction<ffi.Pointer<wire_cst_node_config> Function()>();
-
-  ffi.Pointer<wire_cst_node_credentials> cst_new_box_autoadd_node_credentials() {
-    return _cst_new_box_autoadd_node_credentials();
-  }
-
-  late final _cst_new_box_autoadd_node_credentialsPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_node_credentials> Function()>>(
-        'frbgen_breez_sdk_cst_new_box_autoadd_node_credentials',
-      );
-  late final _cst_new_box_autoadd_node_credentials = _cst_new_box_autoadd_node_credentialsPtr
-      .asFunction<ffi.Pointer<wire_cst_node_credentials> Function()>();
 
   ffi.Pointer<wire_cst_open_channel_fee_request> cst_new_box_autoadd_open_channel_fee_request() {
     return _cst_new_box_autoadd_open_channel_fee_request();
@@ -6819,33 +6479,6 @@ final class wire_cst_configure_node_request extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> close_to_address;
 }
 
-final class wire_cst_greenlight_credentials extends ffi.Struct {
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> developer_key;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> developer_cert;
-}
-
-final class wire_cst_greenlight_node_config extends ffi.Struct {
-  external ffi.Pointer<wire_cst_greenlight_credentials> partner_credentials;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> invite_code;
-}
-
-final class wire_cst_NodeConfig_Greenlight extends ffi.Struct {
-  external ffi.Pointer<wire_cst_greenlight_node_config> config;
-}
-
-final class NodeConfigKind extends ffi.Union {
-  external wire_cst_NodeConfig_Greenlight Greenlight;
-}
-
-final class wire_cst_node_config extends ffi.Struct {
-  @ffi.Int32()
-  external int tag;
-
-  external NodeConfigKind kind;
-}
-
 final class wire_cst_config extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> breezserver;
 
@@ -6878,8 +6511,6 @@ final class wire_cst_config extends ffi.Struct {
 
   @ffi.Uint64()
   external int exemptfee_msat;
-
-  external wire_cst_node_config node_config;
 }
 
 final class wire_cst_connect_request extends ffi.Struct {
@@ -7219,10 +6850,6 @@ final class wire_cst_bitcoin_address_data extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> message;
 }
 
-final class wire_cst_greenlight_device_credentials extends ffi.Struct {
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> device;
-}
-
 final class wire_cst_ln_offer_blinded_path extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_String> blinded_hops;
 }
@@ -7309,21 +6936,6 @@ final class wire_cst_lsp_information extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> lsp_pubkey;
 
   external wire_cst_opening_fee_params_menu opening_fee_params_list;
-}
-
-final class wire_cst_NodeCredentials_Greenlight extends ffi.Struct {
-  external ffi.Pointer<wire_cst_greenlight_device_credentials> credentials;
-}
-
-final class NodeCredentialsKind extends ffi.Union {
-  external wire_cst_NodeCredentials_Greenlight Greenlight;
-}
-
-final class wire_cst_node_credentials extends ffi.Struct {
-  @ffi.Int32()
-  external int tag;
-
-  external NodeCredentialsKind kind;
 }
 
 final class wire_cst_symbol extends ffi.Struct {

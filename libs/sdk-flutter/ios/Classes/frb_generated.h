@@ -310,29 +310,6 @@ typedef struct wire_cst_configure_node_request {
   struct wire_cst_list_prim_u_8_strict *close_to_address;
 } wire_cst_configure_node_request;
 
-typedef struct wire_cst_greenlight_credentials {
-  struct wire_cst_list_prim_u_8_strict *developer_key;
-  struct wire_cst_list_prim_u_8_strict *developer_cert;
-} wire_cst_greenlight_credentials;
-
-typedef struct wire_cst_greenlight_node_config {
-  struct wire_cst_greenlight_credentials *partner_credentials;
-  struct wire_cst_list_prim_u_8_strict *invite_code;
-} wire_cst_greenlight_node_config;
-
-typedef struct wire_cst_NodeConfig_Greenlight {
-  struct wire_cst_greenlight_node_config *config;
-} wire_cst_NodeConfig_Greenlight;
-
-typedef union NodeConfigKind {
-  struct wire_cst_NodeConfig_Greenlight Greenlight;
-} NodeConfigKind;
-
-typedef struct wire_cst_node_config {
-  int32_t tag;
-  union NodeConfigKind kind;
-} wire_cst_node_config;
-
 typedef struct wire_cst_config {
   struct wire_cst_list_prim_u_8_strict *breezserver;
   struct wire_cst_list_prim_u_8_strict *chainnotifier_url;
@@ -348,7 +325,6 @@ typedef struct wire_cst_config {
   struct wire_cst_list_prim_u_8_strict *api_key;
   double maxfee_percent;
   uint64_t exemptfee_msat;
-  struct wire_cst_node_config node_config;
 } wire_cst_config;
 
 typedef struct wire_cst_connect_request {
@@ -579,10 +555,6 @@ typedef struct wire_cst_bitcoin_address_data {
   struct wire_cst_list_prim_u_8_strict *message;
 } wire_cst_bitcoin_address_data;
 
-typedef struct wire_cst_greenlight_device_credentials {
-  struct wire_cst_list_prim_u_8_strict *device;
-} wire_cst_greenlight_device_credentials;
-
 typedef struct wire_cst_ln_offer_blinded_path {
   struct wire_cst_list_String *blinded_hops;
 } wire_cst_ln_offer_blinded_path;
@@ -643,19 +615,6 @@ typedef struct wire_cst_lsp_information {
   struct wire_cst_list_prim_u_8_strict *lsp_pubkey;
   struct wire_cst_opening_fee_params_menu opening_fee_params_list;
 } wire_cst_lsp_information;
-
-typedef struct wire_cst_NodeCredentials_Greenlight {
-  struct wire_cst_greenlight_device_credentials *credentials;
-} wire_cst_NodeCredentials_Greenlight;
-
-typedef union NodeCredentialsKind {
-  struct wire_cst_NodeCredentials_Greenlight Greenlight;
-} NodeCredentialsKind;
-
-typedef struct wire_cst_node_credentials {
-  int32_t tag;
-  union NodeCredentialsKind kind;
-} wire_cst_node_credentials;
 
 typedef struct wire_cst_symbol {
   struct wire_cst_list_prim_u_8_strict *grapheme;
@@ -1006,8 +965,7 @@ void frbgen_breez_sdk_wire__crate__binding__connect_lsp(int64_t port_,
 
 void frbgen_breez_sdk_wire__crate__binding__default_config(int64_t port_,
                                                            int32_t env_type,
-                                                           struct wire_cst_list_prim_u_8_strict *api_key,
-                                                           struct wire_cst_node_config *node_config);
+                                                           struct wire_cst_list_prim_u_8_strict *api_key);
 
 void frbgen_breez_sdk_wire__crate__binding__disconnect(int64_t port_);
 
@@ -1057,8 +1015,6 @@ void frbgen_breez_sdk_wire__crate__binding__lsp_info(int64_t port_);
 
 void frbgen_breez_sdk_wire__crate__binding__mnemonic_to_seed(int64_t port_,
                                                              struct wire_cst_list_prim_u_8_strict *phrase);
-
-void frbgen_breez_sdk_wire__crate__binding__node_credentials(int64_t port_);
 
 void frbgen_breez_sdk_wire__crate__binding__node_info(int64_t port_);
 
@@ -1163,12 +1119,6 @@ struct wire_cst_configure_node_request *frbgen_breez_sdk_cst_new_box_autoadd_con
 
 struct wire_cst_connect_request *frbgen_breez_sdk_cst_new_box_autoadd_connect_request(void);
 
-struct wire_cst_greenlight_credentials *frbgen_breez_sdk_cst_new_box_autoadd_greenlight_credentials(void);
-
-struct wire_cst_greenlight_device_credentials *frbgen_breez_sdk_cst_new_box_autoadd_greenlight_device_credentials(void);
-
-struct wire_cst_greenlight_node_config *frbgen_breez_sdk_cst_new_box_autoadd_greenlight_node_config(void);
-
 int64_t *frbgen_breez_sdk_cst_new_box_autoadd_i_64(int64_t value);
 
 struct wire_cst_invoice_paid_details *frbgen_breez_sdk_cst_new_box_autoadd_invoice_paid_details(void);
@@ -1204,10 +1154,6 @@ struct wire_cst_ln_url_withdraw_success_data *frbgen_breez_sdk_cst_new_box_autoa
 struct wire_cst_lsp_information *frbgen_breez_sdk_cst_new_box_autoadd_lsp_information(void);
 
 struct wire_cst_message_success_action_data *frbgen_breez_sdk_cst_new_box_autoadd_message_success_action_data(void);
-
-struct wire_cst_node_config *frbgen_breez_sdk_cst_new_box_autoadd_node_config(void);
-
-struct wire_cst_node_credentials *frbgen_breez_sdk_cst_new_box_autoadd_node_credentials(void);
 
 struct wire_cst_open_channel_fee_request *frbgen_breez_sdk_cst_new_box_autoadd_open_channel_fee_request(void);
 
@@ -1313,9 +1259,6 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_closed_channel_payment_details);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_configure_node_request);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_connect_request);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_greenlight_credentials);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_greenlight_device_credentials);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_greenlight_node_config);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_i_64);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_invoice_paid_details);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_list_payments_request);
@@ -1334,8 +1277,6 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_ln_url_withdraw_success_data);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_lsp_information);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_message_success_action_data);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_node_config);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_node_credentials);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_open_channel_fee_request);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_opening_fee_params);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_cst_new_box_autoadd_pay_onchain_request);
@@ -1414,7 +1355,6 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__lsp_id);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__lsp_info);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__mnemonic_to_seed);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__node_credentials);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__node_info);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__onchain_payment_limits);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__open_channel_fee);

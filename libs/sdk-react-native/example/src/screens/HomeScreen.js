@@ -15,7 +15,6 @@ import {
     lspInfo,
     listFiatCurrencies,
     mnemonicToSeed,
-    NodeConfigVariant,
     nodeInfo,
     openChannelFee,
     receivePayment,
@@ -116,12 +115,7 @@ const HomeScreen = ({ navigation }) => {
                 let seed = await mnemonicToSeed(mnemonic)
                 addLine("mnemonicToSeed", obfuscateString(JSON.stringify(seed)))
 
-                const nodeConfig = {
-                    type: NodeConfigVariant.GREENLIGHT,
-                    config: {}
-                }
-
-                const config = await defaultConfig(EnvironmentType.PRODUCTION, BuildConfig.BREEZ_API_KEY, nodeConfig)
+                const config = await defaultConfig(EnvironmentType.PRODUCTION, BuildConfig.BREEZ_API_KEY)
                 addLine("defaultConfig", JSON.stringify(config))
 
                 eventSubscription = await connect({ config, seed }, eventHandler)

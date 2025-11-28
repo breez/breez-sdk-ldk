@@ -84,7 +84,6 @@ export interface Config {
     apiKey?: string
     maxfeePercent: number
     exemptfeeMsat: number
-    nodeConfig: NodeConfig
 }
 
 export interface ConfigureNodeRequest {
@@ -110,20 +109,6 @@ export interface CurrencyInfo {
 export interface FiatCurrency {
     id: string
     info: CurrencyInfo
-}
-
-export interface GreenlightCredentials {
-    developerKey: number[]
-    developerCert: number[]
-}
-
-export interface GreenlightDeviceCredentials {
-    device: number[]
-}
-
-export interface GreenlightNodeConfig {
-    partnerCredentials?: GreenlightCredentials
-    inviteCode?: string
 }
 
 export interface InvoicePaidDetails {
@@ -789,24 +774,6 @@ export enum Network {
     REGTEST = "regtest"
 }
 
-export enum NodeConfigVariant {
-    GREENLIGHT = "greenlight"
-}
-
-export interface NodeConfig {
-    type: NodeConfigVariant.GREENLIGHT,
-    config: GreenlightNodeConfig
-}
-
-export enum NodeCredentialsVariant {
-    GREENLIGHT = "greenlight"
-}
-
-export interface NodeCredentials {
-    type: NodeCredentialsVariant.GREENLIGHT,
-    credentials: GreenlightDeviceCredentials
-}
-
 export enum PaymentDetailsVariant {
     LN = "ln",
     CLOSED_CHANNEL = "closedChannel"
@@ -922,8 +889,8 @@ export const mnemonicToSeed = async (phrase: string): Promise<number[]> => {
     return response
 }
 
-export const defaultConfig = async (envType: EnvironmentType, apiKey: string, nodeConfig: NodeConfig): Promise<Config> => {
-    const response = await BreezSDK.defaultConfig(envType, apiKey, nodeConfig)
+export const defaultConfig = async (envType: EnvironmentType, apiKey: string): Promise<Config> => {
+    const response = await BreezSDK.defaultConfig(envType, apiKey)
     return response
 }
 
@@ -978,11 +945,6 @@ export const lnurlAuth = async (reqData: LnUrlAuthRequestData): Promise<LnUrlCal
 
 export const reportIssue = async (req: ReportIssueRequest): Promise<void> => {
     await BreezSDK.reportIssue(req)
-}
-
-export const nodeCredentials = async (): Promise<NodeCredentials | null> => {
-    const response = await BreezSDK.nodeCredentials()
-    return response
 }
 
 export const nodeInfo = async (): Promise<NodeState> => {

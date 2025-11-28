@@ -13,18 +13,15 @@ use crate::{
     bitcoin::bip32::{ChildNumber, Xpriv},
     lightning_invoice::RawBolt11Invoice,
     persist::error::PersistError,
-    CustomMessage, LnUrlAuthError, LspInformation, MaxChannelAmount, NodeCredentials, Payment, PaymentType,PaymentDetails,LnPaymentDetails,PaymentStatus,
-    PaymentResponse, PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse,
-    RouteHint, RouteHintHop, SyncResponse, TlvEntry,
+    CustomMessage, LnUrlAuthError, LspInformation, MaxChannelAmount, Payment, PaymentType, PaymentDetails,
+    LnPaymentDetails, PaymentStatus, PaymentResponse, PrepareRedeemOnchainFundsRequest,
+    PrepareRedeemOnchainFundsResponse, RouteHint, RouteHintHop, SyncResponse, TlvEntry,
 };
 
 pub type NodeResult<T, E = NodeError> = Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeError {
-    #[error("{0}")]
-    Credentials(String),
-
     #[error("{0}")]
     Generic(String),
 
@@ -69,11 +66,6 @@ pub enum NodeError {
 }
 
 impl NodeError {
-    #[allow(dead_code)]
-    pub(crate) fn credentials(err: &str) -> Self {
-        Self::Credentials(err.to_string())
-    }
-
     pub(crate) fn generic(err: &str) -> Self {
         Self::Generic(err.to_string())
     }
@@ -172,7 +164,6 @@ impl TryFrom<IncomingPayment> for Payment {
 #[cfg_attr(test, mockall::automock)]
 #[tonic::async_trait]
 pub trait NodeAPI: Send + Sync {
-    async fn node_credentials(&self) -> NodeResult<Option<NodeCredentials>>;
     async fn configure_node(&self, close_to_address: Option<String>) -> NodeResult<()>;
     async fn create_invoice(&self, request: CreateInvoiceRequest) -> NodeResult<String>;
     async fn delete_invoice(&self, bolt11: String) -> NodeResult<()>;

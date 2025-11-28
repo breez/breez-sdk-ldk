@@ -477,11 +477,10 @@ pub struct Config {
     pub maxfee_percent: f64,
     /// Maps to the CLN `exemptfee` config when paying invoices (`lightning-pay`)
     pub exemptfee_msat: u64,
-    pub node_config: NodeConfig,
 }
 
 impl Config {
-    pub fn production(api_key: String, node_config: NodeConfig) -> Self {
+    pub fn production(api_key: String) -> Self {
         Config {
             breezserver: PRODUCTION_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
@@ -500,11 +499,10 @@ impl Config {
             api_key: Some(api_key),
             maxfee_percent: 1.0,
             exemptfee_msat: 20000,
-            node_config,
         }
     }
 
-    pub fn staging(api_key: String, node_config: NodeConfig) -> Self {
+    pub fn staging(api_key: String) -> Self {
         Config {
             breezserver: STAGING_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
@@ -523,11 +521,10 @@ impl Config {
             api_key: Some(api_key),
             maxfee_percent: 0.5,
             exemptfee_msat: 20000,
-            node_config,
         }
     }
 
-    pub fn regtest(api_key: String, node_config: NodeConfig) -> Self {
+    pub fn regtest(api_key: String) -> Self {
         Config {
             breezserver: REGTEST_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
@@ -547,27 +544,8 @@ impl Config {
             api_key: Some(api_key),
             maxfee_percent: 0.5,
             exemptfee_msat: 20000,
-            node_config,
         }
     }
-}
-
-#[derive(Clone)]
-pub enum NodeConfig {
-    Greenlight { config: GreenlightNodeConfig },
-}
-
-#[derive(Clone, Serialize)]
-pub enum NodeCredentials {
-    Greenlight {
-        credentials: GreenlightDeviceCredentials,
-    },
-}
-
-#[derive(Clone)]
-pub struct GreenlightNodeConfig {
-    pub partner_credentials: Option<GreenlightCredentials>,
-    pub invite_code: Option<String>,
 }
 
 /// Indicates the different kinds of supported environments for [crate::BreezServices].
@@ -579,19 +557,6 @@ pub enum EnvironmentType {
     Staging,
     #[strum(serialize = "regtest")]
     Regtest,
-}
-
-/// Client-specific credentials to connect to and manage a Greenlight node in the cloud
-#[derive(Clone, Serialize, Deserialize)]
-pub struct GreenlightCredentials {
-    pub developer_key: Vec<u8>,
-    pub developer_cert: Vec<u8>,
-}
-
-/// Device credentials used to authenticate to Greenlight with the current device.
-#[derive(Clone, Serialize, Deserialize)]
-pub struct GreenlightDeviceCredentials {
-    pub device: Vec<u8>,
 }
 
 /// Represents a configure node request.

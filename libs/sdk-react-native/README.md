@@ -58,7 +58,6 @@ import {
     BreezEvent,
     defaultConfig,
     EnvironmentType,   
-    NodeConfigVariant, 
     sendPayment,
     connect 
 } from "@breeztech/react-native-breez-sdk";
@@ -78,19 +77,8 @@ const App = () => (
 
     useEffect(() => {
         const asyncFn = async () => {
-            // Create the specific node configuration
-            const nodeConfig = {
-                type: NodeConfigVariant.GREENLIGHT,
-                config: {
-                    partnerCredentials: {
-                        deviceKey: null,
-                        deviceCert: null
-                    }
-                }
-            }
-            
             // Construct the sdk default config
-            const config = await defaultConfig(EnvironmentType.PRODUCTION, BuildConfig.BREEZ_API_KEY, nodeConfig)            
+            const config = await defaultConfig(EnvironmentType.PRODUCTION, BuildConfig.BREEZ_API_KEY)            
 
              // Connect to the Breez SDK make it ready to use
             await connect(config, seed, onEvent)            

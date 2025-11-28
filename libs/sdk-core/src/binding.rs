@@ -42,9 +42,9 @@ use crate::models::{Config, LogEntry, NodeState, Payment, SwapInfo};
 use crate::{
     BackupStatus, BuyBitcoinRequest, BuyBitcoinResponse, CheckMessageRequest, CheckMessageResponse,
     ConfigureNodeRequest, ConnectRequest, EnvironmentType, ListPaymentsRequest, ListSwapsRequest,
-    LnUrlAuthError, NodeConfig, NodeCredentials, OnchainPaymentLimitsResponse,
-    OpenChannelFeeRequest, OpenChannelFeeResponse, PayOnchainRequest, PayOnchainResponse,
-    PrepareOnchainPaymentRequest, PrepareOnchainPaymentResponse, PrepareRedeemOnchainFundsRequest,
+    LnUrlAuthError, OnchainPaymentLimitsResponse, OpenChannelFeeRequest, OpenChannelFeeResponse,
+    PayOnchainRequest, PayOnchainResponse, PrepareOnchainPaymentRequest,
+    PrepareOnchainPaymentResponse, PrepareRedeemOnchainFundsRequest,
     PrepareRedeemOnchainFundsResponse, PrepareRefundRequest, PrepareRefundResponse,
     ReceiveOnchainRequest, ReceivePaymentRequest, ReceivePaymentResponse,
     RedeemOnchainFundsRequest, RedeemOnchainFundsResponse, RefundRequest, RefundResponse,
@@ -383,12 +383,6 @@ pub fn sync() -> Result<()> {
         .map_err(anyhow::Error::new::<SdkError>)
 }
 
-/// See [BreezServices::node_credentials]
-pub fn node_credentials() -> Result<Option<NodeCredentials>> {
-    block_on(async { get_breez_services().await?.node_credentials().await })
-        .map_err(anyhow::Error::new::<SdkError>)
-}
-
 /// See [BreezServices::node_info]
 pub fn node_info() -> Result<NodeState> {
     block_on(async {
@@ -438,12 +432,8 @@ pub fn mnemonic_to_seed(phrase: String) -> Result<Vec<u8>> {
 }
 
 /// See [BreezServices::default_config]
-pub fn default_config(
-    env_type: EnvironmentType,
-    api_key: String,
-    node_config: NodeConfig,
-) -> Config {
-    BreezServices::default_config(env_type, api_key, node_config)
+pub fn default_config(env_type: EnvironmentType, api_key: String) -> Config {
+    BreezServices::default_config(env_type, api_key)
 }
 
 /// See [BreezServices::static_backup]

@@ -9,26 +9,25 @@ use breez_sdk_core::{
     BuyBitcoinProvider, BuyBitcoinRequest, BuyBitcoinResponse, ChannelState, CheckMessageRequest,
     CheckMessageResponse, ClosedChannelPaymentDetails, Config, ConfigureNodeRequest,
     ConnectRequest, CurrencyInfo, EnvironmentType, EventListener, FeeratePreset, FiatCurrency,
-    GreenlightCredentials, GreenlightDeviceCredentials, GreenlightNodeConfig, HealthCheckStatus,
-    InputType, InvoicePaidDetails, LNInvoice, LNOffer, ListPaymentsRequest, ListSwapsRequest,
-    LnOfferBlindedPath, LnPaymentDetails, LnUrlAuthError, LnUrlAuthRequestData,
+    HealthCheckStatus, InputType, InvoicePaidDetails, LNInvoice, LNOffer, ListPaymentsRequest,
+    ListSwapsRequest, LnOfferBlindedPath, LnPaymentDetails, LnUrlAuthError, LnUrlAuthRequestData,
     LnUrlCallbackStatus, LnUrlErrorData, LnUrlPayError, LnUrlPayErrorData, LnUrlPayRequest,
     LnUrlPayRequestData, LnUrlWithdrawError, LnUrlWithdrawRequest, LnUrlWithdrawRequestData,
     LnUrlWithdrawResult, LnUrlWithdrawSuccessData, LocaleOverrides, LocalizedName, LogEntry,
     LogStream, LspInformation, MessageSuccessActionData, MetadataFilter, MetadataItem, Network,
-    NodeConfig, NodeCredentials, NodeState, OnchainPaymentLimitsResponse, OpenChannelFeeRequest,
-    OpenChannelFeeResponse, OpeningFeeParams, OpeningFeeParamsMenu, PayOnchainRequest,
-    PayOnchainResponse, Payment, PaymentDetails, PaymentFailedData, PaymentStatus, PaymentType,
-    PaymentTypeFilter, PrepareOnchainPaymentRequest, PrepareOnchainPaymentResponse,
-    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, PrepareRefundRequest,
-    PrepareRefundResponse, Rate, ReceiveOnchainRequest, ReceivePaymentRequest,
-    ReceivePaymentResponse, RecommendedFees, RedeemOnchainFundsRequest, RedeemOnchainFundsResponse,
-    RefundRequest, RefundResponse, ReportIssueRequest, ReportPaymentFailureDetails,
-    ReverseSwapFeesRequest, ReverseSwapInfo, ReverseSwapPairInfo, ReverseSwapStatus, RouteHint,
-    RouteHintHop, SendPaymentRequest, SendPaymentResponse, SendSpontaneousPaymentRequest,
-    ServiceHealthCheckResponse, SignMessageRequest, SignMessageResponse, StaticBackupRequest,
-    StaticBackupResponse, SuccessActionProcessed, SwapAmountType, SwapInfo, SwapStatus, Symbol,
-    TlvEntry, UnspentTransactionOutput, UrlSuccessActionData,
+    NodeState, OnchainPaymentLimitsResponse, OpenChannelFeeRequest, OpenChannelFeeResponse,
+    OpeningFeeParams, OpeningFeeParamsMenu, PayOnchainRequest, PayOnchainResponse, Payment,
+    PaymentDetails, PaymentFailedData, PaymentStatus, PaymentType, PaymentTypeFilter,
+    PrepareOnchainPaymentRequest, PrepareOnchainPaymentResponse, PrepareRedeemOnchainFundsRequest,
+    PrepareRedeemOnchainFundsResponse, PrepareRefundRequest, PrepareRefundResponse, Rate,
+    ReceiveOnchainRequest, ReceivePaymentRequest, ReceivePaymentResponse, RecommendedFees,
+    RedeemOnchainFundsRequest, RedeemOnchainFundsResponse, RefundRequest, RefundResponse,
+    ReportIssueRequest, ReportPaymentFailureDetails, ReverseSwapFeesRequest, ReverseSwapInfo,
+    ReverseSwapPairInfo, ReverseSwapStatus, RouteHint, RouteHintHop, SendPaymentRequest,
+    SendPaymentResponse, SendSpontaneousPaymentRequest, ServiceHealthCheckResponse,
+    SignMessageRequest, SignMessageResponse, StaticBackupRequest, StaticBackupResponse,
+    SuccessActionProcessed, SwapAmountType, SwapInfo, SwapStatus, Symbol, TlvEntry,
+    UnspentTransactionOutput, UrlSuccessActionData,
 };
 use log::{Level, LevelFilter, Metadata, Record};
 use once_cell::sync::{Lazy, OnceCell};
@@ -64,12 +63,8 @@ impl log::Log for BindingLogger {
 }
 
 /// Create a new SDK config with default values
-pub fn default_config(
-    env_type: EnvironmentType,
-    api_key: String,
-    node_config: NodeConfig,
-) -> Config {
-    BreezServices::default_config(env_type, api_key, node_config)
+pub fn default_config(env_type: EnvironmentType, api_key: String) -> Config {
+    BreezServices::default_config(env_type, api_key)
 }
 
 /// Get the static backup data from the peristent storage.
@@ -148,10 +143,6 @@ impl BlockingBreezServices {
         req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
         rt().block_on(self.breez_services.receive_payment(req))
-    }
-
-    pub fn node_credentials(&self) -> SdkResult<Option<NodeCredentials>> {
-        rt().block_on(self.breez_services.node_credentials())
     }
 
     pub fn node_info(&self) -> SdkResult<NodeState> {

@@ -23,18 +23,6 @@ pub(crate) enum Commands {
     },
     /// [init] Connect to the sdk services, make it operational
     Connect {
-        /// The optional file location containing the greenlight partner certificate
-        #[clap(name = "partner_cert", short = 'c', long = "partner_cert")]
-        partner_cert: Option<std::path::PathBuf>,
-
-        /// The optional file location containing the greenlight partner key
-        #[clap(name = "partner_key", short = 'k', long = "partner_key")]
-        partner_key: Option<std::path::PathBuf>,
-
-        /// The optional greenlight invite code
-        #[clap(name = "invite_code", short = 'i', long = "invite_code")]
-        invite_code: Option<String>,
-
         /// Only restore existing nodes
         #[clap(short = 'r', long = "restore_only")]
         restore_only: bool,
@@ -279,9 +267,6 @@ pub(crate) enum Commands {
 
     /// [node-mgmt] Retrieve a payment by its hash
     PaymentByHash { hash: String },
-
-    /// [node-mgmt] The node credentials
-    NodeCredentials {},
 
     /// [node-mgmt] The up to date node information
     NodeInfo {},
