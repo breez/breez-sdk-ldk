@@ -6,7 +6,7 @@ class SDKListener(breez_sdk.EventListener):
 
 
 seed = breez_sdk.mnemonic_to_seed("repeat hawk combine screen network rhythm ritual social neither casual volcano powder");
-config = breez_sdk.default_config(breez_sdk.EnvironmentType.PRODUCTION, "code", breez_sdk.NodeConfig.GREENLIGHT(breez_sdk.GreenlightNodeConfig(partner_credentials=None, invite_code=None)))
+config = breez_sdk.default_config(breez_sdk.EnvironmentType.PRODUCTION, "code")
 connect_request = breez_sdk.ConnectRequest(config=config, seed=seed)
 sdk_services = breez_sdk.connect(connect_request, SDKListener())     
 node_info = sdk_services.node_info()    

@@ -101,9 +101,6 @@ class BreezSDK {
     await fetchNodeData();
   }
 
-  /// Retrieve the decrypted credentials from the node.
-  Future<NodeCredentials?> nodeCredentials() async => await binding.nodeCredentials();
-
   /// Check whether node service is initialized or not
   Future<bool> isInitialized() async => await binding.isInitialized();
 
@@ -140,12 +137,8 @@ class BreezSDK {
   Future<Uint8List> mnemonicToSeed(String phrase) async => await binding.mnemonicToSeed(phrase: phrase);
 
   /// Get the full default config for a specific environment type
-  Future<Config> defaultConfig({
-    required EnvironmentType envType,
-    required String apiKey,
-    required NodeConfig nodeConfig,
-  }) async {
-    return await binding.defaultConfig(envType: envType, apiKey: apiKey, nodeConfig: nodeConfig);
+  Future<Config> defaultConfig({required EnvironmentType envType, required String apiKey}) async {
+    return await binding.defaultConfig(envType: envType, apiKey: apiKey);
   }
 
   /// Sign given message with the private key of the node id. Returns a zbase
@@ -527,7 +520,6 @@ extension SDKConfig on Config {
     String? apiKey,
     double? maxfeePercent,
     BigInt? exemptfeeMsat,
-    NodeConfig? nodeConfig,
   }) {
     return Config(
       breezserver: breezserver ?? this.breezserver,
@@ -544,7 +536,6 @@ extension SDKConfig on Config {
       apiKey: apiKey ?? this.apiKey,
       maxfeePercent: maxfeePercent ?? this.maxfeePercent,
       exemptfeeMsat: exemptfeeMsat ?? this.exemptfeeMsat,
-      nodeConfig: nodeConfig ?? this.nodeConfig,
     );
   }
 }

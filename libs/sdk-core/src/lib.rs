@@ -15,21 +15,16 @@
 //!
 //! ## Getting Started
 //!
-//! First, make sure you have your API Key and Invite Code ready (see [API Key and Invite Code](#api-key-and-invite-code) section below).
+//! First, make sure you have your API Key ready (see [API Key](#api-key) section below).
 //!
 //! The following code initialize the SDK and make it ready to be used:
 //!
 //! ```ignore
 //! let mnemonic = Mnemonic::generate_in(Language::English, 12)?;
 //! let seed = mnemonic.to_seed("");
-//! let invite_code = Some("...".into());
-//!
 //! let mut config = BreezServices::default_config(
 //!     EnvironmentType::Production,
 //!     "your API key".into(),
-//!     breez_sdk_core::NodeConfig::Greenlight {
-//!         config: GreenlightNodeConfig { partner_credentials: None, invite_code },
-//!     },
 //! );
 //!
 //! // Customize the config object according to your needs
@@ -79,10 +74,10 @@
 //! 1. [BreezServices::default_config] to construct the sdk configuration
 //! 2. [BreezServices::connect] to connect to your node and start all required Breez SDK services
 //!
-//! The first step takes the [EnvironmentType] and [NodeConfig] as arguments. Although you can create
+//! The first step takes the [EnvironmentType] and an API key as arguments. Although you can create
 //! your own config from scratch it is recommended to use the [BreezServices::default_config] method and
 //! customize it according to your needs.
-//! Once the [NodeConfig] is created it is passed to the [BreezServices::connect] method along with the seed and and implementation of [EventListener] which is used to
+//! Once the config is created it is passed to the [BreezServices::connect] method along with the seed and an implementation of [EventListener] which is used to
 //! notify the caller of SDK events.
 //!
 //! Now your SDK is ready to be used.
@@ -146,11 +141,11 @@
 //! * Swift
 //!
 //!
-//! ## API Key and Invite Code
+//! ## API Key
 //!
-//! You will need an API Key to use the SDK, as well as an Invite Code when you create a new node.
+//! You will need an API Key to use the SDK when you create a new node.
 //!
-//! To get both of them, please contact Breez via email at <contact@breez.technology> or at <https://breez.technology/#contact-us-form>
+//! To get it, please contact Breez via email at <contact@breez.technology> or at <https://breez.technology/#contact-us-form>
 //!
 //! ## Support
 //!

@@ -61,7 +61,7 @@ class BreezSdkBindings
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -1202170102;
+  int get rustContentHash => -205939826;
 
   static const kDefaultExternalLibraryLoaderConfig = ExternalLibraryLoaderConfig(
     stem: 'breez_sdk_core',
@@ -98,11 +98,7 @@ abstract class BreezSdkBindingsApi extends BaseApi {
 
   Future<void> crateBindingConnectLsp({required String lspId});
 
-  Future<Config> crateBindingDefaultConfig({
-    required EnvironmentType envType,
-    required String apiKey,
-    required NodeConfig nodeConfig,
-  });
+  Future<Config> crateBindingDefaultConfig({required EnvironmentType envType, required String apiKey});
 
   Future<void> crateBindingDisconnect();
 
@@ -143,8 +139,6 @@ abstract class BreezSdkBindingsApi extends BaseApi {
   Future<LspInformation> crateBindingLspInfo();
 
   Future<Uint8List> crateBindingMnemonicToSeed({required String phrase});
-
-  Future<NodeCredentials?> crateBindingNodeCredentials();
 
   Future<NodeState> crateBindingNodeInfo();
 
@@ -461,29 +455,24 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       const TaskConstMeta(debugName: "connect_lsp", argNames: ["lspId"]);
 
   @override
-  Future<Config> crateBindingDefaultConfig({
-    required EnvironmentType envType,
-    required String apiKey,
-    required NodeConfig nodeConfig,
-  }) {
+  Future<Config> crateBindingDefaultConfig({required EnvironmentType envType, required String apiKey}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           var arg0 = cst_encode_environment_type(envType);
           var arg1 = cst_encode_String(apiKey);
-          var arg2 = cst_encode_box_autoadd_node_config(nodeConfig);
-          return wire.wire__crate__binding__default_config(port_, arg0, arg1, arg2);
+          return wire.wire__crate__binding__default_config(port_, arg0, arg1);
         },
         codec: DcoCodec(decodeSuccessData: dco_decode_config, decodeErrorData: null),
         constMeta: kCrateBindingDefaultConfigConstMeta,
-        argValues: [envType, apiKey, nodeConfig],
+        argValues: [envType, apiKey],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateBindingDefaultConfigConstMeta =>
-      const TaskConstMeta(debugName: "default_config", argNames: ["envType", "apiKey", "nodeConfig"]);
+      const TaskConstMeta(debugName: "default_config", argNames: ["envType", "apiKey"]);
 
   @override
   Future<void> crateBindingDisconnect() {
@@ -896,27 +885,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
 
   TaskConstMeta get kCrateBindingMnemonicToSeedConstMeta =>
       const TaskConstMeta(debugName: "mnemonic_to_seed", argNames: ["phrase"]);
-
-  @override
-  Future<NodeCredentials?> crateBindingNodeCredentials() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          return wire.wire__crate__binding__node_credentials(port_);
-        },
-        codec: DcoCodec(
-          decodeSuccessData: dco_decode_opt_box_autoadd_node_credentials,
-          decodeErrorData: dco_decode_AnyhowException,
-        ),
-        constMeta: kCrateBindingNodeCredentialsConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateBindingNodeCredentialsConstMeta =>
-      const TaskConstMeta(debugName: "node_credentials", argNames: []);
 
   @override
   Future<NodeState> crateBindingNodeInfo() {
@@ -1684,24 +1652,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  GreenlightCredentials dco_decode_box_autoadd_greenlight_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_greenlight_credentials(raw);
-  }
-
-  @protected
-  GreenlightDeviceCredentials dco_decode_box_autoadd_greenlight_device_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_greenlight_device_credentials(raw);
-  }
-
-  @protected
-  GreenlightNodeConfig dco_decode_box_autoadd_greenlight_node_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_greenlight_node_config(raw);
-  }
-
-  @protected
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_i_64(raw);
@@ -1807,18 +1757,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   MessageSuccessActionData dco_decode_box_autoadd_message_success_action_data(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_message_success_action_data(raw);
-  }
-
-  @protected
-  NodeConfig dco_decode_box_autoadd_node_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_node_config(raw);
-  }
-
-  @protected
-  NodeCredentials dco_decode_box_autoadd_node_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_node_credentials(raw);
   }
 
   @protected
@@ -2078,7 +2016,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   Config dco_decode_config(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 15) throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
+    if (arr.length != 14) throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
     return Config(
       breezserver: dco_decode_String(arr[0]),
       chainnotifierUrl: dco_decode_String(arr[1]),
@@ -2094,7 +2032,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       apiKey: dco_decode_opt_String(arr[11]),
       maxfeePercent: dco_decode_f_64(arr[12]),
       exemptfeeMsat: dco_decode_u_64(arr[13]),
-      nodeConfig: dco_decode_node_config(arr[14]),
     );
   }
 
@@ -2152,36 +2089,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     final arr = raw as List<dynamic>;
     if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
     return FiatCurrency(id: dco_decode_String(arr[0]), info: dco_decode_currency_info(arr[1]));
-  }
-
-  @protected
-  GreenlightCredentials dco_decode_greenlight_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return GreenlightCredentials(
-      developerKey: dco_decode_list_prim_u_8_strict(arr[0]),
-      developerCert: dco_decode_list_prim_u_8_strict(arr[1]),
-    );
-  }
-
-  @protected
-  GreenlightDeviceCredentials dco_decode_greenlight_device_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 1) throw Exception('unexpected arr length: expect 1 but see ${arr.length}');
-    return GreenlightDeviceCredentials(device: dco_decode_list_prim_u_8_strict(arr[0]));
-  }
-
-  @protected
-  GreenlightNodeConfig dco_decode_greenlight_node_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return GreenlightNodeConfig(
-      partnerCredentials: dco_decode_opt_box_autoadd_greenlight_credentials(arr[0]),
-      inviteCode: dco_decode_opt_String(arr[1]),
-    );
   }
 
   @protected
@@ -2680,30 +2587,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  NodeConfig dco_decode_node_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    switch (raw[0]) {
-      case 0:
-        return NodeConfig_Greenlight(config: dco_decode_box_autoadd_greenlight_node_config(raw[1]));
-      default:
-        throw Exception("unreachable");
-    }
-  }
-
-  @protected
-  NodeCredentials dco_decode_node_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    switch (raw[0]) {
-      case 0:
-        return NodeCredentials_Greenlight(
-          credentials: dco_decode_box_autoadd_greenlight_device_credentials(raw[1]),
-        );
-      default:
-        throw Exception("unreachable");
-    }
-  }
-
-  @protected
   NodeState dco_decode_node_state(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -2801,12 +2684,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  GreenlightCredentials? dco_decode_opt_box_autoadd_greenlight_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw == null ? null : dco_decode_box_autoadd_greenlight_credentials(raw);
-  }
-
-  @protected
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
@@ -2822,12 +2699,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   LspInformation? dco_decode_opt_box_autoadd_lsp_information(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_lsp_information(raw);
-  }
-
-  @protected
-  NodeCredentials? dco_decode_opt_box_autoadd_node_credentials(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw == null ? null : dco_decode_box_autoadd_node_credentials(raw);
   }
 
   @protected
@@ -3675,26 +3546,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  GreenlightCredentials sse_decode_box_autoadd_greenlight_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_greenlight_credentials(deserializer));
-  }
-
-  @protected
-  GreenlightDeviceCredentials sse_decode_box_autoadd_greenlight_device_credentials(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_greenlight_device_credentials(deserializer));
-  }
-
-  @protected
-  GreenlightNodeConfig sse_decode_box_autoadd_greenlight_node_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_greenlight_node_config(deserializer));
-  }
-
-  @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_i_64(deserializer));
@@ -3800,18 +3651,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   MessageSuccessActionData sse_decode_box_autoadd_message_success_action_data(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_message_success_action_data(deserializer));
-  }
-
-  @protected
-  NodeConfig sse_decode_box_autoadd_node_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_node_config(deserializer));
-  }
-
-  @protected
-  NodeCredentials sse_decode_box_autoadd_node_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_node_credentials(deserializer));
   }
 
   @protected
@@ -4101,7 +3940,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_apiKey = sse_decode_opt_String(deserializer);
     var var_maxfeePercent = sse_decode_f_64(deserializer);
     var var_exemptfeeMsat = sse_decode_u_64(deserializer);
-    var var_nodeConfig = sse_decode_node_config(deserializer);
     return Config(
       breezserver: var_breezserver,
       chainnotifierUrl: var_chainnotifierUrl,
@@ -4117,7 +3955,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       apiKey: var_apiKey,
       maxfeePercent: var_maxfeePercent,
       exemptfeeMsat: var_exemptfeeMsat,
-      nodeConfig: var_nodeConfig,
     );
   }
 
@@ -4177,29 +4014,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_id = sse_decode_String(deserializer);
     var var_info = sse_decode_currency_info(deserializer);
     return FiatCurrency(id: var_id, info: var_info);
-  }
-
-  @protected
-  GreenlightCredentials sse_decode_greenlight_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_developerKey = sse_decode_list_prim_u_8_strict(deserializer);
-    var var_developerCert = sse_decode_list_prim_u_8_strict(deserializer);
-    return GreenlightCredentials(developerKey: var_developerKey, developerCert: var_developerCert);
-  }
-
-  @protected
-  GreenlightDeviceCredentials sse_decode_greenlight_device_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_device = sse_decode_list_prim_u_8_strict(deserializer);
-    return GreenlightDeviceCredentials(device: var_device);
-  }
-
-  @protected
-  GreenlightNodeConfig sse_decode_greenlight_node_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_partnerCredentials = sse_decode_opt_box_autoadd_greenlight_credentials(deserializer);
-    var var_inviteCode = sse_decode_opt_String(deserializer);
-    return GreenlightNodeConfig(partnerCredentials: var_partnerCredentials, inviteCode: var_inviteCode);
   }
 
   @protected
@@ -4868,34 +4682,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  NodeConfig sse_decode_node_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var tag_ = sse_decode_i_32(deserializer);
-    switch (tag_) {
-      case 0:
-        var var_config = sse_decode_box_autoadd_greenlight_node_config(deserializer);
-        return NodeConfig_Greenlight(config: var_config);
-      default:
-        throw UnimplementedError('');
-    }
-  }
-
-  @protected
-  NodeCredentials sse_decode_node_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var tag_ = sse_decode_i_32(deserializer);
-    switch (tag_) {
-      case 0:
-        var var_credentials = sse_decode_box_autoadd_greenlight_device_credentials(deserializer);
-        return NodeCredentials_Greenlight(credentials: var_credentials);
-      default:
-        throw UnimplementedError('');
-    }
-  }
-
-  @protected
   NodeState sse_decode_node_state(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
@@ -5017,17 +4803,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  GreenlightCredentials? sse_decode_opt_box_autoadd_greenlight_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    if (sse_decode_bool(deserializer)) {
-      return (sse_decode_box_autoadd_greenlight_credentials(deserializer));
-    } else {
-      return null;
-    }
-  }
-
-  @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -5055,17 +4830,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_lsp_information(deserializer));
-    } else {
-      return null;
-    }
-  }
-
-  @protected
-  NodeCredentials? sse_decode_opt_box_autoadd_node_credentials(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    if (sse_decode_bool(deserializer)) {
-      return (sse_decode_box_autoadd_node_credentials(deserializer));
     } else {
       return null;
     }
@@ -6132,27 +5896,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  void sse_encode_box_autoadd_greenlight_credentials(GreenlightCredentials self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_greenlight_credentials(self, serializer);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_greenlight_device_credentials(
-    GreenlightDeviceCredentials self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_greenlight_device_credentials(self, serializer);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_greenlight_node_config(GreenlightNodeConfig self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_greenlight_node_config(self, serializer);
-  }
-
-  @protected
   void sse_encode_box_autoadd_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_64(self, serializer);
@@ -6267,18 +6010,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_message_success_action_data(self, serializer);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_node_config(NodeConfig self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_node_config(self, serializer);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_node_credentials(NodeCredentials self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_node_credentials(self, serializer);
   }
 
   @protected
@@ -6559,7 +6290,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_opt_String(self.apiKey, serializer);
     sse_encode_f_64(self.maxfeePercent, serializer);
     sse_encode_u_64(self.exemptfeeMsat, serializer);
-    sse_encode_node_config(self.nodeConfig, serializer);
   }
 
   @protected
@@ -6605,26 +6335,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
     sse_encode_currency_info(self.info, serializer);
-  }
-
-  @protected
-  void sse_encode_greenlight_credentials(GreenlightCredentials self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_u_8_strict(self.developerKey, serializer);
-    sse_encode_list_prim_u_8_strict(self.developerCert, serializer);
-  }
-
-  @protected
-  void sse_encode_greenlight_device_credentials(GreenlightDeviceCredentials self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_u_8_strict(self.device, serializer);
-  }
-
-  @protected
-  void sse_encode_greenlight_node_config(GreenlightNodeConfig self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_opt_box_autoadd_greenlight_credentials(self.partnerCredentials, serializer);
-    sse_encode_opt_String(self.inviteCode, serializer);
   }
 
   @protected
@@ -7117,26 +6827,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  void sse_encode_node_config(NodeConfig self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    switch (self) {
-      case NodeConfig_Greenlight(config: final config):
-        sse_encode_i_32(0, serializer);
-        sse_encode_box_autoadd_greenlight_node_config(config, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_node_credentials(NodeCredentials self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    switch (self) {
-      case NodeCredentials_Greenlight(credentials: final credentials):
-        sse_encode_i_32(0, serializer);
-        sse_encode_box_autoadd_greenlight_device_credentials(credentials, serializer);
-    }
-  }
-
-  @protected
   void sse_encode_node_state(NodeState self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
@@ -7227,19 +6917,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   }
 
   @protected
-  void sse_encode_opt_box_autoadd_greenlight_credentials(
-    GreenlightCredentials? self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    sse_encode_bool(self != null, serializer);
-    if (self != null) {
-      sse_encode_box_autoadd_greenlight_credentials(self, serializer);
-    }
-  }
-
-  @protected
   void sse_encode_opt_box_autoadd_i_64(PlatformInt64? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -7266,16 +6943,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_lsp_information(self, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_opt_box_autoadd_node_credentials(NodeCredentials? self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    sse_encode_bool(self != null, serializer);
-    if (self != null) {
-      sse_encode_box_autoadd_node_credentials(self, serializer);
     }
   }
 

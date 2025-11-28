@@ -96,12 +96,11 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
 
-    @objc(defaultConfig:apiKey:nodeConfig:resolve:reject:)
-    func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(defaultConfig:apiKey:resolve:reject:)
+    func defaultConfig(_ envType: String, apiKey: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let envTypeTmp = try BreezSDKMapper.asEnvironmentType(environmentType: envType)
-            let nodeConfigTmp = try BreezSDKMapper.asNodeConfig(nodeConfig: nodeConfig)
-            var res = BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey, nodeConfig: nodeConfigTmp)
+            var res = BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey)
             res.workingDir = RNBreezSDK.breezSdkDirectory.path
             resolve(BreezSDKMapper.dictionaryOf(config: res))
         } catch let err {
@@ -252,20 +251,6 @@ class RNBreezSDK: RCTEventEmitter {
             let reqTmp = try BreezSDKMapper.asReportIssueRequest(reportIssueRequest: req)
             try getBreezServices().reportIssue(req: reqTmp)
             resolve(["status": "ok"])
-        } catch let err {
-            rejectErr(err: err, reject: reject)
-        }
-    }
-
-    @objc(nodeCredentials:reject:)
-    func nodeCredentials(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        do {
-            var res = try getBreezServices().nodeCredentials()
-            if res != nil {
-                resolve(BreezSDKMapper.dictionaryOf(nodeCredentials: res!))
-            } else {
-                resolve(nil)
-            }
         } catch let err {
             rejectErr(err: err, reject: reject)
         }

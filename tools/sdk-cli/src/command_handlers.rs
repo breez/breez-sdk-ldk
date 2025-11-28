@@ -1,5 +1,4 @@
 use std::borrow::Cow::{self, Owned};
-use std::fs;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -7,14 +6,13 @@ use anyhow::{anyhow, ensure, Context, Error, Result};
 use breez_sdk_core::InputType::{LnUrlAuth, LnUrlPay, LnUrlWithdraw};
 use breez_sdk_core::{
     parse, BreezEvent, BreezServices, BuyBitcoinRequest, CheckMessageRequest, ConnectRequest,
-    EventListener, GreenlightCredentials, ListPaymentsRequest, ListSwapsRequest, LnUrlPayRequest,
-    LnUrlWithdrawRequest, MetadataFilter, PayOnchainRequest, PrepareOnchainPaymentRequest,
+    EventListener, ListPaymentsRequest, ListSwapsRequest, LnUrlPayRequest, LnUrlWithdrawRequest,
+    MetadataFilter, PayOnchainRequest, PrepareOnchainPaymentRequest,
     PrepareRedeemOnchainFundsRequest, PrepareRefundRequest, ReceiveOnchainRequest,
     ReceivePaymentRequest, RedeemOnchainFundsRequest, RefundRequest, ReportIssueRequest,
     ReportPaymentFailureDetails, ReverseSwapFeesRequest, SendPaymentRequest,
     SendSpontaneousPaymentRequest, SignMessageRequest, StaticBackupRequest, SwapAmountType,
 };
-use breez_sdk_core::{GreenlightNodeConfig, NodeConfig};
 use qrcode_rs::render::unicode;
 use qrcode_rs::{EcLevel, QrCode};
 use rustyline::history::DefaultHistory;
@@ -87,33 +85,11 @@ impl CommandHandler {
                 self.persistence.save_config(config)?;
                 Ok(format!("Environment was set to {env:?}"))
             }
-            Commands::Connect {
-                partner_cert,
-                partner_key,
-                invite_code,
-                restore_only,
-            } => {
-                let mut config = self
+            Commands::Connect { restore_only } => {
+                let config = self
                     .persistence
                     .get_or_create_config()?
                     .to_sdk_config(&self.persistence.data_dir);
-                let mut partner_credentials: Option<GreenlightCredentials> = None;
-                if partner_cert.is_some() && partner_key.is_some() {
-                    let cert = fs::read(partner_cert.unwrap())?;
-                    let key = fs::read(partner_key.unwrap())?;
-                    partner_credentials = Some(GreenlightCredentials {
-                        developer_cert: cert,
-                        developer_key: key,
-                    })
-                }
-
-                config.node_config = NodeConfig::Greenlight {
-                    config: GreenlightNodeConfig {
-                        partner_credentials,
-                        invite_code,
-                    },
-                };
-
                 self.connect(ConnectRequest {
                     config,
                     seed: self.persistence.get_or_create_seed(),
@@ -361,12 +337,6 @@ impl CommandHandler {
                     .await?;
                 serde_json::to_string_pretty(&res).map_err(|e| e.into())
             }
-            Commands::NodeCredentials {} => match self.sdk()?.node_credentials().await? {
-                Some(credentials) => {
-                    serde_json::to_string_pretty(&credentials).map_err(|e| e.into())
-                }
-                None => Ok("No credentials".into()),
-            },
             Commands::NodeInfo {} => {
                 serde_json::to_string_pretty(&self.sdk()?.node_info()?).map_err(|e| e.into())
             }
