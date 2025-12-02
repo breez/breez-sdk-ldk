@@ -80,6 +80,9 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
 
+    let node_pubkey = services.node_info().unwrap().id;
+    let lnd_pubkey = lnd.get_id().await.unwrap();
+
     info!("Waiting for BreezEvent::Synced...");
     assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
 
@@ -95,10 +98,9 @@ async fn test_node_receive_payments() {
         .unwrap();
     let opening_fee_msat = response.opening_fee_msat.unwrap_or_default();
     assert_eq!(opening_fee_msat, 1_000_000);
-    let bolt11 = response.ln_invoice.bolt11;
-    info!("Invoice created: {bolt11}");
+    let invoice = response.ln_invoice;
 
-    lnd.pay(bolt11).await.unwrap();
+    lnd.pay(invoice.bolt11.clone()).await.unwrap();
     info!("Waiting for BreezEvent::InvoicePaid...");
     wait_for!(matches!(
         events.recv().await,
@@ -112,6 +114,13 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.amount_msat, huge_amount_msat - opening_fee_msat);
     assert_eq!(payment.fee_msat, opening_fee_msat);
     assert_eq!(payment.payment_type, PaymentType::Received);
+    assert_eq!(payment.description.unwrap(), "Init");
+    if let PaymentDetails::Ln { data } = &payment.details {
+        assert_eq!(data.bolt11, invoice.bolt11);
+        assert_eq!(data.destination_pubkey, node_pubkey);
+    } else {
+        panic!("Expected LN payment details");
+    }
 
     // Receiving a normal payment.
     let small_amount_msat = 10_000;
@@ -124,9 +133,8 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
     assert_eq!(response.opening_fee_msat, None);
-    let bolt11 = response.ln_invoice.bolt11;
-    info!("Invoice created: {bolt11}");
-    lnd.pay(bolt11).await.unwrap();
+    let invoice = response.ln_invoice;
+    lnd.pay(invoice.bolt11.clone()).await.unwrap();
     info!("Waiting for BreezEvent::InvoicePaid...");
     wait_for!(matches!(
         events.recv().await,
@@ -140,13 +148,20 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.amount_msat, small_amount_msat);
     assert_eq!(payment.fee_msat, 0);
     assert_eq!(payment.payment_type, PaymentType::Received);
+    assert_eq!(payment.description.unwrap(), "small");
+    if let PaymentDetails::Ln { data } = &payment.details {
+        assert_eq!(data.bolt11, invoice.bolt11);
+        assert_eq!(data.destination_pubkey, node_pubkey);
+    } else {
+        panic!("Expected LN payment details");
+    }
 
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
     let bolt11 = lnd.receive(&amount).await.unwrap();
     let payment = services
         .send_payment(SendPaymentRequest {
-            bolt11,
+            bolt11: bolt11.clone(),
             amount_msat: None,
         })
         .await
@@ -171,13 +186,20 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
+    assert_eq!(payment.description.unwrap(), "LND");
+    if let PaymentDetails::Ln { data } = &payment.details {
+        assert_eq!(data.bolt11, bolt11);
+        assert_eq!(data.destination_pubkey, lnd_pubkey);
+    } else {
+        panic!("Expected LN payment details");
+    }
 
     // Paying open amount BOLT-11 invoice.
     let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
     let amount = Amount::from_sat(1100);
     let payment = services
         .send_payment(SendPaymentRequest {
-            bolt11,
+            bolt11: bolt11.clone(),
             amount_msat: Some(amount.to_msat()),
         })
         .await
@@ -202,6 +224,13 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
+    assert_eq!(payment.description.unwrap(), "LND");
+    if let PaymentDetails::Ln { data } = &payment.details {
+        assert_eq!(data.bolt11, bolt11);
+        assert_eq!(data.destination_pubkey, lnd_pubkey);
+    } else {
+        panic!("Expected LN payment details");
+    }
 
     // Sending spontaneous payment.
     let lnd_id = lnd.get_id().await.unwrap();
@@ -240,6 +269,13 @@ async fn test_node_receive_payments() {
             data: LnPaymentDetails { keysend: true, .. }
         }
     ));
+    assert!(payment.description.is_none());
+    if let PaymentDetails::Ln { data } = &payment.details {
+        assert_eq!(data.bolt11, "");
+        assert_eq!(data.destination_pubkey, "");
+    } else {
+        panic!("Expected LN payment details");
+    }
 
     services.disconnect().await.unwrap();
     drop(services);
