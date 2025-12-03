@@ -3,7 +3,10 @@ use ldk_node::{Node, PendingSweepBalance};
 
 use crate::ldk::utils::Hex;
 use crate::node_api::NodeError;
-use crate::{LnPaymentDetails, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType};
+use crate::{
+    ChannelState, ClosedChannelPaymentDetails, LnPaymentDetails, NodeState, Payment,
+    PaymentDetails, PaymentStatus, PaymentType,
+};
 
 impl From<&Node> for NodeState {
     fn from(node: &Node) -> Self {
@@ -99,6 +102,16 @@ fn to_payment_details(
         ldk_node::payment::PaymentKind::Spontaneous { hash, preimage } => Ok(PaymentDetails::Ln {
             data: ln_payment_details(hash, preimage, destination_pubkey, true),
         }),
+        ldk_node::payment::PaymentKind::Onchain { status, .. } => {
+            Ok(PaymentDetails::ClosedChannel {
+                data: ClosedChannelPaymentDetails {
+                    state: (*status).into(),
+                    funding_txid: String::new(),
+                    short_channel_id: None,
+                    closing_txid: None,
+                },
+            })
+        }
         other => Err(NodeError::Generic(format!(
             "Unsupported payment kind: {other:?}"
         ))),
@@ -136,6 +149,15 @@ impl From<ldk_node::payment::PaymentDirection> for PaymentType {
         match direction {
             ldk_node::payment::PaymentDirection::Inbound => PaymentType::Received,
             ldk_node::payment::PaymentDirection::Outbound => PaymentType::Sent,
+        }
+    }
+}
+
+impl From<ldk_node::payment::ConfirmationStatus> for ChannelState {
+    fn from(status: ldk_node::payment::ConfirmationStatus) -> Self {
+        match status {
+            ldk_node::payment::ConfirmationStatus::Unconfirmed => ChannelState::PendingClose,
+            ldk_node::payment::ConfirmationStatus::Confirmed { .. } => ChannelState::Closed,
         }
     }
 }

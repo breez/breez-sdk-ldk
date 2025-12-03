@@ -5,9 +5,9 @@ use std::time::Duration;
 use bitcoin::Amount;
 use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, LnPaymentDetails, PaymentDetails,
-    PaymentType, ReceivePaymentRequest, RedeemOnchainFundsRequest, SendPaymentRequest,
-    SendPaymentRequest, SendSpontaneousPaymentRequest, SendSpontaneousPaymentRequest,
+    BreezEvent, BreezServices, ChannelState, ClosedChannelPaymentDetails, Config, ConnectRequest,
+    LnPaymentDetails, PaymentDetails, PaymentType, ReceivePaymentRequest,
+    RedeemOnchainFundsRequest, SendPaymentRequest, SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -250,9 +250,28 @@ async fn test_node_receive_payments() {
         }
     ));
 
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
+
     // Close channels.
     info!("Closing channels");
     services.close_lsp_channels().await.unwrap();
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 6);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Received);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::ClosedChannel {
+            data: ClosedChannelPaymentDetails {
+                state: ChannelState::PendingClose,
+                ..
+            }
+        }
+    ));
+    assert_eq!(payment.amount_msat, 5707000);
+    assert_eq!(payment.fee_msat, 1170000);
+
     // Waiting here for an extra block to let LDK Node to catch up.
     bitcoind.generate_blocks(1).await.unwrap();
     info!("Waiting for BreezEvent::NewBlock...");
@@ -272,6 +291,22 @@ async fn test_node_receive_payments() {
     assert_eq!(node_info.channels_balance_msat, 0);
     assert_eq!(node_info.pending_onchain_balance_msat, 0);
     assert_eq!(node_info.onchain_balance_msat, 5707000);
+
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 6);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Received);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::ClosedChannel {
+            data: ClosedChannelPaymentDetails {
+                state: ChannelState::Closed,
+                ..
+            }
+        }
+    ));
+    assert_eq!(payment.amount_msat, 5707000);
+    assert_eq!(payment.fee_msat, 1170000);
 
     // Redeem funds.
     let address = bitcoind.get_new_address().await.unwrap();
