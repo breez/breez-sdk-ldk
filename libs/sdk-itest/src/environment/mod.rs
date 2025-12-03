@@ -278,7 +278,7 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
-    async fn bitcoind(&self) -> Result<&Bitcoind> {
+    pub async fn bitcoind(&self) -> Result<&Bitcoind> {
         let bitcoind = self
             .bitcoind
             .get_or_try_init(|| async {
