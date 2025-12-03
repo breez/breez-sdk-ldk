@@ -105,7 +105,7 @@ impl Ldk {
 
         builder.set_liquidity_source_lsps2(lsp_id, lsp_address, None);
 
-        let vss_store = build_vss_store(&config, &seed, "ldk_node");
+        let vss_store = build_vss_store(&config, &seed, "ldk_node")?;
 
         // It is not possible to use oneshot here, because `oneshot::Sender::send()`
         // consumes itself, not allowing to call `closed()` method after.

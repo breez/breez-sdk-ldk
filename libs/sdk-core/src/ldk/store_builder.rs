@@ -4,6 +4,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use bitcoin::bip32::{ChildNumber, Xpriv};
+use bitcoin::key::Secp256k1;
 use hex::ToHex;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -14,9 +16,9 @@ use sdk_common::bitcoin::hashes::Hash;
 use sdk_common::prelude::Network;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc;
-use vss_client::client::VssClient;
-use vss_client::error::VssError;
-use vss_client::util::retry::{
+use vss_client_ng::client::VssClient;
+use vss_client_ng::error::VssError;
+use vss_client_ng::util::retry::{
     ExponentialBackoffRetryPolicy, FilteredRetryPolicy, JitteredRetryPolicy,
     MaxAttemptsRetryPolicy, MaxTotalDelayRetryPolicy, RetryPolicy,
 };
@@ -36,17 +38,29 @@ pub(crate) type CustomRetryPolicy = FilteredRetryPolicy<
 pub(crate) type LockingStore = crate::ldk::store::LockingStore<VssStore<CustomRetryPolicy>>;
 pub(crate) type MirroringStore = crate::ldk::store::MirroringStore<Arc<LockingStore>, LockingStore>;
 
+const VSS_HARDENED_CHILD_INDEX: u32 = 877;
+
 pub(crate) fn build_vss_store(
     config: &Config,
     seed: &[u8],
     store_id: &str,
-) -> VssStore<CustomRetryPolicy> {
+) -> NodeResult<VssStore<CustomRetryPolicy>> {
+    let bitcoin_network: crate::bitcoin::Network = config.network.into();
+    let xprv = Xpriv::new_master(bitcoin_network, seed)?.derive_priv(
+        &Secp256k1::new(),
+        &[ChildNumber::Hardened {
+            index: VSS_HARDENED_CHILD_INDEX,
+        }],
+    )?;
+
+    let seed = xprv.private_key.secret_bytes();
+    let seed_hash = Sha256::hash(&seed);
     let store_id = match config.network {
         Network::Regtest => {
             // Regtest instance of VSS does not implement authentication,
             // that is why the hash of the seed is used to avoid collisions.
-            let seed_hash = Sha256::hash(seed).encode_hex::<String>();
-            format!("{seed_hash}/{store_id}")
+            let seed_hash_hex = seed_hash.encode_hex::<String>();
+            format!("{seed_hash_hex}/{store_id}")
         }
         _ => store_id.to_string(),
     };
@@ -65,7 +79,7 @@ pub(crate) fn build_vss_store(
         }) as _);
 
     let vss_client = VssClient::new(config.vss_url.clone(), retry_policy);
-    VssStore::new(vss_client, store_id)
+    Ok(VssStore::new(vss_client, store_id, seed))
 }
 
 pub(crate) async fn build_mirroring_store(
