@@ -103,15 +103,12 @@ class BreezSDKModule(
     fun defaultConfig(
         envType: String,
         apiKey: String,
-        nodeConfig: ReadableMap,
         promise: Promise,
     ) {
         executor.execute {
             try {
                 val envTypeTmp = asEnvironmentType(envType)
-                val nodeConfigTmp =
-                    asNodeConfig(nodeConfig) ?: run { throw SdkException.Generic(errMissingMandatoryField("nodeConfig", "NodeConfig")) }
-                val res = defaultConfig(envTypeTmp, apiKey, nodeConfigTmp)
+                val res = defaultConfig(envTypeTmp, apiKey)
                 val workingDir = File(reactApplicationContext.filesDir.toString() + "/breezSdk")
 
                 res.workingDir = workingDir.absolutePath
@@ -344,18 +341,6 @@ class BreezSDKModule(
                     asReportIssueRequest(req) ?: run { throw SdkException.Generic(errMissingMandatoryField("req", "ReportIssueRequest")) }
                 getBreezServices().reportIssue(reqTmp)
                 promise.resolve(readableMapOf("status" to "ok"))
-            } catch (e: Exception) {
-                promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
-            }
-        }
-    }
-
-    @ReactMethod
-    fun nodeCredentials(promise: Promise) {
-        executor.execute {
-            try {
-                val res = getBreezServices().nodeCredentials()
-                promise.resolve(res?.let { readableMapOf(res) })
             } catch (e: Exception) {
                 promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
             }
