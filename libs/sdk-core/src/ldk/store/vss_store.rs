@@ -51,26 +51,34 @@ impl<P: RetryPolicy<E = VssError> + Send + Sync> VssStore<P> {
 
     /// Persist the payload and commit to the version and the key to cross-check
     /// against the VSS metadata returned on reads.
-    fn construct_storable(&self, key: &str, value: Vec<u8>, version: i64) -> Vec<u8> {
+    fn construct_storable(&self, obfuscated_key: &str, value: Vec<u8>, version: i64) -> Vec<u8> {
         self.storable_builder
             .build(
                 value,
                 version + 1, // VSS server will increment the version.
                 &self.data_encryption_key,
-                key.as_bytes(),
+                obfuscated_key.as_bytes(),
             )
             .encode_to_vec()
     }
 
-    fn deconstruct_storable(&self, key: &str, bytes: &[u8]) -> Result<(Vec<u8>, i64), Error> {
-        let key = self.obfuscate_key(key);
+    fn deconstruct_storable(
+        &self,
+        key: &str,
+        obfuscated_key: &str,
+        bytes: &[u8],
+    ) -> Result<(Vec<u8>, i64), Error> {
         let storable = Storable::decode(bytes).map_err(|e| {
             Error::Internal(format!(
                 "Failed to decode encrypted value for key `{key}`: {e}"
             ))
         })?;
         self.storable_builder
-            .deconstruct(storable, &self.data_encryption_key, key.as_bytes())
+            .deconstruct(
+                storable,
+                &self.data_encryption_key,
+                obfuscated_key.as_bytes(),
+            )
             .map_err(|e| Error::Internal(format!("Failed to decrypt value for key `{key}`: {e}")))
     }
 }
@@ -78,14 +86,16 @@ impl<P: RetryPolicy<E = VssError> + Send + Sync> VssStore<P> {
 #[async_trait]
 impl<P: RetryPolicy<E = VssError> + Send + Sync> VersionedStore for VssStore<P> {
     async fn get(&self, key: String) -> Result<Option<(Vec<u8>, i64)>, Error> {
+        let obfuscated_key = self.obfuscate_key(&key);
         let request = GetObjectRequest {
             store_id: self.store_id.clone(),
-            key: self.obfuscate_key(&key),
+            key: obfuscated_key.clone(),
         };
 
         match self.client.get_object(&request).await {
             Ok(GetObjectResponse { value: Some(kv) }) => {
-                let (value, stored_version) = self.deconstruct_storable(&key, &kv.value)?;
+                let (value, stored_version) =
+                    self.deconstruct_storable(&key, &obfuscated_key, &kv.value)?;
                 ensure_sdk!(stored_version == kv.version,
                     Error::Internal(format!(
                         "Version mismatch for key `{key}`: decrypted version={stored_version} but metadata version={}",
@@ -100,10 +110,12 @@ impl<P: RetryPolicy<E = VssError> + Send + Sync> VersionedStore for VssStore<P> 
     }
 
     async fn put(&self, key: String, value: Vec<u8>, version: i64) -> Result<(), Error> {
+        let obfuscated_key = self.obfuscate_key(&key);
+        let value = self.construct_storable(&obfuscated_key, value, version);
         let key_value = KeyValue {
-            key: self.obfuscate_key(&key),
+            key: obfuscated_key,
             version,
-            value: self.construct_storable(&key, value, version),
+            value,
         };
         let request = PutObjectRequest {
             store_id: self.store_id.clone(),
@@ -193,5 +205,43 @@ impl From<VssError> for Error {
             VssError::ConflictError(e) => Error::Conflict(e),
             _ => Error::Internal(format!("{err:?}")),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use vss_client_ng::util::retry::RetryContext;
+
+    /// A no-op retry policy for constructing the client in tests.
+    struct NoRetry;
+
+    impl RetryPolicy for NoRetry {
+        type E = VssError;
+
+        fn next_delay(&self, _context: &RetryContext<Self::E>) -> Option<Duration> {
+            None
+        }
+    }
+
+    #[test]
+    fn construct_and_deconstruct_roundtrip() {
+        let vss_seed = [1u8; 32];
+        let store = VssStore::new(
+            VssClient::new("http://example.com".to_string(), NoRetry),
+            "store-id".to_string(),
+            vss_seed,
+        );
+
+        let key = "test-key";
+        let obfuscated_key = "obfuscated";
+        let value = b"payload".to_vec();
+        let storable = store.construct_storable(obfuscated_key, value, 0);
+        let (value, version) = store
+            .deconstruct_storable(key, obfuscated_key, &storable)
+            .unwrap();
+        assert_eq!(value, b"payload");
+        assert_eq!(version, 1);
     }
 }
