@@ -2479,17 +2479,17 @@ dependencies = [
  "electrum-client",
  "esplora-client",
  "libc",
- "lightning 0.2.0",
+ "lightning",
  "lightning-background-processor",
  "lightning-block-sync",
- "lightning-invoice 0.34.0",
+ "lightning-invoice",
  "lightning-liquidity",
  "lightning-macros",
  "lightning-net-tokio",
  "lightning-persister",
  "lightning-rapid-gossip-sync",
  "lightning-transaction-sync",
- "lightning-types 0.3.0",
+ "lightning-types",
  "log",
  "prost 0.11.6",
  "rand 0.9.2",
@@ -2520,17 +2520,17 @@ dependencies = [
  "electrum-client",
  "esplora-client",
  "libc",
- "lightning 0.2.0",
+ "lightning",
  "lightning-background-processor",
  "lightning-block-sync",
- "lightning-invoice 0.34.0",
+ "lightning-invoice",
  "lightning-liquidity",
  "lightning-macros",
  "lightning-net-tokio",
  "lightning-persister",
  "lightning-rapid-gossip-sync",
  "lightning-transaction-sync",
- "lightning-types 0.3.0",
+ "lightning-types",
  "log",
  "prost 0.11.6",
  "rand 0.9.2",
@@ -2625,22 +2625,6 @@ dependencies = [
 
 [[package]]
 name = "lightning"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc19846267fc5406a43bed1ca00621a74752b26998ee4eae9f532386b9bee59e"
-dependencies = [
- "bech32",
- "bitcoin",
- "dnssec-prover",
- "hashbrown 0.13.2",
- "libm",
- "lightning-invoice 0.33.2",
- "lightning-types 0.2.0",
- "possiblyrandom",
-]
-
-[[package]]
-name = "lightning"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4342d07db2b3fe7c9a73849e94d012ebcfa3588c25097daf0b5ff2857c04e0e1"
@@ -2650,9 +2634,9 @@ dependencies = [
  "dnssec-prover",
  "hashbrown 0.13.2",
  "libm",
- "lightning-invoice 0.34.0",
+ "lightning-invoice",
  "lightning-macros",
- "lightning-types 0.3.0",
+ "lightning-types",
  "possiblyrandom",
 ]
 
@@ -2665,7 +2649,7 @@ dependencies = [
  "bitcoin",
  "bitcoin-io",
  "bitcoin_hashes 0.14.0",
- "lightning 0.2.0",
+ "lightning",
  "lightning-liquidity",
  "lightning-rapid-gossip-sync",
  "possiblyrandom",
@@ -2679,20 +2663,9 @@ checksum = "ee5069846b07a62aaecdaf25233e067bc69f245b7c8fd00cc9c217053221f875"
 dependencies = [
  "bitcoin",
  "chunked_transfer",
- "lightning 0.2.0",
+ "lightning",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "lightning-invoice"
-version = "0.33.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11209f386879b97198b2bfc9e9c1e5d42870825c6bd4376f17f95357244d6600"
-dependencies = [
- "bech32",
- "bitcoin",
- "lightning-types 0.2.0",
 ]
 
 [[package]]
@@ -2703,7 +2676,7 @@ checksum = "b85e5e14bcdb30d746e9785b04f27938292e8944f78f26517e01e91691f6b3f2"
 dependencies = [
  "bech32",
  "bitcoin",
- "lightning-types 0.3.0",
+ "lightning-types",
  "serde",
 ]
 
@@ -2715,10 +2688,10 @@ checksum = "58a6480d4d7726c49b4cd170b18a39563bbe897d0b8960be11d5e4a0cebd43b0"
 dependencies = [
  "bitcoin",
  "chrono",
- "lightning 0.2.0",
- "lightning-invoice 0.34.0",
+ "lightning",
+ "lightning-invoice",
  "lightning-macros",
- "lightning-types 0.3.0",
+ "lightning-types",
  "serde",
  "serde_json",
 ]
@@ -2741,7 +2714,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8055737e3d2d06240a3fdf10e26b2716110fcea90011a0839e8e82fc6e58ff5e"
 dependencies = [
  "bitcoin",
- "lightning 0.2.0",
+ "lightning",
  "tokio",
 ]
 
@@ -2752,7 +2725,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d78990de56ca75c5535c3f8e6f86b183a1aa8f521eb32afb9e8181f3bd91d7"
 dependencies = [
  "bitcoin",
- "lightning 0.2.0",
+ "lightning",
  "tokio",
  "windows-sys 0.48.0",
 ]
@@ -2766,7 +2739,7 @@ dependencies = [
  "bitcoin",
  "bitcoin-io",
  "bitcoin_hashes 0.14.0",
- "lightning 0.2.0",
+ "lightning",
 ]
 
 [[package]]
@@ -2779,17 +2752,8 @@ dependencies = [
  "electrum-client",
  "esplora-client",
  "futures",
- "lightning 0.2.0",
+ "lightning",
  "lightning-macros",
-]
-
-[[package]]
-name = "lightning-types"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2cd84d4e71472035903e43caded8ecc123066ce466329ccd5ae537a8d5488c7"
-dependencies = [
- "bitcoin",
 ]
 
 [[package]]
@@ -4484,8 +4448,8 @@ dependencies = [
  "hex",
  "hickory-resolver",
  "lazy_static",
- "lightning 0.1.7",
- "lightning-invoice 0.33.2",
+ "lightning",
+ "lightning-invoice",
  "log",
  "maybe-sync",
  "percent-encoding",
