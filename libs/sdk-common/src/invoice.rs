@@ -2,7 +2,6 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 use std::time::{SystemTimeError, UNIX_EPOCH};
 
-use anyhow::anyhow;
 use hex::ToHex;
 use lightning::bitcoin::secp256k1::PublicKey;
 use lightning::routing::gossip::RoutingFees;
@@ -10,10 +9,7 @@ use lightning::routing::*;
 use lightning_invoice::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use {
-    lightning::ln::msgs::DecodeError, lightning::offers::offer::Offer,
-    lightning::offers::parse::Bolt12ParseError,
-};
+use {lightning::offers::offer::Offer, lightning::offers::parse::Bolt12ParseError};
 
 use crate::prelude::*;
 
@@ -120,22 +116,19 @@ pub enum Amount {
     },
 }
 
-impl TryFrom<lightning::offers::offer::Amount> for Amount {
-    type Error = anyhow::Error;
-
-    fn try_from(amount: lightning::offers::offer::Amount) -> Result<Self, Self::Error> {
+impl From<lightning::offers::offer::Amount> for Amount {
+    fn from(amount: lightning::offers::offer::Amount) -> Self {
         match amount {
-            lightning::offers::offer::Amount::Bitcoin { amount_msats } => Ok(Amount::Bitcoin {
+            lightning::offers::offer::Amount::Bitcoin { amount_msats } => Amount::Bitcoin {
                 amount_msat: amount_msats,
-            }),
+            },
             lightning::offers::offer::Amount::Currency {
                 iso4217_code,
                 amount,
-            } => Ok(Amount::Currency {
-                iso4217_code: String::from_utf8(iso4217_code.to_vec())
-                    .map_err(|_| anyhow!("Expecting a valid ISO 4217 character sequence"))?,
+            } => Amount::Currency {
+                iso4217_code: iso4217_code.to_string(),
                 fractional_amount: amount,
-            }),
+            },
         }
     }
 }
@@ -400,25 +393,7 @@ pub fn parse_invoice(bolt11: &str) -> InvoiceResult<LNInvoice> {
 
 pub fn parse_bolt12_offer(input: &str) -> Result<LNOffer, Bolt12ParseError> {
     let offer = input.parse::<Offer>()?;
-    // TODO This conversion (between lightning-v0.0.125 to -v0.0.118 Amount types)
-    //      won't be needed when gl-client upgrades to >=0.0.125
-    let min_amount = offer
-        .amount()
-        .map(|amount| match amount {
-            lightning::offers::offer::Amount::Bitcoin { amount_msats } => Ok(Amount::Bitcoin {
-                amount_msat: amount_msats,
-            }),
-            lightning::offers::offer::Amount::Currency {
-                iso4217_code,
-                amount,
-            } => Ok(Amount::Currency {
-                iso4217_code: String::from_utf8(iso4217_code.to_vec())
-                    .map_err(|_| anyhow!("Expecting a valid ISO 4217 character sequence"))?,
-                fractional_amount: amount,
-            }),
-        })
-        .transpose()
-        .map_err(|_e: anyhow::Error| Bolt12ParseError::Decode(DecodeError::InvalidValue))?;
+    let min_amount = offer.amount().map(Into::into);
 
     Ok(LNOffer {
         offer: input.to_string(),
