@@ -5,7 +5,6 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
-use hex::ToHex;
 use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
@@ -13,10 +12,9 @@ use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::router::{
     RouteParametersConfig, DEFAULT_MAX_TOTAL_CLTV_EXPIRY_DELTA,
 };
-use ldk_node::lightning::util::persist::KVStoreSync;
 use ldk_node::lightning_invoice::{Bolt11InvoiceDescription, Description};
 use ldk_node::lightning_types::payment::{PaymentHash, PaymentPreimage};
-use ldk_node::{Builder, CustomTlvRecord, DynStore, Event, Node};
+use ldk_node::{Builder, CustomTlvRecord, Event, Node};
 use rand::Rng;
 use sdk_common::ensure_sdk;
 use sdk_common::invoice::parse_invoice;
@@ -35,7 +33,9 @@ use crate::grpc;
 use crate::ldk::event_handling::{start_event_handling, wait_for_payment_success};
 use crate::ldk::node_state::convert_payment;
 use crate::ldk::restore_state::RestoreStateTracker;
+use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
+use crate::ldk::utils::Hex;
 use crate::lightning_invoice::RawBolt11Invoice;
 use crate::models::{
     Config, LspAPI, OpeningFeeParams, OpeningFeeParamsMenu, ReceivePaymentRequest,
@@ -50,22 +50,13 @@ use crate::{
     SyncResponse, TlvEntry,
 };
 
-pub(crate) type KVStore = Arc<DynStore>;
-
-pub(crate) const PREIMAGES_PRIMARY_NS: &str = "preimages";
-pub(crate) const PREIMAGES_SECONDARY_NS: &str = "";
-
-pub(crate) fn preimage_store_key(payment_hash: &PaymentHash) -> String {
-    payment_hash.0.encode_hex()
-}
-
 pub(crate) struct Ldk {
     config: Config,
     seed: [u8; 64],
     node: Arc<Node>,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
     events_tx: broadcast::Sender<Event>,
-    kv_store: KVStore,
+    store: Store,
     remote_lock_shutdown_tx: mpsc::Sender<()>,
 }
 
@@ -113,6 +104,7 @@ impl Ldk {
         let mirroring_store =
             build_mirroring_store(&config.working_dir, vss_store, remote_lock_shutdown_rx).await?;
         let kv_store: KVStore = Arc::new(mirroring_store);
+        let store = Store::new(Arc::clone(&kv_store));
 
         let restore_state_tracker = RestoreStateTracker::new(Arc::clone(&kv_store));
         let was_initialized = restore_state_tracker.is_initialized()?;
@@ -123,7 +115,7 @@ impl Ldk {
         }
 
         let node = builder
-            .build_with_store(Arc::clone(&kv_store))
+            .build_with_store(kv_store)
             .map_err(|e| NodeError::Generic(format!("Fail to build LDK Node: {e}")))?;
         let node = Arc::new(node);
         debug!("LDK Node was built");
@@ -140,7 +132,7 @@ impl Ldk {
             node,
             incoming_payments_tx,
             events_tx,
-            kv_store,
+            store,
             remote_lock_shutdown_tx,
         })
     }
@@ -167,14 +159,7 @@ impl Ldk {
         let preimage =
             preimage.unwrap_or_else(|| PaymentPreimage(rand::thread_rng().gen::<[u8; 32]>()));
         let payment_hash: PaymentHash = preimage.into();
-        let key = preimage_store_key(&payment_hash);
-        KVStoreSync::write(
-            self.kv_store.as_ref(),
-            PREIMAGES_PRIMARY_NS,
-            PREIMAGES_SECONDARY_NS,
-            &key,
-            preimage.0.to_vec(),
-        )?;
+        self.store.store_preimage(&payment_hash, &preimage)?;
 
         let payments = self.node.bolt11_payment();
         let invoice = match opening_fee_msat {
@@ -187,7 +172,10 @@ impl Ldk {
             ),
             None => payments.receive_for_hash(amount_msat, &description, expiry, payment_hash),
         }?;
-        Ok(invoice.to_string())
+        let bolt11 = invoice.to_string();
+        self.store
+            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11.clone())?;
+        Ok(bolt11)
     }
 }
 
@@ -222,7 +210,7 @@ impl NodeAPI for Ldk {
         let payments = node
             .list_payments()
             .into_iter()
-            .map(|p| convert_payment(p, &local_node_id))
+            .map(|p| convert_payment(p, &local_node_id, &self.store))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(SyncResponse {
             sync_state: Value::Null,
@@ -242,13 +230,17 @@ impl NodeAPI for Ldk {
             max_path_count: 3,
             max_channel_saturation_power_of_half: 2,
         });
+
+        self.store
+            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11)?;
+
         let payment_id = match amount_msat {
             Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),
             None => payments.send(&invoice, params),
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id())
+        convert_payment(payment, &self.node.node_id(), &self.store)
     }
 
     async fn send_spontaneous_payment(
@@ -277,7 +269,7 @@ impl NodeAPI for Ldk {
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id())
+        convert_payment(payment, &self.node.node_id(), &self.store)
     }
 
     async fn node_id(&self) -> NodeResult<String> {
@@ -324,7 +316,7 @@ impl NodeAPI for Ldk {
         start_event_handling(
             Arc::clone(&self.node),
             self.events_tx.clone(),
-            Arc::clone(&self.kv_store),
+            self.store.clone(),
             self.incoming_payments_tx.clone(),
             shutdown,
         )
