@@ -1,5 +1,7 @@
 mod event_listener;
 
+use std::time::Duration;
+
 use bitcoin::Amount;
 use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
@@ -12,10 +14,13 @@ use sdk_itest::environment::Environment;
 use sdk_itest::wait_for;
 use testdir::testdir;
 use tokio::sync::mpsc;
+use tokio::time::sleep;
 use tokio::try_join;
 use tracing::info;
 
 use crate::event_listener::EventListenerImpl;
+
+const SECOND: Duration = Duration::from_secs(1);
 
 #[rstest]
 #[tokio::test(flavor = "multi_thread")]
@@ -127,12 +132,20 @@ async fn test_node_receive_payments() {
     ));
     info!("Waiting for BreezEvent::Synced...");
     assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
+    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    assert_eq!(
+        balance_msat,
+        huge_amount_msat - opening_fee_msat + small_amount_msat
+    );
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 2);
     let payment = payments.first().cloned().unwrap();
     assert_eq!(payment.amount_msat, small_amount_msat);
     assert_eq!(payment.fee_msat, 0);
     assert_eq!(payment.payment_type, PaymentType::Received);
+
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
 
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
@@ -165,6 +178,9 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
 
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
+
     // Paying open amount BOLT-11 invoice.
     let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
     let amount = Amount::from_sat(1100);
@@ -195,6 +211,9 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
+
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
 
     // Sending spontaneous payment.
     let lnd_id = lnd.get_id().await.unwrap();
