@@ -52,8 +52,8 @@ async fn main() -> Result<()> {
                 let mut vec: Vec<&str> = line.as_str().split_whitespace().collect();
                 vec.insert(0, " ");
                 let cli_res = Commands::try_parse_from(vec);
-                if cli_res.is_err() {
-                    println!("{}", cli_res.unwrap_err());
+                if let Err(e) = cli_res {
+                    println!("{e}");
                     continue;
                 }
                 let res = command_handler.handle_command(rl, cli_res.unwrap()).await;

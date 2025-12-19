@@ -42,7 +42,6 @@ impl SqliteStorage {
 
         let funding_txs: Vec<String> = new_channels
             .iter()
-            .cloned()
             .map(|c| format!("'{}'", c.funding_txid))
             .collect();
 
