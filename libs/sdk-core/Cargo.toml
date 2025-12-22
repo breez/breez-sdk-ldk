@@ -45,9 +45,10 @@ tokio-stream = { version = "0.1.15", features = ["sync"] }
 serde_with = "3.3.0"
 ryu = "1.0.18"
 ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "v0.7.0-rc.0" }
-vss-client-ng = { git = "https://github.com/lightningdevkit/vss-client", rev = "5934149a0ba75867eb364661bfe15e2d36ce8b88", default-features = false }
+vss-client-ng = { workspace = true, default-features = false }
 r2d2 = "0.8"
 r2d2_sqlite = "0.24"
+vss-signing-auth = { path = "../vss-signing-auth" }
 
 [dev-dependencies]
 base64 = { workspace = true }
