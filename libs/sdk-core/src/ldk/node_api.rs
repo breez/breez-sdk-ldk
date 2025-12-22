@@ -77,8 +77,8 @@ impl Ldk {
     ) -> NodeResult<Self> {
         debug!("Building LDK Node");
         ensure_sdk!(
-            config.network == Network::Regtest,
-            NodeError::generic("Only Regtest mode is supported for now")
+            matches!(config.network, Network::Regtest | Network::Signet),
+            NodeError::generic("Only Regtest or Signet modes are supported for now")
         );
 
         let (lsp_id, lsp_address) = get_lsp(&config)?;
@@ -450,34 +450,11 @@ impl NodeAPI for Ldk {
 impl LspAPI for Ldk {
     async fn list_lsps(&self, _node_pubkey: String) -> SdkResult<Vec<LspInformation>> {
         // TODO: Load data dynamically from LSP.
-        // TODO: For now hard-code values for other environments.
-        // Regtest
-        let year = Duration::from_secs(60 * 60 * 24 * 365);
-        let in_one_year = SystemTime::now() + year;
-        let in_one_year: DateTime<Utc> = in_one_year.into();
-        let opening_fee_params = OpeningFeeParams {
-            min_msat: 1_000_000,
-            proportional: 40_000,
-            valid_until: in_one_year.to_rfc3339(),
-            max_idle_time: 0,
-            max_client_to_self_delay: 10_000,
-            promise: "I promise".to_string(),
-        };
         let (pubkey, address) = get_lsp(&self.config)?;
-        let lsp = LspInformation {
-            id: pubkey.to_string(),
-            name: "Breez SDK Regtest LSPS2".to_string(),
-            widget_url: "http://widget.example.com".to_string(),
-            pubkey: pubkey.to_string(),
-            host: address.to_string(),
-            base_fee_msat: 1_000,
-            fee_rate: 0.0,
-            time_lock_delta: 72,
-            min_htlc_msat: 1,
-            lsp_pubkey: pubkey.serialize().to_vec(),
-            opening_fee_params_list: OpeningFeeParamsMenu {
-                values: vec![opening_fee_params],
-            },
+        let lsp = match self.config.network {
+            Network::Regtest => regtest_lsp(pubkey, address),
+            Network::Signet => signet_lsp(pubkey, address),
+            _ => return Err(SdkError::generic("Unsupported network")),
         };
         Ok(vec![lsp])
     }
@@ -625,5 +602,64 @@ fn get_lsp(config: &Config) -> NodeResult<(PublicKey, SocketAddress)> {
                 .map_err(|e| NodeError::Generic(format!("Invalid LSP address: {e}")))?;
             Ok((id, address))
         }
+    }
+}
+
+fn regtest_lsp(pubkey: PublicKey, address: SocketAddress) -> LspInformation {
+    let year = Duration::from_secs(60 * 60 * 24 * 365);
+    let in_one_year = SystemTime::now() + year;
+    let in_one_year: DateTime<Utc> = in_one_year.into();
+    let opening_fee_params = OpeningFeeParams {
+        min_msat: 1_000_000,
+        proportional: 40_000,
+        valid_until: in_one_year.to_rfc3339(),
+        max_idle_time: 0,
+        max_client_to_self_delay: 10_000,
+        promise: "I promise".to_string(),
+    };
+    LspInformation {
+        id: pubkey.to_string(),
+        name: "Breez SDK Regtest LSPS2".to_string(),
+        widget_url: "http://widget.example.com".to_string(),
+        pubkey: pubkey.to_string(),
+        host: address.to_string(),
+        base_fee_msat: 1_000,
+        fee_rate: 0.0,
+        time_lock_delta: 72,
+        min_htlc_msat: 1,
+        lsp_pubkey: pubkey.serialize().to_vec(),
+        opening_fee_params_list: OpeningFeeParamsMenu {
+            values: vec![opening_fee_params],
+        },
+    }
+}
+
+fn signet_lsp(pubkey: PublicKey, address: SocketAddress) -> LspInformation {
+    // TODO: Hard-code values for Megalith.
+    let year = Duration::from_secs(60 * 60 * 24 * 365);
+    let in_one_year = SystemTime::now() + year;
+    let in_one_year: DateTime<Utc> = in_one_year.into();
+    let opening_fee_params = OpeningFeeParams {
+        min_msat: 1_000_000,
+        proportional: 40_000,
+        valid_until: in_one_year.to_rfc3339(),
+        max_idle_time: 0,
+        max_client_to_self_delay: 10_000,
+        promise: "I promise".to_string(),
+    };
+    LspInformation {
+        id: pubkey.to_string(),
+        name: "Megalith LSPS2".to_string(),
+        widget_url: "http://widget.example.com".to_string(),
+        pubkey: pubkey.to_string(),
+        host: address.to_string(),
+        base_fee_msat: 1_000,
+        fee_rate: 0.0,
+        time_lock_delta: 72,
+        min_htlc_msat: 1,
+        lsp_pubkey: pubkey.serialize().to_vec(),
+        opening_fee_params_list: OpeningFeeParamsMenu {
+            values: vec![opening_fee_params],
+        },
     }
 }

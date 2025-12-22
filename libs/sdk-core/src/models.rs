@@ -506,16 +506,17 @@ impl Config {
         Config {
             breezserver: STAGING_BREEZSERVER_URL.to_string(),
             chainnotifier_url: "https://chainnotifier.breez.technology".to_string(),
-            mempoolspace_url: None,
+            mempoolspace_url: Some("https://mutinynet.com/api/v1".to_string()),
 
-            // TODO: Set proper values.
-            esplora_url: String::new(),
-            vss_url: String::new(),
-            rgs_url: String::new(),
-            lsps2_address: String::new(),
+            esplora_url: "https://mutinynet.com/api".to_string(),
+            vss_url: "http://localhost:3080/vss".to_string(),
+            rgs_url: "https://rgs.mutinynet.com/snapshot/v2".to_string(),
+            lsps2_address:
+                "02b49b94e068e05c04c2ac98e096a06202d04920daec25d82f7898e21901f15d81@localhost:9735"
+                    .to_string(),
 
             working_dir: ".".to_string(),
-            network: Bitcoin,
+            network: Signet,
             payment_timeout_sec: 60,
             default_lsp_id: None,
             api_key: Some(api_key),
