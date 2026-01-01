@@ -189,6 +189,7 @@ impl Lnd {
             .lightning()
             .add_invoice(Invoice {
                 value_msat: (amount.to_sat() * 1000) as i64,
+                memo: "LND".to_string(),
                 ..Default::default()
             })
             .await?;

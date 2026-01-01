@@ -1,25 +1,20 @@
-use core::convert::TryInto;
 use std::sync::Arc;
 
 use ldk_node::lightning::events::PaymentFailureReason;
 use ldk_node::lightning::ln::channelmanager::PaymentId;
-use ldk_node::lightning::util::persist::KVStoreSync;
-use ldk_node::lightning_types::payment::PaymentPreimage;
 use ldk_node::payment::PaymentDetails;
 use ldk_node::{Event, Node};
 use tokio::sync::{broadcast, mpsc};
 use tokio::time::error::Elapsed;
 use tokio::time::{timeout, Duration};
 
-use crate::ldk::node_api::{
-    preimage_store_key, KVStore, PREIMAGES_PRIMARY_NS, PREIMAGES_SECONDARY_NS,
-};
+use crate::ldk::store::Store;
 use crate::node_api::{IncomingPayment, NodeError, NodeResult};
 
 pub async fn start_event_handling(
     node: Arc<Node>,
     events_tx: broadcast::Sender<Event>,
-    kv_store: KVStore,
+    store: Store,
     incoming_payments_tx: broadcast::Sender<IncomingPayment>,
     mut shutdown: mpsc::Receiver<()>,
 ) {
@@ -41,32 +36,20 @@ pub async fn start_event_handling(
                 amount_msat,
                 ..
             } => {
-                let key = preimage_store_key(&payment_hash);
-                match KVStoreSync::read(
-                    kv_store.as_ref(),
-                    PREIMAGES_PRIMARY_NS,
-                    PREIMAGES_SECONDARY_NS,
-                    &key,
-                ) {
+                match store.load_preimage(&payment_hash) {
                     Ok(preimage) => {
-                        if let Err(err) = KVStoreSync::remove(
-                            kv_store.as_ref(),
-                            PREIMAGES_PRIMARY_NS,
-                            PREIMAGES_SECONDARY_NS,
-                            &key,
-                            false,
-                        ) {
-                            warn!(
-								"Failed to remove preimage from store for payment with id={payment_id:?}: {err}"
-							);
-                        }
-                        // TODO: Load bolt11 from the store.
-                        let bolt11 = String::new();
+                        let bolt11 = match store.load_bolt11(&payment_hash) {
+                            Ok(bolt11) => bolt11,
+                            Err(err) => {
+                                error!("Failed to read bolt11 for payment with id={payment_id:?}: {err}");
+                                None
+                            }
+                        };
                         let payment = IncomingPayment {
                             payment_hash: payment_hash.0.to_vec(),
-                            preimage,
+                            preimage: preimage.0.to_vec(),
                             amount_msat,
-                            bolt11,
+                            bolt11: bolt11.unwrap_or_default(),
                         };
                         if let Err(e) = incoming_payments_tx.send(payment) {
                             warn!("Failed to send payment to incoming_payments_tx: {e}");
@@ -87,27 +70,8 @@ pub async fn start_event_handling(
                 claimable_amount_msat,
                 ..
             } => {
-                let key = preimage_store_key(&payment_hash);
-                let preimage = match KVStoreSync::read(
-                    kv_store.as_ref(),
-                    PREIMAGES_PRIMARY_NS,
-                    PREIMAGES_SECONDARY_NS,
-                    &key,
-                ) {
-                    Ok(preimage) => match preimage.as_slice().try_into() {
-                        Ok(preimage_arr) => Some(PaymentPreimage(preimage_arr)),
-                        Err(err) => {
-                            error!("Failed to convert preimage for payment with id={payment_id:?}: {err}");
-                            None
-                        }
-                    },
-                    Err(err) => {
-                        error!("Failed to read preimage when payment claimable for payment with id={payment_id:?}: {err}");
-                        None
-                    }
-                };
-                match preimage {
-                    Some(preimage) => {
+                match store.load_preimage(&payment_hash) {
+                    Ok(preimage) => {
                         if let Err(e) = node.bolt11_payment().claim_for_hash(
                             payment_hash,
                             claimable_amount_msat,
@@ -116,7 +80,8 @@ pub async fn start_event_handling(
                             error!("Failed to claim payment: {e}");
                         }
                     }
-                    None => {
+                    Err(err) => {
+                        error!("Failed to read preimage when payment claimable for payment with id={payment_id:?}: {err}");
                         if let Err(e) = node.bolt11_payment().fail_for_hash(payment_hash) {
                             error!("Failed to fail payment: {e}");
                         }

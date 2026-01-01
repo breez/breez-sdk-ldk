@@ -1,3 +1,4 @@
+mod kv_store;
 mod locking_store;
 mod mirroring_store;
 #[cfg(test)]
@@ -6,6 +7,7 @@ mod time_lock;
 mod versioned_store;
 mod vss_store;
 
+pub(crate) use kv_store::{KVStore, Store};
 pub(crate) use locking_store::LockingStore;
 pub(crate) use mirroring_store::MirroringStore;
 pub(crate) use time_lock::PreviousHolder;
