@@ -1,7 +1,12 @@
+use core::str::FromStr;
+
 use ldk_node::bitcoin::secp256k1::PublicKey;
+use ldk_node::lightning_invoice::Bolt11Invoice;
+use ldk_node::lightning_types::payment::{PaymentHash, PaymentPreimage};
 use ldk_node::LightningBalance::ClaimableOnChannelClose;
 use ldk_node::{Node, PendingSweepBalance};
 
+use crate::ldk::store::Store;
 use crate::ldk::utils::Hex;
 use crate::node_api::NodeError;
 use crate::{LnPaymentDetails, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType};
@@ -69,6 +74,7 @@ impl From<&Node> for NodeState {
 pub fn convert_payment(
     payment: ldk_node::payment::PaymentDetails,
     local_node_id: &PublicKey,
+    store: &Store,
 ) -> Result<Payment, NodeError> {
     let lsp_fee_msat = match payment.kind {
         ldk_node::payment::PaymentKind::Bolt11Jit {
@@ -77,7 +83,21 @@ pub fn convert_payment(
         } => lsp_fee_msat,
         _ => 0,
     };
-    let details = to_payment_details(&payment, local_node_id)?;
+    let bolt11 = match get_payment_hash(&payment) {
+        Some(payment_hash) => store.load_bolt11(payment_hash)?,
+        None => None,
+    };
+    let (description, destination_pubkey) = match &bolt11 {
+        Some(bolt11) => {
+            let invoice = Bolt11Invoice::from_str(bolt11)?;
+            let description = invoice.description().to_string();
+            let destination_pubkey = invoice.get_payee_pub_key().to_string();
+            (Some(description), destination_pubkey)
+        }
+        None => (None, String::new()),
+    };
+
+    let details = to_payment_details(&payment, local_node_id, bolt11, destination_pubkey)?;
     Ok(Payment {
         id: payment.id.to_hex(),
         payment_type: payment.direction.into(),
@@ -86,7 +106,7 @@ pub fn convert_payment(
         fee_msat: payment.fee_paid_msat.unwrap_or(lsp_fee_msat),
         status: payment.status.into(),
         error: None,
-        description: None, // TODO: Get it from bolt11.
+        description,
         details,
         metadata: None,
     })
@@ -95,22 +115,24 @@ pub fn convert_payment(
 fn to_payment_details(
     payment: &ldk_node::payment::PaymentDetails,
     local_node_id: &PublicKey,
+    bolt11: Option<String>,
+    destination_pubkey: String,
 ) -> Result<PaymentDetails, NodeError> {
     let destination_pubkey = match payment.direction {
         ldk_node::payment::PaymentDirection::Inbound => local_node_id.to_string(),
-        ldk_node::payment::PaymentDirection::Outbound => String::new(), // TODO: Get it from bolt11.
+        ldk_node::payment::PaymentDirection::Outbound => destination_pubkey,
     };
     match &payment.kind {
         ldk_node::payment::PaymentKind::Bolt11 { hash, preimage, .. } => Ok(PaymentDetails::Ln {
-            data: ln_payment_details(hash, preimage, destination_pubkey, false),
+            data: ln_payment_details(hash, preimage, destination_pubkey, false, bolt11),
         }),
         ldk_node::payment::PaymentKind::Bolt11Jit { hash, preimage, .. } => {
             Ok(PaymentDetails::Ln {
-                data: ln_payment_details(hash, preimage, destination_pubkey, false),
+                data: ln_payment_details(hash, preimage, destination_pubkey, false, bolt11),
             })
         }
         ldk_node::payment::PaymentKind::Spontaneous { hash, preimage } => Ok(PaymentDetails::Ln {
-            data: ln_payment_details(hash, preimage, destination_pubkey, true),
+            data: ln_payment_details(hash, preimage, destination_pubkey, true, bolt11),
         }),
         other => Err(NodeError::Generic(format!(
             "Unsupported payment kind: {other:?}"
@@ -119,17 +141,18 @@ fn to_payment_details(
 }
 
 fn ln_payment_details(
-    hash: &ldk_node::lightning_types::payment::PaymentHash,
-    preimage: &Option<ldk_node::lightning_types::payment::PaymentPreimage>,
+    hash: &PaymentHash,
+    preimage: &Option<PaymentPreimage>,
     destination_pubkey: String,
     keysend: bool,
+    bolt11: Option<String>,
 ) -> LnPaymentDetails {
     LnPaymentDetails {
         payment_hash: hash.to_hex(),
         destination_pubkey,
         payment_preimage: preimage.as_ref().map(Hex::to_hex).unwrap_or_default(),
         keysend,
-        bolt11: String::new(), // TODO: Put it.
+        bolt11: bolt11.unwrap_or_default(),
         ..Default::default()
     }
 }
@@ -164,5 +187,14 @@ fn get_balance(balance: &PendingSweepBalance) -> u64 {
         | PendingSweepBalance::AwaitingThresholdConfirmations {
             amount_satoshis, ..
         } => *amount_satoshis,
+    }
+}
+
+fn get_payment_hash(payment: &ldk_node::payment::PaymentDetails) -> Option<&PaymentHash> {
+    match &payment.kind {
+        ldk_node::payment::PaymentKind::Bolt11 { hash, .. }
+        | ldk_node::payment::PaymentKind::Bolt11Jit { hash, .. }
+        | ldk_node::payment::PaymentKind::Spontaneous { hash, .. } => Some(hash),
+        _ => None,
     }
 }
