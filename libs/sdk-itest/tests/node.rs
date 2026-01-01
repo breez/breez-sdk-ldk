@@ -5,8 +5,9 @@ use std::time::Duration;
 use bitcoin::Amount;
 use breez_sdk_core::error::ConnectError;
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, LnPaymentDetails, PaymentDetails,
-    PaymentType, ReceivePaymentRequest, SendPaymentRequest, SendSpontaneousPaymentRequest,
+    BreezEvent, BreezServices, ChannelState, ClosedChannelPaymentDetails, Config, ConnectRequest,
+    LnPaymentDetails, PaymentDetails, PaymentType, ReceivePaymentRequest,
+    RedeemOnchainFundsRequest, SendPaymentRequest, SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -27,7 +28,8 @@ const SECOND: Duration = Duration::from_secs(1);
 #[test_log::test]
 async fn test_node_receive_payments() {
     let env = Environment::default();
-    let (esplora, mempool, vss, lsp, lnd, rgs) = try_join!(
+    let (bitcoind, esplora, mempool, vss, lsp, lnd, rgs) = try_join!(
+        env.bitcoind(),
         env.esplora_api(),
         env.mempool_api(),
         env.vss_api(),
@@ -162,6 +164,9 @@ async fn test_node_receive_payments() {
     // Ensure that the next payment does not occur at the same time (down to the second).
     sleep(SECOND).await;
 
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
+
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
     let bolt11 = lnd.receive(&amount).await.unwrap();
@@ -203,6 +208,9 @@ async fn test_node_receive_payments() {
     // Ensure that the next payment does not occur at the same time (down to the second).
     sleep(SECOND).await;
 
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
+
     // Paying open amount BOLT-11 invoice.
     let bolt11 = lnd.receive(&Amount::ZERO).await.unwrap();
     let amount = Amount::from_sat(1100);
@@ -240,6 +248,9 @@ async fn test_node_receive_payments() {
     } else {
         panic!("Expected LN payment details");
     }
+
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
 
     // Ensure that the next payment does not occur at the same time (down to the second).
     sleep(SECOND).await;
@@ -288,6 +299,85 @@ async fn test_node_receive_payments() {
     } else {
         panic!("Expected LN payment details");
     }
+
+    // Ensure that the next payment does not occur at the same time (down to the second).
+    sleep(SECOND).await;
+
+    // Close channels.
+    info!("Closing channels");
+    services.close_lsp_channels().await.unwrap();
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 6);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Received);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::ClosedChannel {
+            data: ClosedChannelPaymentDetails {
+                state: ChannelState::PendingClose,
+                ..
+            }
+        }
+    ));
+    assert_eq!(payment.amount_msat, 5707000);
+    assert_eq!(payment.fee_msat, 1170000);
+
+    // Waiting here for an extra block to let LDK Node to catch up.
+    bitcoind.generate_blocks(1).await.unwrap();
+    info!("Waiting for BreezEvent::NewBlock...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::NewBlock { .. })
+    ));
+    let tip = services.node_info().unwrap().block_height;
+    let block_numers = 6;
+    bitcoind.generate_blocks(block_numers).await.unwrap();
+    info!("Waiting for BreezEvent::NewBlock...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::NewBlock { block }) if block == tip + block_numers
+    ));
+    let node_info = services.node_info().unwrap();
+    assert_eq!(node_info.channels_balance_msat, 0);
+    assert_eq!(node_info.pending_onchain_balance_msat, 0);
+    assert_eq!(node_info.onchain_balance_msat, 5707000);
+
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 6);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.payment_type, PaymentType::Received);
+    assert!(matches!(
+        payment.details,
+        PaymentDetails::ClosedChannel {
+            data: ClosedChannelPaymentDetails {
+                state: ChannelState::Closed,
+                ..
+            }
+        }
+    ));
+    assert_eq!(payment.amount_msat, 5707000);
+    assert_eq!(payment.fee_msat, 1170000);
+
+    // Redeem funds.
+    let address = bitcoind.get_new_address().await.unwrap();
+    let request = RedeemOnchainFundsRequest {
+        to_address: address.to_string(),
+        sat_per_vbyte: 2,
+    };
+    info!("Redeeming on-chain funds to {address}");
+    services.redeem_onchain_funds(request).await.unwrap();
+    bitcoind.generate_blocks(1).await.unwrap();
+    info!("Waiting for BreezEvent::NewBlock...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::NewBlock { .. })
+    ));
+    let node_info = services.node_info().unwrap();
+    assert_eq!(node_info.channels_balance_msat, 0);
+    assert_eq!(node_info.pending_onchain_balance_msat, 0);
+    assert_eq!(node_info.onchain_balance_msat, 0);
+    let balance = bitcoind.get_address_balance(&address).await.unwrap();
+    assert!(balance.to_sat() > 5400);
 
     services.disconnect().await.unwrap();
     drop(services);

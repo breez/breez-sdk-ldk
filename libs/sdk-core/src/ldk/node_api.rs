@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
+use ldk_node::bitcoin::{Address, FeeRate};
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::router::{
     RouteParametersConfig, DEFAULT_MAX_TOTAL_CLTV_EXPIRY_DELTA,
@@ -291,10 +292,22 @@ impl NodeAPI for Ldk {
 
     async fn redeem_onchain_funds(
         &self,
-        _to_address: String,
-        _sat_per_vbyte: u32,
+        to_address: String,
+        sat_per_vbyte: u32,
     ) -> NodeResult<Vec<u8>> {
-        Err(NodeError::generic("LDK implementation not yet available"))
+        let address = Address::from_str(&to_address)
+            .map_err(|e| NodeError::Generic(format!("Invalid address: {e}")))?
+            .require_network(self.node.config().network)
+            .map_err(|e| NodeError::Generic(format!("Invalid network: {e}")))?;
+        let fee_rate = FeeRate::from_sat_per_vb(sat_per_vbyte as u64)
+            .ok_or(NodeError::generic("Invalid fee rate"))?;
+
+        let txid =
+            self.node
+                .onchain_payment()
+                .send_all_to_address(&address, false, Some(fee_rate))?;
+        let txid: &[u8] = txid.as_ref();
+        Ok(txid.to_vec())
     }
 
     async fn prepare_redeem_onchain_funds(
