@@ -422,10 +422,6 @@ impl NodeAPI for MockNodeAPI {
         Ok(Vec::new())
     }
 
-    async fn execute_command(&self, _command: String) -> NodeResult<Value> {
-        Err(NodeError::Generic("Not implemented".to_string()))
-    }
-
     async fn generate_diagnostic_data(&self) -> NodeResult<Value> {
         Ok(json!({}))
     }

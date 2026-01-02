@@ -19,7 +19,7 @@ use rand::Rng;
 use sdk_common::ensure_sdk;
 use sdk_common::invoice::parse_invoice;
 use sdk_common::prelude::Network;
-use serde_json::Value;
+use serde_json::{json, Value};
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError::Lagged;
 use tokio_stream::wrappers::BroadcastStream;
@@ -373,12 +373,8 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    async fn execute_command(&self, _command: String) -> NodeResult<Value> {
-        Err(NodeError::generic("LDK implementation not yet available"))
-    }
-
     async fn generate_diagnostic_data(&self) -> NodeResult<Value> {
-        Err(NodeError::generic("LDK implementation not yet available"))
+        Ok(json!({}))
     }
 
     async fn sign_message(&self, _message: &str) -> NodeResult<String> {

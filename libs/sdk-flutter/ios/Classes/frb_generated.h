@@ -969,9 +969,6 @@ void frbgen_breez_sdk_wire__crate__binding__default_config(int64_t port_,
 
 void frbgen_breez_sdk_wire__crate__binding__disconnect(int64_t port_);
 
-void frbgen_breez_sdk_wire__crate__binding__execute_command(int64_t port_,
-                                                            struct wire_cst_list_prim_u_8_strict *command);
-
 void frbgen_breez_sdk_wire__crate__binding__fetch_fiat_rates(int64_t port_);
 
 void frbgen_breez_sdk_wire__crate__binding__fetch_lsp_info(int64_t port_,
@@ -1336,7 +1333,6 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__connect_lsp);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__default_config);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__disconnect);
-    dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__execute_command);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__fetch_fiat_rates);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__fetch_lsp_info);
     dummy_var ^= ((int64_t) (void*) frbgen_breez_sdk_wire__crate__binding__fetch_reverse_swap_fees);

@@ -14,9 +14,7 @@ use futures::{StreamExt, TryFutureExt};
 use log::{LevelFilter, Metadata, Record};
 use sdk_common::grpc;
 use sdk_common::prelude::*;
-use serde::Serialize;
 use serde_json::{json, Value};
-use strum_macros::EnumString;
 use tokio::sync::{mpsc, watch, Mutex};
 use tokio::time::{sleep, MissedTickBehavior};
 
@@ -140,13 +138,6 @@ pub struct CheckMessageResponse {
     /// Boolean value indicating whether the signature covers the message and
     /// was signed by the given pubkey.
     pub is_valid: bool,
-}
-
-#[derive(Clone, PartialEq, EnumString, Serialize)]
-enum DevCommand {
-    /// Generates diagnostic data report.
-    #[strum(serialize = "generatediagnosticdata")]
-    GenerateDiagnosticData,
 }
 
 /// BreezServices is a facade and the single entry point for the SDK.
@@ -1024,21 +1015,6 @@ impl BreezServices {
         }
 
         Ok(rsis)
-    }
-
-    /// Execute a command directly on the NodeAPI interface.
-    /// Mainly used for debugging.
-    pub async fn execute_dev_command(&self, command: String) -> SdkResult<String> {
-        let dev_cmd_res = DevCommand::from_str(&command);
-
-        match dev_cmd_res {
-            Ok(dev_cmd) => match dev_cmd {
-                DevCommand::GenerateDiagnosticData => self.generate_diagnostic_data().await,
-            },
-            Err(_) => Ok(crate::serializer::to_string_pretty(
-                &self.node_api.execute_command(command).await?,
-            )?),
-        }
     }
 
     // Collects various user data from the node and the sdk storage.

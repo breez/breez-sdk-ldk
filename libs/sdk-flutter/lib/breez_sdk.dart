@@ -418,12 +418,6 @@ class BreezSDK {
 
   /* CLI API's */
 
-  /// Execute a command directly on the NodeAPI interface.
-  /// Mainly used to debugging.
-  Future<String> executeCommand({required String command}) async {
-    return await binding.executeCommand(command: command);
-  }
-
   /// Generate diagnostic data.
   /// Mainly used to debugging.
   Future<String> generateDiagnosticData() async {
