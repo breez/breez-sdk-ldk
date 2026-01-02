@@ -624,16 +624,6 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
 
-    @objc(executeDevCommand:resolve:reject:)
-    func executeDevCommand(_ command: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        do {
-            var res = try getBreezServices().executeDevCommand(command: command)
-            resolve(res)
-        } catch let err {
-            rejectErr(err: err, reject: reject)
-        }
-    }
-
     @objc(generateDiagnosticData:reject:)
     func generateDiagnosticData(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {

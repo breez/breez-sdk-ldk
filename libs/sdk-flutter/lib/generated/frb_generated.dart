@@ -61,7 +61,7 @@ class BreezSdkBindings
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -205939826;
+  int get rustContentHash => -310961496;
 
   static const kDefaultExternalLibraryLoaderConfig = ExternalLibraryLoaderConfig(
     stem: 'breez_sdk_core',
@@ -101,8 +101,6 @@ abstract class BreezSdkBindingsApi extends BaseApi {
   Future<Config> crateBindingDefaultConfig({required EnvironmentType envType, required String apiKey});
 
   Future<void> crateBindingDisconnect();
-
-  Future<String> crateBindingExecuteCommand({required String command});
 
   Future<List<Rate>> crateBindingFetchFiatRates();
 
@@ -491,25 +489,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
 
   TaskConstMeta get kCrateBindingDisconnectConstMeta =>
       const TaskConstMeta(debugName: "disconnect", argNames: []);
-
-  @override
-  Future<String> crateBindingExecuteCommand({required String command}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          var arg0 = cst_encode_String(command);
-          return wire.wire__crate__binding__execute_command(port_, arg0);
-        },
-        codec: DcoCodec(decodeSuccessData: dco_decode_String, decodeErrorData: dco_decode_AnyhowException),
-        constMeta: kCrateBindingExecuteCommandConstMeta,
-        argValues: [command],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateBindingExecuteCommandConstMeta =>
-      const TaskConstMeta(debugName: "execute_command", argNames: ["command"]);
 
   @override
   Future<List<Rate>> crateBindingFetchFiatRates() {

@@ -15,7 +15,7 @@ use sdk_common::grpc::{
 use sdk_common::prelude::{FiatAPI, FiatCurrency, Rate};
 use secp256k1::musig::MusigKeyAggCache;
 use serde_json::{json, Value};
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{mpsc, Mutex};
 use tokio::time::sleep;
 use tokio_stream::Stream;
 use tokio_stream::StreamExt;
@@ -388,8 +388,6 @@ impl NodeAPI for MockNodeAPI {
 
     async fn start(&self, _shutdown: mpsc::Receiver<()>) {}
 
-    async fn start_keep_alive(&self, _shutdown: watch::Receiver<()>) {}
-
     async fn connect_peer(&self, _node_id: String, _addr: String) -> NodeResult<()> {
         Ok(())
     }
@@ -420,16 +418,8 @@ impl NodeAPI for MockNodeAPI {
         Err(NodeError::Generic("Not implemented".to_string()))
     }
 
-    async fn stream_log_messages(&self) -> NodeResult<Pin<Box<dyn Stream<Item = String> + Send>>> {
-        Err(NodeError::Generic("Not implemented".to_string()))
-    }
-
     async fn static_backup(&self) -> NodeResult<Vec<String>> {
         Ok(Vec::new())
-    }
-
-    async fn execute_command(&self, _command: String) -> NodeResult<Value> {
-        Err(NodeError::Generic("Not implemented".to_string()))
     }
 
     async fn generate_diagnostic_data(&self) -> NodeResult<Value> {

@@ -559,9 +559,6 @@ impl CommandHandler {
                     .await?;
                 Ok("Report sent".into())
             }
-            Commands::ExecuteDevCommand { command } => {
-                Ok(self.sdk()?.execute_dev_command(command).await?)
-            }
             Commands::GenerateDiagnosticData {} => {
                 Ok(self.sdk()?.generate_diagnostic_data().await?)
             }

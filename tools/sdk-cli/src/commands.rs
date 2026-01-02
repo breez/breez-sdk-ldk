@@ -296,9 +296,6 @@ pub(crate) enum Commands {
     /// [fiat] Fetch available fiat rates
     FetchFiatRates {},
 
-    /// [dev] Execute a low level node command (used for debugging)
-    ExecuteDevCommand { command: String },
-
     /// [dev] Generates and retrieves a diagnostic data report from the sdk services (used for debugging)
     GenerateDiagnosticData {},
 
