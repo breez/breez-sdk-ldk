@@ -418,10 +418,6 @@ impl NodeAPI for MockNodeAPI {
         Err(NodeError::Generic("Not implemented".to_string()))
     }
 
-    async fn stream_log_messages(&self) -> NodeResult<Pin<Box<dyn Stream<Item = String> + Send>>> {
-        Err(NodeError::Generic("Not implemented".to_string()))
-    }
-
     async fn static_backup(&self) -> NodeResult<Vec<String>> {
         Ok(Vec::new())
     }

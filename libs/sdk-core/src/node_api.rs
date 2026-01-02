@@ -216,9 +216,6 @@ pub trait NodeAPI: Send + Sync {
     async fn stream_incoming_payments(
         &self,
     ) -> NodeResult<Pin<Box<dyn Stream<Item = IncomingPayment> + Send>>>;
-    async fn stream_log_messages(
-        &self,
-    ) -> NodeResult<Pin<Box<dyn Stream<Item = String> + Send>>>;
     async fn static_backup(&self) -> NodeResult<Vec<String>>;
     async fn execute_command(&self, command: String) -> NodeResult<Value>;
     async fn generate_diagnostic_data(&self) -> NodeResult<Value>;

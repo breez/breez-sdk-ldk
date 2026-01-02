@@ -369,11 +369,6 @@ impl NodeAPI for Ldk {
         Ok(Box::pin(stream))
     }
 
-    async fn stream_log_messages(&self) -> NodeResult<Pin<Box<dyn Stream<Item = String> + Send>>> {
-        // LDK Node is configured with facade logger.
-        Ok(Box::pin(futures::stream::empty()))
-    }
-
     async fn static_backup(&self) -> NodeResult<Vec<String>> {
         Err(NodeError::generic("LDK implementation not yet available"))
     }

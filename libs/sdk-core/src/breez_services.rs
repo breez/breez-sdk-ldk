@@ -1379,9 +1379,6 @@ impl BreezServices {
         // track new blocks
         self.track_new_blocks().await;
 
-        // track logs
-        self.track_logs().await;
-
         // Stop signer on shutdown
         let mut shutdown_receiver = self.shutdown_sender.subscribe();
         tokio::spawn(async move {
@@ -1564,61 +1561,6 @@ impl BreezServices {
                     if let Err(e) = cloned.do_sync(true).await {
                         error!("failed to sync after paid invoice: {e:?}");
                     }
-                }
-
-                tokio::select! {
-                    _ = sleep(Duration::from_secs(1)) => {
-                        continue
-                    }
-                    _ = shutdown_receiver.changed() => {
-                        debug!("Invoice tracking task has completed");
-                        return;
-                    }
-                };
-            }
-        });
-    }
-
-    async fn track_logs(self: &Arc<BreezServices>) {
-        let cloned = self.clone();
-        tokio::spawn(async move {
-            let mut shutdown_receiver = cloned.shutdown_sender.subscribe();
-            loop {
-                if shutdown_receiver.has_changed().unwrap_or(true) {
-                    return;
-                }
-                let mut log_stream = match cloned.node_api.stream_log_messages().await {
-                    Ok(log_stream) => log_stream,
-                    Err(e) => {
-                        warn!("stream log messages returned error: {e:?}");
-                        tokio::select! {
-                            _ = sleep(Duration::from_secs(1)) => {
-                                continue
-                            }
-                            _ = shutdown_receiver.changed() => {
-                                debug!("Invoice tracking task has completed");
-                                return;
-                            }
-                        };
-                    }
-                };
-
-                loop {
-                    let log_message_res = tokio::select! {
-                        log_message_res = log_stream.next() => log_message_res,
-                        _ = shutdown_receiver.changed() => {
-                            debug!("Track logs task has completed");
-                            return;
-                        }
-                    };
-
-                    match log_message_res {
-                        Some(l) => info!("node-logs: {l}"),
-                        None => {
-                            // stream is closed, renew it
-                            break;
-                        }
-                    };
                 }
 
                 tokio::select! {
