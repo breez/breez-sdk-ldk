@@ -20,7 +20,7 @@ use sdk_common::ensure_sdk;
 use sdk_common::invoice::parse_invoice;
 use sdk_common::prelude::Network;
 use serde_json::Value;
-use tokio::sync::{broadcast, mpsc, watch};
+use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError::Lagged;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::{Stream, StreamExt};
@@ -335,10 +335,6 @@ impl NodeAPI for Ldk {
         self.remote_lock_shutdown_tx.closed().await;
 
         debug!("Exiting Ldk::start()");
-    }
-
-    async fn start_keep_alive(&self, _shutdown: watch::Receiver<()>) {
-        // No-op for LDK Node.
     }
 
     async fn connect_peer(&self, node_id: String, addr: String) -> NodeResult<()> {

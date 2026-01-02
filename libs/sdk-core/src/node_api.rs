@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use serde_json::Value;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::mpsc;
 use tokio_stream::Stream;
 
 use sdk_common::prelude::*;
@@ -210,7 +210,6 @@ pub trait NodeAPI: Send + Sync {
         req: PrepareRedeemOnchainFundsRequest,
     ) -> NodeResult<PrepareRedeemOnchainFundsResponse>;
     async fn start(&self, shutdown: mpsc::Receiver<()>);
-    async fn start_keep_alive(&self, shutdown: watch::Receiver<()>);
     async fn connect_peer(&self, node_id: String, addr: String) -> NodeResult<()>;
     async fn sign_invoice(&self, invoice: RawBolt11Invoice) -> NodeResult<String>;
     async fn close_all_channels(&self) -> NodeResult<()>;

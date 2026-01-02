@@ -1349,8 +1349,6 @@ impl BreezServices {
         // start the signer
         let (shutdown_signer_sender, signer_signer_receiver) = watch::channel(());
         self.start_signer(signer_signer_receiver).await;
-        self.start_node_keep_alive(self.shutdown_sender.subscribe())
-            .await;
 
         // Sync node state
         match self.persister.get_node_state()? {
@@ -1419,16 +1417,6 @@ impl BreezServices {
                     }
                 };
             }
-        });
-    }
-
-    async fn start_node_keep_alive(
-        self: &Arc<BreezServices>,
-        shutdown_receiver: watch::Receiver<()>,
-    ) {
-        let cloned = self.clone();
-        tokio::spawn(async move {
-            cloned.node_api.start_keep_alive(shutdown_receiver).await;
         });
     }
 

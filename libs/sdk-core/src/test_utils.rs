@@ -15,7 +15,7 @@ use sdk_common::grpc::{
 use sdk_common::prelude::{FiatAPI, FiatCurrency, Rate};
 use secp256k1::musig::MusigKeyAggCache;
 use serde_json::{json, Value};
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{mpsc, Mutex};
 use tokio::time::sleep;
 use tokio_stream::Stream;
 use tokio_stream::StreamExt;
@@ -387,8 +387,6 @@ impl NodeAPI for MockNodeAPI {
     }
 
     async fn start(&self, _shutdown: mpsc::Receiver<()>) {}
-
-    async fn start_keep_alive(&self, _shutdown: watch::Receiver<()>) {}
 
     async fn connect_peer(&self, _node_id: String, _addr: String) -> NodeResult<()> {
         Ok(())
