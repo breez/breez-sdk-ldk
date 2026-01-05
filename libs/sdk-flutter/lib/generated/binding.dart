@@ -225,10 +225,6 @@ Future<List<ReverseSwapInfo>> inProgressOnchainPayments() =>
 /// See [BreezServices::recommended_fees]
 Future<RecommendedFees> recommendedFees() => BreezSdkBindings.instance.api.crateBindingRecommendedFees();
 
-/// See [BreezServices::execute_dev_command]
-Future<String> executeCommand({required String command}) =>
-    BreezSdkBindings.instance.api.crateBindingExecuteCommand(command: command);
-
 /// See [BreezServices::generate_diagnostic_data]
 Future<String> generateDiagnosticData() => BreezSdkBindings.instance.api.crateBindingGenerateDiagnosticData();
 

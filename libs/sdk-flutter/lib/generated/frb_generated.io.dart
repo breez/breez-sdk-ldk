@@ -4632,17 +4632,6 @@ class BreezSdkBindingsWire implements BaseWire {
   late final _wire__crate__binding__disconnect = _wire__crate__binding__disconnectPtr
       .asFunction<void Function(int)>();
 
-  void wire__crate__binding__execute_command(int port_, ffi.Pointer<wire_cst_list_prim_u_8_strict> command) {
-    return _wire__crate__binding__execute_command(port_, command);
-  }
-
-  late final _wire__crate__binding__execute_commandPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-        'frbgen_breez_sdk_wire__crate__binding__execute_command',
-      );
-  late final _wire__crate__binding__execute_command = _wire__crate__binding__execute_commandPtr
-      .asFunction<void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
-
   void wire__crate__binding__fetch_fiat_rates(int port_) {
     return _wire__crate__binding__fetch_fiat_rates(port_);
   }

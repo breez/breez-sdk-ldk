@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use serde_json::Value;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::mpsc;
 use tokio_stream::Stream;
 
 use sdk_common::prelude::*;
@@ -210,18 +210,13 @@ pub trait NodeAPI: Send + Sync {
         req: PrepareRedeemOnchainFundsRequest,
     ) -> NodeResult<PrepareRedeemOnchainFundsResponse>;
     async fn start(&self, shutdown: mpsc::Receiver<()>);
-    async fn start_keep_alive(&self, shutdown: watch::Receiver<()>);
     async fn connect_peer(&self, node_id: String, addr: String) -> NodeResult<()>;
     async fn sign_invoice(&self, invoice: RawBolt11Invoice) -> NodeResult<String>;
     async fn close_all_channels(&self) -> NodeResult<()>;
     async fn stream_incoming_payments(
         &self,
     ) -> NodeResult<Pin<Box<dyn Stream<Item = IncomingPayment> + Send>>>;
-    async fn stream_log_messages(
-        &self,
-    ) -> NodeResult<Pin<Box<dyn Stream<Item = String> + Send>>>;
     async fn static_backup(&self) -> NodeResult<Vec<String>>;
-    async fn execute_command(&self, command: String) -> NodeResult<Value>;
     async fn generate_diagnostic_data(&self) -> NodeResult<Value>;
     async fn sign_message(&self, message: &str) -> NodeResult<String>;
     async fn check_message(&self, message: &str, pubkey: &str, signature: &str)

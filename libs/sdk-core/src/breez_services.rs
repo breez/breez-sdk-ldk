@@ -14,9 +14,7 @@ use futures::{StreamExt, TryFutureExt};
 use log::{LevelFilter, Metadata, Record};
 use sdk_common::grpc;
 use sdk_common::prelude::*;
-use serde::Serialize;
 use serde_json::{json, Value};
-use strum_macros::EnumString;
 use tokio::sync::{mpsc, watch, Mutex};
 use tokio::time::{sleep, MissedTickBehavior};
 
@@ -140,13 +138,6 @@ pub struct CheckMessageResponse {
     /// Boolean value indicating whether the signature covers the message and
     /// was signed by the given pubkey.
     pub is_valid: bool,
-}
-
-#[derive(Clone, PartialEq, EnumString, Serialize)]
-enum DevCommand {
-    /// Generates diagnostic data report.
-    #[strum(serialize = "generatediagnosticdata")]
-    GenerateDiagnosticData,
 }
 
 /// BreezServices is a facade and the single entry point for the SDK.
@@ -1026,21 +1017,6 @@ impl BreezServices {
         Ok(rsis)
     }
 
-    /// Execute a command directly on the NodeAPI interface.
-    /// Mainly used for debugging.
-    pub async fn execute_dev_command(&self, command: String) -> SdkResult<String> {
-        let dev_cmd_res = DevCommand::from_str(&command);
-
-        match dev_cmd_res {
-            Ok(dev_cmd) => match dev_cmd {
-                DevCommand::GenerateDiagnosticData => self.generate_diagnostic_data().await,
-            },
-            Err(_) => Ok(crate::serializer::to_string_pretty(
-                &self.node_api.execute_command(command).await?,
-            )?),
-        }
-    }
-
     // Collects various user data from the node and the sdk storage.
     // This is used for debugging and support purposes only.
     pub async fn generate_diagnostic_data(&self) -> SdkResult<String> {
@@ -1349,8 +1325,6 @@ impl BreezServices {
         // start the signer
         let (shutdown_signer_sender, signer_signer_receiver) = watch::channel(());
         self.start_signer(signer_signer_receiver).await;
-        self.start_node_keep_alive(self.shutdown_sender.subscribe())
-            .await;
 
         // Sync node state
         match self.persister.get_node_state()? {
@@ -1380,9 +1354,6 @@ impl BreezServices {
 
         // track new blocks
         self.track_new_blocks().await;
-
-        // track logs
-        self.track_logs().await;
 
         // Stop signer on shutdown
         let mut shutdown_receiver = self.shutdown_sender.subscribe();
@@ -1419,16 +1390,6 @@ impl BreezServices {
                     }
                 };
             }
-        });
-    }
-
-    async fn start_node_keep_alive(
-        self: &Arc<BreezServices>,
-        shutdown_receiver: watch::Receiver<()>,
-    ) {
-        let cloned = self.clone();
-        tokio::spawn(async move {
-            cloned.node_api.start_keep_alive(shutdown_receiver).await;
         });
     }
 
@@ -1576,61 +1537,6 @@ impl BreezServices {
                     if let Err(e) = cloned.do_sync(true).await {
                         error!("failed to sync after paid invoice: {e:?}");
                     }
-                }
-
-                tokio::select! {
-                    _ = sleep(Duration::from_secs(1)) => {
-                        continue
-                    }
-                    _ = shutdown_receiver.changed() => {
-                        debug!("Invoice tracking task has completed");
-                        return;
-                    }
-                };
-            }
-        });
-    }
-
-    async fn track_logs(self: &Arc<BreezServices>) {
-        let cloned = self.clone();
-        tokio::spawn(async move {
-            let mut shutdown_receiver = cloned.shutdown_sender.subscribe();
-            loop {
-                if shutdown_receiver.has_changed().unwrap_or(true) {
-                    return;
-                }
-                let mut log_stream = match cloned.node_api.stream_log_messages().await {
-                    Ok(log_stream) => log_stream,
-                    Err(e) => {
-                        warn!("stream log messages returned error: {e:?}");
-                        tokio::select! {
-                            _ = sleep(Duration::from_secs(1)) => {
-                                continue
-                            }
-                            _ = shutdown_receiver.changed() => {
-                                debug!("Invoice tracking task has completed");
-                                return;
-                            }
-                        };
-                    }
-                };
-
-                loop {
-                    let log_message_res = tokio::select! {
-                        log_message_res = log_stream.next() => log_message_res,
-                        _ = shutdown_receiver.changed() => {
-                            debug!("Track logs task has completed");
-                            return;
-                        }
-                    };
-
-                    match log_message_res {
-                        Some(l) => info!("node-logs: {l}"),
-                        None => {
-                            // stream is closed, renew it
-                            break;
-                        }
-                    };
                 }
 
                 tokio::select! {

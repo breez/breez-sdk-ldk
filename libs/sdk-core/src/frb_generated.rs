@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -205939826;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -310961496;
 
 // Section: executor
 
@@ -356,29 +356,6 @@ fn wire__crate__binding__disconnect_impl(port_: flutter_rust_bridge::for_generat
                 transform_result_dco::<_, _, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::binding::disconnect()?;
-                        Ok(output_ok)
-                    })(),
-                )
-            }
-        },
-    )
-}
-fn wire__crate__binding__execute_command_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    command: impl CstDecode<String>,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "execute_command",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let api_command = command.cst_decode();
-            move |context| {
-                transform_result_dco::<_, _, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::binding::execute_command(api_command)?;
                         Ok(output_ok)
                     })(),
                 )
@@ -11499,14 +11476,6 @@ mod io {
     #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_breez_sdk_wire__crate__binding__disconnect(port_: i64) {
         wire__crate__binding__disconnect_impl(port_)
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_breez_sdk_wire__crate__binding__execute_command(
-        port_: i64,
-        command: *mut wire_cst_list_prim_u_8_strict,
-    ) {
-        wire__crate__binding__execute_command_impl(port_, command)
     }
 
     #[unsafe(no_mangle)]

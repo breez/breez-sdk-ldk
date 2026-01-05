@@ -1108,11 +1108,6 @@ export const payOnchain = async (req: PayOnchainRequest): Promise<PayOnchainResp
     return response
 }
 
-export const executeDevCommand = async (command: string): Promise<string> => {
-    const response = await BreezSDK.executeDevCommand(command)
-    return response
-}
-
 export const generateDiagnosticData = async (): Promise<string> => {
     const response = await BreezSDK.generateDiagnosticData()
     return response

@@ -847,21 +847,6 @@ class BreezSDKModule(
     }
 
     @ReactMethod
-    fun executeDevCommand(
-        command: String,
-        promise: Promise,
-    ) {
-        executor.execute {
-            try {
-                val res = getBreezServices().executeDevCommand(command)
-                promise.resolve(res)
-            } catch (e: Exception) {
-                promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
-            }
-        }
-    }
-
-    @ReactMethod
     fun generateDiagnosticData(promise: Promise) {
         executor.execute {
             try {
