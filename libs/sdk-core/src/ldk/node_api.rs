@@ -27,7 +27,7 @@ use tokio_stream::{Stream, StreamExt};
 
 use crate::bitcoin::bip32::{ChildNumber, Xpriv};
 use crate::bitcoin::secp256k1::Secp256k1;
-use crate::breez_services::{OpenChannelParams, Receiver};
+use crate::breez_services::Receiver;
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::grpc;
 use crate::ldk::event_handling::{start_event_handling, wait_for_payment_success};
@@ -36,17 +36,14 @@ use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
 use crate::ldk::utils::Hex;
-use crate::lightning_invoice::RawBolt11Invoice;
 use crate::models::{
     Config, LspAPI, OpeningFeeParams, OpeningFeeParamsMenu, ReceivePaymentRequest,
     ReceivePaymentResponse, INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
 };
-use crate::node_api::{
-    CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
-};
+use crate::node_api::{FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult};
 use crate::{
     CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
-    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHint, RouteHintHop,
+    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop,
     SyncResponse, TlvEntry,
 };
 
@@ -183,12 +180,6 @@ impl Ldk {
 impl NodeAPI for Ldk {
     async fn configure_node(&self, _close_to_address: Option<String>) -> NodeResult<()> {
         Err(NodeError::generic("LDK implementation not yet available"))
-    }
-
-    async fn create_invoice(&self, _request: CreateInvoiceRequest) -> NodeResult<String> {
-        Err(NodeError::generic(
-            "NodeAPI::create_invoice() must not be called directly for LDK implementation",
-        ))
     }
 
     async fn delete_invoice(&self, _bolt11: String) -> NodeResult<()> {
@@ -347,10 +338,6 @@ impl NodeAPI for Ldk {
         Ok(())
     }
 
-    async fn sign_invoice(&self, _invoice: RawBolt11Invoice) -> NodeResult<String> {
-        Err(NodeError::generic("LDK implementation not yet available"))
-    }
-
     async fn close_all_channels(&self) -> NodeResult<()> {
         for channel_id in self.node.list_channels() {
             self.node
@@ -411,13 +398,6 @@ impl NodeAPI for Ldk {
     async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
         // Using the main implementation, because legacy way was never used for LDK.
         self.derive_bip32_key(path).await
-    }
-
-    async fn get_routing_hints(
-        &self,
-        _lsp_info: &LspInformation,
-    ) -> NodeResult<(Vec<RouteHint>, bool)> {
-        Err(NodeError::generic("LDK implementation not yet available"))
     }
 
     async fn get_open_peers(&self) -> NodeResult<HashSet<Vec<u8>>> {
@@ -570,15 +550,6 @@ impl Receiver for Ldk {
             opening_fee_params,
             opening_fee_msat,
         })
-    }
-
-    async fn wrap_node_invoice(
-        &self,
-        invoice: &str,
-        _params: Option<OpenChannelParams>,
-        _lsp_info: Option<LspInformation>,
-    ) -> Result<String, ReceivePaymentError> {
-        Ok(invoice.to_string())
     }
 }
 
