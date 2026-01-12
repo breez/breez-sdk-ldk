@@ -32,7 +32,7 @@ use crate::bitcoin::hashes::{sha256, Hash as _};
 use crate::bitcoin::secp256k1::{Message, PublicKey, Secp256k1};
 use crate::bitcoin::taproot::{TaprootBuilder, TaprootSpendInfo};
 use crate::bitcoin::{key::XOnlyPublicKey, Address, Network, ScriptBuf, Sequence};
-use crate::breez_services::{OpenChannelParams, Receiver};
+use crate::breez_services::Receiver;
 use crate::buy::BuyBitcoinApi;
 use crate::chain::{ChainService, OnchainTx, Outspend, RecommendedFees, TxStatus};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
@@ -45,9 +45,7 @@ use crate::models::{
     LnPaymentDetails, LspAPI, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType,
     ReverseSwapServiceAPI, SwapperAPI, SyncResponse, TlvEntry,
 };
-use crate::node_api::{
-    CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
-};
+use crate::node_api::{FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult};
 use crate::swap_in::TaprootSwapperAPI;
 use crate::swap_out::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapStatus};
 use crate::swap_out::error::{ReverseSwapError, ReverseSwapResult};
@@ -286,14 +284,6 @@ impl Receiver for MockReceiver {
             opening_fee_msat: None,
         })
     }
-    async fn wrap_node_invoice(
-        &self,
-        invoice: &str,
-        _params: Option<OpenChannelParams>,
-        _lsp_info: Option<LspInformation>,
-    ) -> Result<String, ReceivePaymentError> {
-        Ok(String::from(invoice))
-    }
 }
 
 pub struct MockNodeAPI {
@@ -312,16 +302,6 @@ pub struct MockNodeAPI {
 impl NodeAPI for MockNodeAPI {
     async fn configure_node(&self, _close_to_address: Option<String>) -> NodeResult<()> {
         Ok(())
-    }
-
-    async fn create_invoice(&self, request: CreateInvoiceRequest) -> NodeResult<String> {
-        let invoice = create_invoice(
-            request.description,
-            request.amount_msat,
-            vec![],
-            request.preimage,
-        );
-        Ok(invoice.bolt11)
     }
 
     async fn delete_invoice(&self, _bolt11: String) -> NodeResult<()> {
@@ -405,10 +385,6 @@ impl NodeAPI for MockNodeAPI {
         Ok(true)
     }
 
-    async fn sign_invoice(&self, invoice: RawBolt11Invoice) -> NodeResult<String> {
-        Ok(sign_invoice(invoice))
-    }
-
     async fn close_all_channels(&self) -> NodeResult<()> {
         Ok(())
     }
@@ -457,13 +433,6 @@ impl NodeAPI for MockNodeAPI {
         Ok(Box::pin(
             tokio_stream::wrappers::ReceiverStream::new(rx).map(Ok),
         ))
-    }
-
-    async fn get_routing_hints(
-        &self,
-        _lsp_info: &LspInformation,
-    ) -> NodeResult<(Vec<RouteHint>, bool)> {
-        Ok((vec![], false))
     }
 
     async fn fetch_bolt11(&self, _payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>> {

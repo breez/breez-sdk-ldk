@@ -11,11 +11,10 @@ use sdk_common::prelude::*;
 
 use crate::{
     bitcoin::bip32::{ChildNumber, Xpriv},
-    lightning_invoice::RawBolt11Invoice,
     persist::error::PersistError,
-    CustomMessage, LnUrlAuthError, LspInformation, MaxChannelAmount, Payment, PaymentType, PaymentDetails,
+    CustomMessage, LnUrlAuthError, MaxChannelAmount, Payment, PaymentType, PaymentDetails,
     LnPaymentDetails, PaymentStatus, PaymentResponse, PrepareRedeemOnchainFundsRequest,
-    PrepareRedeemOnchainFundsResponse, RouteHint, RouteHintHop, SyncResponse, TlvEntry,
+    PrepareRedeemOnchainFundsResponse, RouteHintHop, SyncResponse, TlvEntry,
 };
 
 pub type NodeResult<T, E = NodeError> = Result<T, E>;
@@ -165,7 +164,6 @@ impl TryFrom<IncomingPayment> for Payment {
 #[tonic::async_trait]
 pub trait NodeAPI: Send + Sync {
     async fn configure_node(&self, close_to_address: Option<String>) -> NodeResult<()>;
-    async fn create_invoice(&self, request: CreateInvoiceRequest) -> NodeResult<String>;
     async fn delete_invoice(&self, bolt11: String) -> NodeResult<()>;
     /// Fetches an existing BOLT11 invoice from the node
     async fn fetch_bolt11(&self, payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>>;
@@ -211,7 +209,6 @@ pub trait NodeAPI: Send + Sync {
     ) -> NodeResult<PrepareRedeemOnchainFundsResponse>;
     async fn start(&self, shutdown: mpsc::Receiver<()>);
     async fn connect_peer(&self, node_id: String, addr: String) -> NodeResult<()>;
-    async fn sign_invoice(&self, invoice: RawBolt11Invoice) -> NodeResult<String>;
     async fn close_all_channels(&self) -> NodeResult<()>;
     async fn stream_incoming_payments(
         &self,
@@ -230,12 +227,6 @@ pub trait NodeAPI: Send + Sync {
     async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
     async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
 
-    /// Gets the routing hints related to all private channels that the node has.
-    /// Also returns a boolean indicating if the node has a public channel or not.
-    async fn get_routing_hints(
-        &self,
-        lsp_info: &LspInformation,
-    ) -> NodeResult<(Vec<RouteHint>, bool)>;
     /// Get peers with whom we have an open channel
     async fn get_open_peers(&self) -> NodeResult<HashSet<Vec<u8>>>;
 }

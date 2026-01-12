@@ -16,7 +16,6 @@ const METADATA_MAX_LEN: usize = 1000;
 #[cfg_attr(test, mockall::automock)]
 pub(crate) trait PaymentStorage: Send + Sync {
     fn get_completed_payment_by_hash(&self, hash: &str) -> PersistResult<Option<Payment>>;
-    fn get_open_channel_bolt11_by_hash(&self, hash: &str) -> PersistResult<Option<String>>;
 }
 
 impl PaymentStorage for SqliteStorage {
@@ -28,22 +27,6 @@ impl PaymentStorage for SqliteStorage {
             .get_payment_by_hash(hash)?
             .filter(|p| p.status == PaymentStatus::Complete);
         Ok(res)
-    }
-
-    /// Look up a modified open channel bolt11 by hash.
-    fn get_open_channel_bolt11_by_hash(&self, hash: &str) -> PersistResult<Option<String>> {
-        Ok(self
-            .get_connection()?
-            .query_row(
-                "
-          SELECT o.open_channel_bolt11           
-          FROM sync.open_channel_payment_info o        
-          WHERE
-           payment_hash = ?1",
-                [hash],
-                |row| row.get(0),
-            )
-            .optional()?)
     }
 }
 
@@ -203,30 +186,6 @@ impl SqliteStorage {
         Ok(())
     }
 
-    /// Inserts payer amount for invoices that require opening a channel.
-    pub fn insert_open_channel_payment_info(
-        &self,
-        payment_hash: &str,
-        payer_amount_msat: u64,
-        open_channel_bolt11: &str,
-    ) -> PersistResult<()> {
-        let con = self.get_connection()?;
-        let mut prep_statement = con.prepare(
-            "
-        INSERT OR IGNORE INTO sync.open_channel_payment_info (
-          payment_hash,
-          payer_amount_msat,
-          open_channel_bolt11
-        )
-        VALUES (?1,?2,?3)
-       ",
-        )?;
-
-        _ = prep_statement.execute((payment_hash, payer_amount_msat, open_channel_bolt11))?;
-
-        Ok(())
-    }
-
     /// Constructs [Payment] by joining data in the `payment` and `payments_external_info` tables
     ///
     /// This queries all payments. To query a single payment, see [Self::get_payment_by_hash]
@@ -303,8 +262,6 @@ impl SqliteStorage {
            e.lnurl_withdraw_endpoint,
            e.attempted_amount_msat,
            e.attempted_error,
-           o.payer_amount_msat,
-           o.open_channel_bolt11,
            m.metadata,
            e.lnurl_pay_domain,
            e.lnurl_pay_comment,
@@ -317,9 +274,6 @@ impl SqliteStorage {
           LEFT JOIN sync.payments_metadata m
           ON
             p.id = m.payment_id
-          LEFT JOIN sync.open_channel_payment_info o
-           ON
-            p.id = o.payment_hash
           LEFT JOIN ({swap_query}) as swaps
            ON
             p.id = hex(swaps_payment_hash) COLLATE NOCASE
@@ -349,27 +303,6 @@ impl SqliteStorage {
             .optional()?)
     }
 
-    /// Look up a modified open channel bolt11 by hash.
-    #[allow(unused)]
-    pub(crate) fn get_open_channel_bolt11_by_hash(
-        &self,
-        hash: &str,
-    ) -> PersistResult<Option<String>> {
-        Ok(self
-            .get_connection()?
-            .query_row(
-                "
-          SELECT
-           o.open_channel_bolt11           
-          FROM sync.open_channel_payment_info o        
-          WHERE
-           payment_hash = ?1",
-                [hash],
-                |row| row.get(0),
-            )
-            .optional()?)
-    }
-
     fn sql_row_to_payment(&self, row: &Row) -> PersistResult<Payment, rusqlite::Error> {
         let payment_type_str: String = row.get(1)?;
         let amount_msat = row.get(3)?;
@@ -388,7 +321,7 @@ impl SqliteStorage {
             description: row.get(6)?,
             details: row.get(7)?,
             error: row.get(13)?,
-            metadata: row.get(16)?,
+            metadata: row.get(14)?,
         };
 
         if let PaymentDetails::Ln { ref mut data } = payment.details {
@@ -400,8 +333,8 @@ impl SqliteStorage {
                 })?,
             };
 
-            data.lnurl_pay_domain = row.get(17)?;
-            data.lnurl_pay_comment = row.get(18)?;
+            data.lnurl_pay_domain = row.get(15)?;
+            data.lnurl_pay_comment = row.get(16)?;
             data.lnurl_metadata = row.get(9)?;
             data.ln_address = row.get(10)?;
             data.lnurl_withdraw_endpoint = row.get(11)?;
@@ -409,12 +342,6 @@ impl SqliteStorage {
             if let Ok(fr) = self.sql_row_to_reverse_swap(row, "revswaps_") {
                 data.reverse_swap_info = Some(fr.get_reverse_swap_info_using_cached_values());
             }
-        }
-
-        // In case we have a record of the open channel fee, let's use it.
-        let payer_amount_msat: Option<u64> = row.get(14)?;
-        if let Some(payer_amount) = payer_amount_msat {
-            payment.fee_msat = payer_amount - amount_msat;
         }
 
         Ok(payment)
@@ -884,10 +811,6 @@ mod test {
         let retrieve_txs = storage.list_payments(ListPaymentsRequest::default())?;
         assert_eq!(retrieve_txs.len(), 5);
         assert_eq!(retrieve_txs, txs);
-
-        storage.insert_open_channel_payment_info("123", 150, "")?;
-        let retrieve_txs = storage.list_payments(ListPaymentsRequest::default())?;
-        assert_eq!(retrieve_txs[0].fee_msat, 50);
 
         // test all with failures
         let retrieve_txs = storage.list_payments(ListPaymentsRequest {

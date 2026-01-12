@@ -12,7 +12,6 @@ use bitcoin::hashes::{sha256, Hash};
 use chrono::Local;
 use futures::{StreamExt, TryFutureExt};
 use log::{LevelFilter, Metadata, Record};
-use sdk_common::grpc;
 use sdk_common::prelude::*;
 use serde_json::{json, Value};
 use tokio::sync::{mpsc, watch, Mutex};
@@ -36,7 +35,7 @@ use crate::models::{
     NodeState, Payment, PaymentDetails, PaymentType, ReverseSwapPairInfo, ReverseSwapServiceAPI,
     SwapInfo, SwapperAPI, INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
 };
-use crate::node_api::{CreateInvoiceRequest, NodeAPI};
+use crate::node_api::NodeAPI;
 use crate::persist::cache::NodeStateStorage;
 use crate::persist::db::SqliteStorage;
 use crate::persist::swap::SwapStorage;
@@ -2049,6 +2048,7 @@ impl log::Log for GlobalSdkLogger {
 struct BreezServicesBuilder {
     config: Config,
     node_api: Option<Arc<dyn NodeAPI>>,
+    receiver: Option<Arc<dyn Receiver>>,
     backup_transport: Option<Arc<dyn BackupTransport>>,
     seed: Option<Vec<u8>>,
     lsp_api: Option<Arc<dyn LspAPI>>,
@@ -2071,6 +2071,7 @@ impl BreezServicesBuilder {
         BreezServicesBuilder {
             config,
             node_api: None,
+            receiver: None,
             seed: None,
             lsp_api: None,
             fiat_api: None,
@@ -2088,6 +2089,11 @@ impl BreezServicesBuilder {
 
     pub fn node_api(&mut self, node_api: Arc<dyn NodeAPI>) -> &mut Self {
         self.node_api = Some(node_api);
+        self
+    }
+
+    pub fn receiver(&mut self, receiver: Arc<dyn Receiver>) -> &mut Self {
+        self.receiver = Some(receiver);
         self
     }
 
@@ -2186,7 +2192,7 @@ impl BreezServicesBuilder {
         let mut node_api = self.node_api.clone();
         let mut backup_transport = self.backup_transport.clone();
         let mut lsp_api = self.lsp_api.clone();
-        let mut receiver = None;
+        let mut receiver = self.receiver.clone();
         if node_api.is_none() {
             let node_impls = node_builder::build_node(
                 self.config.clone(),
@@ -2198,7 +2204,7 @@ impl BreezServicesBuilder {
             node_api = Some(node_impls.node);
             backup_transport = backup_transport.or(Some(node_impls.backup_transport));
             lsp_api = lsp_api.or(node_impls.lsp);
-            receiver = node_impls.receiver;
+            receiver = receiver.or(node_impls.receiver);
         }
         let lsp_api = lsp_api.unwrap_or_else(|| breez_server.clone());
 
@@ -2248,14 +2254,9 @@ impl BreezServicesBuilder {
             persister.set_lsp(self.config.default_lsp_id.clone().unwrap(), None)?;
         }
 
-        let payment_receiver = receiver.unwrap_or_else(|| {
-            Arc::new(PaymentReceiver {
-                config: self.config.clone(),
-                node_api: unwrapped_node_api.clone(),
-                lsp: lsp_api.clone(),
-                persister: persister.clone(),
-            })
-        });
+        let payment_receiver = receiver.ok_or(ConnectError::Generic {
+            err: "Receiver should be provided".into(),
+        })?;
 
         let rest_client: Arc<dyn RestClient> = match self.rest_client.clone() {
             Some(rest_client) => rest_client,
@@ -2365,11 +2366,6 @@ pub fn mnemonic_to_seed(phrase: String) -> Result<Vec<u8>> {
     Ok(seed.as_bytes().to_vec())
 }
 
-pub struct OpenChannelParams {
-    pub payer_amount_msat: u64,
-    pub opening_fee_params: models::OpeningFeeParams,
-}
-
 #[tonic::async_trait]
 pub trait Receiver: Send + Sync {
     fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError>;
@@ -2377,273 +2373,10 @@ pub trait Receiver: Send + Sync {
         &self,
         req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError>;
-    async fn wrap_node_invoice(
-        &self,
-        invoice: &str,
-        params: Option<OpenChannelParams>,
-        lsp_info: Option<LspInformation>,
-    ) -> Result<String, ReceivePaymentError>;
-}
-
-pub(crate) struct PaymentReceiver {
-    config: Config,
-    node_api: Arc<dyn NodeAPI>,
-    lsp: Arc<dyn LspAPI>,
-    persister: Arc<SqliteStorage>,
-}
-
-#[tonic::async_trait]
-impl Receiver for PaymentReceiver {
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
-        let node_state = self
-            .persister
-            .get_node_state()?
-            .ok_or(ReceivePaymentError::Generic {
-                err: "Node info not found".into(),
-            })?;
-        Ok(node_state.max_receivable_single_payment_amount_msat < amount_msat)
-    }
-
-    async fn receive_payment(
-        &self,
-        req: ReceivePaymentRequest,
-    ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
-        let lsp_info = get_lsp(self.persister.clone(), self.lsp.clone()).await?;
-        let expiry = req.expiry.unwrap_or(INVOICE_PAYMENT_FEE_EXPIRY_SECONDS);
-
-        ensure_sdk!(
-            req.amount_msat > 0,
-            ReceivePaymentError::InvalidAmount {
-                err: "Receive amount must be more than 0".into()
-            }
-        );
-
-        let mut destination_invoice_amount_msat = req.amount_msat;
-        let mut channel_opening_fee_params = None;
-        let mut channel_fees_msat = None;
-
-        // check if we need to open channel
-        let open_channel_needed = self.open_channel_needed(req.amount_msat)?;
-        if open_channel_needed {
-            info!("We need to open a channel");
-
-            // we need to open channel so we are calculating the fees for the LSP (coming either from the user, or from the LSP)
-            let ofp = match req.opening_fee_params {
-                Some(fee_params) => fee_params,
-                None => lsp_info.cheapest_open_channel_fee(expiry)?.clone(),
-            };
-
-            channel_opening_fee_params = Some(ofp.clone());
-            channel_fees_msat = Some(ofp.get_channel_fees_msat_for(req.amount_msat));
-            if let Some(channel_fees_msat) = channel_fees_msat {
-                info!("zero-conf fee calculation option: lsp fee rate (proportional): {}:  (minimum {}), total fees for channel: {}",
-                    ofp.proportional, ofp.min_msat, channel_fees_msat);
-
-                if req.amount_msat < channel_fees_msat + 1000 {
-                    return Err(
-                        ReceivePaymentError::InvalidAmount{err: format!(
-                           "Amount should be more than the minimum fees {channel_fees_msat} msat, but is {} msat",
-                            req.amount_msat
-                        )}
-                    );
-                }
-                // remove the fees from the amount to get the small amount on the current node invoice.
-                destination_invoice_amount_msat = req.amount_msat - channel_fees_msat;
-            }
-        }
-
-        info!("Creating invoice on NodeAPI");
-        let invoice = self
-            .node_api
-            .create_invoice(CreateInvoiceRequest {
-                amount_msat: destination_invoice_amount_msat,
-                description: req.description,
-                payer_amount_msat: match open_channel_needed {
-                    true => Some(req.amount_msat),
-                    false => None,
-                },
-                preimage: req.preimage,
-                use_description_hash: req.use_description_hash,
-                expiry: Some(expiry),
-                cltv: Some(req.cltv.unwrap_or(144)),
-            })
-            .await?;
-        info!("Invoice created {invoice}");
-
-        let open_channel_params = match open_channel_needed {
-            true => Some(OpenChannelParams {
-                payer_amount_msat: req.amount_msat,
-                opening_fee_params: channel_opening_fee_params.clone().ok_or(
-                    ReceivePaymentError::Generic {
-                        err: "We need to open a channel, but no channel opening fee params found"
-                            .into(),
-                    },
-                )?,
-            }),
-            false => None,
-        };
-
-        let invoice = self
-            .wrap_node_invoice(&invoice, open_channel_params, Some(lsp_info))
-            .await?;
-        let parsed_invoice = parse_invoice(&invoice)?;
-
-        // return the signed, converted invoice with hints
-        Ok(ReceivePaymentResponse {
-            ln_invoice: parsed_invoice,
-            opening_fee_params: channel_opening_fee_params,
-            opening_fee_msat: channel_fees_msat,
-        })
-    }
-
-    async fn wrap_node_invoice(
-        &self,
-        invoice: &str,
-        params: Option<OpenChannelParams>,
-        lsp_info: Option<LspInformation>,
-    ) -> Result<String, ReceivePaymentError> {
-        let lsp_info = match lsp_info {
-            Some(lsp_info) => lsp_info,
-            None => get_lsp(self.persister.clone(), self.lsp.clone()).await?,
-        };
-
-        match params {
-            Some(params) => {
-                self.wrap_open_channel_invoice(invoice, params, &lsp_info)
-                    .await
-            }
-            None => self.ensure_hint(invoice, &lsp_info).await,
-        }
-    }
-}
-
-impl PaymentReceiver {
-    async fn ensure_hint(
-        &self,
-        invoice: &str,
-        lsp_info: &LspInformation,
-    ) -> Result<String, ReceivePaymentError> {
-        info!("Getting routing hints from node");
-        let (mut hints, has_public_channel) = self.node_api.get_routing_hints(lsp_info).await?;
-        if !has_public_channel && hints.is_empty() {
-            return Err(ReceivePaymentError::InvoiceNoRoutingHints {
-                err: "Must have at least one active channel".into(),
-            });
-        }
-
-        let parsed_invoice = parse_invoice(invoice)?;
-
-        // check if the lsp hint already exists
-        info!("Existing routing hints {:?}", parsed_invoice.routing_hints);
-
-        // limit the hints to max 3 and extract the lsp one.
-        if let Some(lsp_hint) = Self::limit_and_extract_lsp_hint(&mut hints, lsp_info) {
-            if parsed_invoice.contains_hint_for_node(lsp_info.pubkey.as_str()) {
-                return Ok(String::from(invoice));
-            }
-
-            info!("Adding lsp hint: {lsp_hint:?}");
-            let modified =
-                add_routing_hints(invoice, true, &vec![lsp_hint], parsed_invoice.amount_msat)?;
-
-            let invoice = self.node_api.sign_invoice(modified).await?;
-            info!("Signed invoice with hint = {invoice}");
-            return Ok(invoice);
-        }
-
-        if parsed_invoice.routing_hints.is_empty() {
-            info!("Adding custom hints: {hints:?}");
-            let modified = add_routing_hints(invoice, false, &hints, parsed_invoice.amount_msat)?;
-            let invoice = self.node_api.sign_invoice(modified).await?;
-            info!("Signed invoice with hints = {invoice}");
-            return Ok(invoice);
-        }
-
-        Ok(String::from(invoice))
-    }
-
-    async fn wrap_open_channel_invoice(
-        &self,
-        invoice: &str,
-        params: OpenChannelParams,
-        lsp_info: &LspInformation,
-    ) -> Result<String, ReceivePaymentError> {
-        let parsed_invoice = parse_invoice(invoice)?;
-        let open_channel_hint = RouteHint {
-            hops: vec![RouteHintHop {
-                src_node_id: lsp_info.pubkey.clone(),
-                short_channel_id: "1x0x0".to_string(),
-                fees_base_msat: lsp_info.base_fee_msat as u32,
-                fees_proportional_millionths: (lsp_info.fee_rate * 1000000.0) as u32,
-                cltv_expiry_delta: lsp_info.time_lock_delta as u64,
-                htlc_minimum_msat: Some(lsp_info.min_htlc_msat as u64),
-                htlc_maximum_msat: None,
-            }],
-        };
-        info!("Adding open channel hint: {open_channel_hint:?}");
-        let invoice_with_hint = add_routing_hints(
-            invoice,
-            false,
-            &vec![open_channel_hint],
-            Some(params.payer_amount_msat),
-        )?;
-        let signed_invoice = self.node_api.sign_invoice(invoice_with_hint).await?;
-
-        info!("Registering payment with LSP");
-        let api_key = self.config.api_key.clone().unwrap_or_default();
-        let api_key_hash = format!("{:x}", sha256::Hash::hash(api_key.as_bytes()));
-
-        self.lsp
-            .register_payment(
-                lsp_info.id.clone(),
-                lsp_info.lsp_pubkey.clone(),
-                grpc::PaymentInformation {
-                    payment_hash: hex::decode(parsed_invoice.payment_hash.clone())
-                        .map_err(|e| anyhow!("Failed to decode hex payment hash: {e}"))?,
-                    payment_secret: parsed_invoice.payment_secret.clone(),
-                    destination: hex::decode(parsed_invoice.payee_pubkey.clone())
-                        .map_err(|e| anyhow!("Failed to decode hex payee pubkey: {e}"))?,
-                    incoming_amount_msat: params.payer_amount_msat as i64,
-                    outgoing_amount_msat: parsed_invoice
-                        .amount_msat
-                        .ok_or(anyhow!("Open channel invoice must have an amount"))?
-                        as i64,
-                    tag: json!({ "apiKeyHash": api_key_hash }).to_string(),
-                    opening_fee_params: Some(params.opening_fee_params.into()),
-                },
-            )
-            .await?;
-        // Make sure we save the large amount so we can deduce the fees later.
-        self.persister.insert_open_channel_payment_info(
-            &parsed_invoice.payment_hash,
-            params.payer_amount_msat,
-            &signed_invoice,
-        )?;
-
-        Ok(signed_invoice)
-    }
-
-    fn limit_and_extract_lsp_hint(
-        routing_hints: &mut Vec<RouteHint>,
-        lsp_info: &LspInformation,
-    ) -> Option<RouteHint> {
-        let mut lsp_hint: Option<RouteHint> = None;
-        if let Some(lsp_index) = routing_hints.iter().position(|r| {
-            r.hops
-                .iter()
-                .any(|h| h.src_node_id == lsp_info.pubkey.clone())
-        }) {
-            lsp_hint = Some(routing_hints.remove(lsp_index));
-        }
-        if routing_hints.len() > 3 {
-            routing_hints.drain(3..);
-        }
-        lsp_hint
-    }
 }
 
 /// Convenience method to look up LSP info based on current LSP ID
-async fn get_lsp(
+pub(crate) async fn get_lsp(
     persister: Arc<SqliteStorage>,
     lsp_api: Arc<dyn LspAPI>,
 ) -> SdkResult<LspInformation> {
@@ -2736,12 +2469,9 @@ pub(crate) mod tests {
     use crate::breez_services::{BreezServices, BreezServicesBuilder};
     use crate::models::{LnPaymentDetails, NodeState, Payment, PaymentDetails, PaymentTypeFilter};
     use crate::node_api::NodeAPI;
-    use crate::persist::cache::NodeStateStorage;
     use crate::persist::swap::SwapStorage;
     use crate::test_utils::*;
     use crate::*;
-
-    use super::{PaymentReceiver, Receiver};
 
     #[tokio::test]
     async fn test_node_state() -> Result<()> {
@@ -3019,6 +2749,7 @@ pub(crate) mod tests {
             .lsp_api(Arc::new(MockBreezServer {}))
             .fiat_api(Arc::new(MockBreezServer {}))
             .node_api(node_api)
+            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
@@ -3079,42 +2810,6 @@ pub(crate) mod tests {
                 PaymentDetails::Ln {data: LnPaymentDetails {reverse_swap_info: rev_swap, ..}}
                 if rev_swap == &Some(rev_swap_info)));
 
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_receive_with_open_channel() -> Result<()> {
-        let config = create_test_config();
-        let persister = Arc::new(create_test_persister(config.clone()));
-        persister.init().unwrap();
-
-        let dummy_node_state = get_dummy_node_state();
-
-        let node_api = Arc::new(MockNodeAPI::new(dummy_node_state.clone()));
-
-        let breez_server = Arc::new(MockBreezServer {});
-        persister.set_lsp(breez_server.lsp_id(), None).unwrap();
-        persister.set_node_state(&dummy_node_state).unwrap();
-
-        let receiver: Arc<dyn Receiver> = Arc::new(PaymentReceiver {
-            config,
-            node_api,
-            persister,
-            lsp: breez_server.clone(),
-        });
-        let ln_invoice = receiver
-            .receive_payment(ReceivePaymentRequest {
-                amount_msat: 3_000_000,
-                description: "should populate lsp hints".to_string(),
-                use_description_hash: Some(false),
-                ..Default::default()
-            })
-            .await?
-            .ln_invoice;
-        assert_eq!(ln_invoice.routing_hints[0].hops.len(), 1);
-        let lsp_hop = &ln_invoice.routing_hints[0].hops[0];
-        assert_eq!(lsp_hop.src_node_id, breez_server.clone().lsp_pub_key());
-        assert_eq!(lsp_hop.short_channel_id, "1x0x0");
         Ok(())
     }
 
@@ -3216,6 +2911,7 @@ pub(crate) mod tests {
             .taproot_swapper_api(Arc::new(MockBreezServer {}))
             .reverse_swap_service_api(Arc::new(MockReverseSwapperAPI {}))
             .buy_bitcoin_api(Arc::new(MockBuyBitcoinService {}))
+            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .node_api(node_api)
             .rest_client(rest_client)

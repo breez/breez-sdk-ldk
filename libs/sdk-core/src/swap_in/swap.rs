@@ -20,7 +20,7 @@ use crate::bitcoin::{
 };
 use crate::lightning_invoice::Bolt11Invoice;
 use crate::{
-    breez_services::{OpenChannelParams, Receiver},
+    breez_services::Receiver,
     chain::ChainService,
     error::ReceivePaymentError,
     node_api::{FetchBolt11Result, NodeAPI},
@@ -813,35 +813,22 @@ impl BTCReceiveSwap {
             return Ok(None);
         }
 
-        if let Some(payer_amount_msat) = bolt11_result.payer_amount_msat {
-            // Do not recreate wrapped invoices as long as the amount is correct.
+        if let Some(_payer_amount_msat) = bolt11_result.payer_amount_msat {
+            // ~Do not recreate wrapped invoices as long as the amount is correct.~
+            // We do not store wrapped invoices and wrapping does nothing,
+            // so the old code didn' make sense any more.
             // TODO: Validate opening fee params validity here.
             // TODO: Validate invoice expiry here.
-            if let Some(open_channel_invoice) = self
-                .payment_storage
-                .get_open_channel_bolt11_by_hash(&hex::encode(&swap_info.payment_hash))?
-            {
-                return Ok(Some(open_channel_invoice));
-            }
 
             // This is an open channel invoice, so liquidity won't be an issue.
             // TODO: Validate opening_fee_params validity.
             // TODO: Fetch opening_fee_params belonging to the invoice
-            let opening_fee_params = swap_info
+            let _opening_fee_params = swap_info
                 .channel_opening_fees
                 .clone()
                 .ok_or(GetPaymentRequestError::MissingOpeningFeeParams)?;
-            let wrapped_invoice = self
-                .payment_receiver
-                .wrap_node_invoice(
-                    &bolt11_result.bolt11,
-                    Some(OpenChannelParams {
-                        payer_amount_msat,
-                        opening_fee_params,
-                    }),
-                    None,
-                )
-                .await?;
+            // All implementations just returns the invoice.
+            let wrapped_invoice = bolt11_result.bolt11;
             return Ok(Some(wrapped_invoice));
         }
 

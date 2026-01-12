@@ -215,19 +215,6 @@ impl SqliteStorage {
             [],
         )?;
 
-        // sync remote swap_refunds table
-        tx.execute(
-            "
-        INSERT INTO sync.open_channel_payment_info
-         SELECT
-          payment_hash,
-          payer_amount_msat,
-          open_channel_bolt11
-         FROM remote_sync.open_channel_payment_info
-         WHERE payment_hash NOT IN (SELECT payment_hash FROM sync.open_channel_payment_info);",
-            [],
-        )?;
-
         // Sync remote swaps_fees table, which contains dynamic fees used in swaps
         // created_at is used to settle conflicts, since we assume small variations in the client local times
         Self::sync_swaps_fees_local(&tx)?;
@@ -297,8 +284,6 @@ mod tests {
         let remote_storage = SqliteStorage::new(test_utils::create_test_sql_dir());
         remote_storage.init()?;
         remote_storage.insert_swap(&remote_swap_info)?;
-
-        remote_storage.insert_open_channel_payment_info("123", 100000, "")?;
 
         remote_storage.import_remote_changes(&local_storage, false)?;
         local_storage.import_remote_changes(&remote_storage, true)?;
