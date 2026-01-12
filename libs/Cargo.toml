@@ -13,6 +13,7 @@ members = [
   "sdk-itest",
   "sdk-itest/lsps2-server",
   "sdk-macros",
+  "vss-signing-auth",
 ]
 resolver = "2"
 
@@ -52,3 +53,4 @@ thiserror = "1.0.56"
 tokio = "^1.43"
 tonic = "^0.11"
 tonic-build = "^0.11"
+vss-client-ng = { git = "https://github.com/lightningdevkit/vss-client", rev = "5934149a0ba75867eb364661bfe15e2d36ce8b88", default-features = false }
