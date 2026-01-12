@@ -163,7 +163,6 @@ mod backup;
 pub mod binding;
 mod breez_services;
 mod chain;
-mod crypt;
 pub mod error;
 #[rustfmt::skip]
 mod node_api; // flutter_rust_bridge_codegen: has to be defined before greenlight; greenlight::node_api

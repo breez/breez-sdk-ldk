@@ -1,17 +1,6 @@
-use crate::crypt::encrypt;
-use crate::error::{SdkError, SdkResult};
-use crate::models::{LspAPI, OpeningFeeParams, OpeningFeeParamsMenu};
+use crate::models::{OpeningFeeParams, OpeningFeeParamsMenu};
 
 use anyhow::{anyhow, Result};
-use prost::Message;
-use sdk_common::grpc::{
-    self, LspFullListRequest, LspListRequest, PaymentInformation,
-    RegisterPaymentNotificationRequest, RegisterPaymentNotificationResponse, RegisterPaymentReply,
-    RegisterPaymentRequest, RemovePaymentNotificationRequest, RemovePaymentNotificationResponse,
-    SubscribeNotificationsRequest, UnsubscribeNotificationsRequest,
-};
-use sdk_common::prelude::BreezServer;
-use sdk_common::with_connection_retry;
 use serde::{Deserialize, Serialize};
 
 /// Details of supported LSP
@@ -47,27 +36,6 @@ pub struct LspInformation {
 }
 
 impl LspInformation {
-    /// Validation may fail if [LspInformation.opening_fee_params_list] has invalid entries
-    fn try_from(lsp_id: &str, lsp_info: grpc::LspInformation) -> Result<Self> {
-        let info = LspInformation {
-            id: lsp_id.to_string(),
-            name: lsp_info.name,
-            widget_url: lsp_info.widget_url,
-            pubkey: lsp_info.pubkey,
-            host: lsp_info.host,
-            base_fee_msat: lsp_info.base_fee_msat,
-            fee_rate: lsp_info.fee_rate,
-            time_lock_delta: lsp_info.time_lock_delta,
-            min_htlc_msat: lsp_info.min_htlc_msat,
-            lsp_pubkey: lsp_info.lsp_pubkey,
-            opening_fee_params_list: OpeningFeeParamsMenu::try_from(
-                lsp_info.opening_fee_params_menu,
-            )?,
-        };
-
-        Ok(info)
-    }
-
     /// Returns the cheapest opening channel fees from LSP that within the expiry range.
     ///
     /// If the LSP fees are needed, the LSP is expected to have at least one dynamic fee entry in its menu,
@@ -87,128 +55,6 @@ impl LspInformation {
             .values
             .last()
             .ok_or_else(|| anyhow!("Dynamic fees menu contains no values"))
-    }
-}
-
-#[tonic::async_trait]
-impl LspAPI for BreezServer {
-    async fn list_lsps(&self, pubkey: String) -> SdkResult<Vec<LspInformation>> {
-        let mut client = self.get_channel_opener_client().await?;
-
-        let request = LspListRequest { pubkey };
-        let response = with_connection_retry!(client.lsp_list(request.clone())).await?;
-        let mut lsp_list: Vec<LspInformation> = Vec::new();
-        for (lsp_id, lsp_info) in response.into_inner().lsps.into_iter() {
-            match LspInformation::try_from(&lsp_id, lsp_info) {
-                Ok(lsp) => lsp_list.push(lsp),
-                Err(e) => error!("LSP Information validation failed for LSP {lsp_id}: {e}"),
-            }
-        }
-        lsp_list.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        Ok(lsp_list)
-    }
-
-    async fn list_used_lsps(&self, pubkey: String) -> SdkResult<Vec<LspInformation>> {
-        let mut client = self.get_channel_opener_client().await?;
-
-        let request = LspFullListRequest { pubkey };
-        let response = with_connection_retry!(client.lsp_full_list(request.clone())).await?;
-        let mut lsp_list: Vec<LspInformation> = Vec::new();
-        for grpc_lsp_info in response.into_inner().lsps.into_iter() {
-            let lsp_id = grpc_lsp_info.id.clone();
-            match LspInformation::try_from(&lsp_id, grpc_lsp_info) {
-                Ok(lsp) => lsp_list.push(lsp),
-                Err(e) => error!("LSP Information validation failed for LSP {lsp_id}: {e}"),
-            }
-        }
-        lsp_list.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        Ok(lsp_list)
-    }
-
-    async fn register_payment_notifications(
-        &self,
-        lsp_id: String,
-        lsp_pubkey: Vec<u8>,
-        webhook_url: String,
-        webhook_url_signature: String,
-    ) -> SdkResult<RegisterPaymentNotificationResponse> {
-        let subscribe_request = SubscribeNotificationsRequest {
-            url: webhook_url,
-            signature: webhook_url_signature,
-        };
-
-        let mut client = self.get_payment_notifier_client().await;
-
-        let mut buf = Vec::with_capacity(subscribe_request.encoded_len());
-        subscribe_request
-            .encode(&mut buf)
-            .map_err(|e| SdkError::Generic {
-                err: format!("(LSP {lsp_id}) Failed to encode subscribe request: {e}"),
-            })?;
-
-        let request = RegisterPaymentNotificationRequest {
-            lsp_id,
-            blob: encrypt(lsp_pubkey, buf)?,
-        };
-        let response =
-            with_connection_retry!(client.register_payment_notification(request.clone())).await?;
-
-        Ok(response.into_inner())
-    }
-
-    async fn unregister_payment_notifications(
-        &self,
-        lsp_id: String,
-        lsp_pubkey: Vec<u8>,
-        webhook_url: String,
-        webhook_url_signature: String,
-    ) -> SdkResult<RemovePaymentNotificationResponse> {
-        let unsubscribe_request = UnsubscribeNotificationsRequest {
-            url: webhook_url,
-            signature: webhook_url_signature,
-        };
-
-        let mut client = self.get_payment_notifier_client().await;
-
-        let mut buf = Vec::with_capacity(unsubscribe_request.encoded_len());
-        unsubscribe_request
-            .encode(&mut buf)
-            .map_err(|e| SdkError::Generic {
-                err: format!("(LSP {lsp_id}) Failed to encode unsubscribe request: {e}"),
-            })?;
-
-        let request = RemovePaymentNotificationRequest {
-            lsp_id,
-            blob: encrypt(lsp_pubkey, buf)?,
-        };
-        let response =
-            with_connection_retry!(client.remove_payment_notification(request.clone())).await?;
-
-        Ok(response.into_inner())
-    }
-
-    async fn register_payment(
-        &self,
-        lsp_id: String,
-        lsp_pubkey: Vec<u8>,
-        payment_info: PaymentInformation,
-    ) -> SdkResult<RegisterPaymentReply> {
-        let mut client = self.get_channel_opener_client().await?;
-
-        let mut buf = Vec::with_capacity(payment_info.encoded_len());
-        payment_info
-            .encode(&mut buf)
-            .map_err(|e| SdkError::ServiceConnectivity {
-                err: format!("(LSP {lsp_id}) Failed to encode payment info: {e}"),
-            })?;
-
-        let request = RegisterPaymentRequest {
-            lsp_id,
-            blob: encrypt(lsp_pubkey, buf)?,
-        };
-        let response = with_connection_retry!(client.register_payment(request.clone())).await?;
-
-        Ok(response.into_inner())
     }
 }
 

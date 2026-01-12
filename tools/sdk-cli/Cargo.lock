@@ -550,7 +550,6 @@ dependencies = [
  "log",
  "miniz_oxide 0.7.4",
  "once_cell",
- "prost 0.12.6",
  "r2d2",
  "r2d2_sqlite",
  "rand 0.8.5",
