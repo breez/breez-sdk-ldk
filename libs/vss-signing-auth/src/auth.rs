@@ -16,9 +16,13 @@ pub struct AuthenticationFailed;
 pub fn authenticate(
     headers: &HashMap<String, String>,
     max_skew: Duration,
-    expected_api_key: Option<&str>,
 ) -> Result<String, AuthenticationFailed> {
-    let pubkey_hex = find_header(headers, USER_PUBKEY_HEADER)?;
+    let headers: HashMap<_, _> = headers
+        .iter()
+        .map(|(k, v)| (k.to_ascii_lowercase(), v))
+        .collect();
+
+    let pubkey_hex = find_header(&headers, USER_PUBKEY_HEADER)?;
     let pubkey_bytes = decode(pubkey_hex).map_err(|e| {
         warn!("Authentication failed: invalid user pubkey: {e}");
         AuthenticationFailed
@@ -28,21 +32,14 @@ pub fn authenticate(
         AuthenticationFailed
     })?;
 
-    let api_key = find_header(headers, API_KEY_HEADER)?;
-    if let Some(expected_api_key) = expected_api_key {
-        if expected_api_key != api_key {
-            warn!("Authentication failed: invalid api key");
-            return Err(AuthenticationFailed);
-        }
-    }
+    let api_key = find_header(&headers, API_KEY_HEADER)?;
 
-    let request_timestamp: u32 =
-        find_header(headers, REQUEST_TIME_HEADER)?
-            .parse()
-            .map_err(|e| {
-                warn!("Authentication failed: invalid {REQUEST_TIME_HEADER} header: {e}");
-                AuthenticationFailed
-            })?;
+    let request_timestamp: u32 = find_header(&headers, REQUEST_TIME_HEADER)?
+        .parse()
+        .map_err(|e| {
+            warn!("Authentication failed: invalid {REQUEST_TIME_HEADER} header: {e}");
+            AuthenticationFailed
+        })?;
 
     let request_time = UNIX_EPOCH + Duration::from_secs(request_timestamp as u64);
     let now = SystemTime::now();
@@ -62,7 +59,7 @@ pub fn authenticate(
         return Err(AuthenticationFailed);
     }
 
-    let signature_header = find_header(headers, SIGNATURE_HEADER)?;
+    let signature_header = find_header(&headers, SIGNATURE_HEADER)?;
     let signature_bytes = zbase32::decode_full_bytes(signature_header.as_bytes()).map_err(|e| {
         warn!("Authentication failed: {SIGNATURE_HEADER} header is not valid zbase32: {e}");
         AuthenticationFailed
@@ -104,16 +101,16 @@ pub fn authenticate(
 }
 
 fn find_header<'a>(
-    headers: &'a HashMap<String, String>,
+    headers: &HashMap<String, &'a String>,
     name: &'static str,
 ) -> Result<&'a String, AuthenticationFailed> {
     headers
-        .get(name)
-        .or_else(|| headers.get(&name.to_ascii_lowercase()))
+        .get(&name.to_ascii_lowercase())
         .ok_or_else(|| {
             warn!("Authentication failed: missing {name} header");
             AuthenticationFailed
         })
+        .copied()
 }
 
 #[cfg(all(test, feature = "signing"))]
@@ -131,7 +128,7 @@ mod tests {
         let provider = HeaderProvider::new(&seed, network, api_key.clone()).unwrap();
         let headers = provider.get_headers(&[]).await.unwrap();
 
-        let result = authenticate(&headers, Duration::from_secs(30), Some(api_key.as_str()));
+        let result = authenticate(&headers, Duration::from_secs(30));
 
         let result = result.unwrap();
         assert_eq!(result, provider.pubkey_hex().to_string());
@@ -149,7 +146,7 @@ mod tests {
             .map(|(k, v)| (k.to_ascii_lowercase(), v))
             .collect();
 
-        let result = authenticate(&headers, Duration::from_secs(30), Some(api_key.as_str()));
+        let result = authenticate(&headers, Duration::from_secs(30));
 
         let result = result.unwrap();
         assert_eq!(result, provider.pubkey_hex().to_string());
@@ -164,7 +161,7 @@ mod tests {
         // Corrupt signature.
         headers.insert(SIGNATURE_HEADER.to_string(), "invalidsig".into());
 
-        let result = authenticate(&headers, Duration::from_secs(30), None);
+        let result = authenticate(&headers, Duration::from_secs(30));
 
         assert_eq!(result, Err(AuthenticationFailed));
     }
@@ -186,19 +183,7 @@ mod tests {
             provider.pubkey_hex().to_string(),
         );
 
-        let result = authenticate(&headers, Duration::from_secs(30), None);
-
-        assert_eq!(result, Err(AuthenticationFailed));
-    }
-
-    #[tokio::test]
-    async fn fails_on_api_key_mismatch() {
-        let seed = [3u8; 64];
-        let network = Network::Bitcoin;
-        let provider = HeaderProvider::new(&seed, network, "wrong".into()).unwrap();
-        let headers = provider.get_headers(&[]).await.unwrap();
-
-        let result = authenticate(&headers, Duration::from_secs(30), Some("expected"));
+        let result = authenticate(&headers, Duration::from_secs(30));
 
         assert_eq!(result, Err(AuthenticationFailed));
     }
