@@ -151,7 +151,6 @@ pub struct BreezServices {
     chain_service: Arc<dyn ChainService>,
     persister: Arc<SqliteStorage>,
     rest_client: Arc<dyn RestClient>,
-    payment_receiver: Arc<dyn Receiver>,
     btc_receive_swapper: Arc<BTCReceiveSwap>,
     btc_send_swapper: Arc<BTCSendSwap>,
     event_listener: Option<Box<dyn EventListener>>,
@@ -509,7 +508,7 @@ impl BreezServices {
         &self,
         req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
-        self.payment_receiver.receive_payment(req).await
+        self.node_api.receive_payment(req).await
     }
 
     /// Report an issue.
@@ -2048,7 +2047,6 @@ impl log::Log for GlobalSdkLogger {
 struct BreezServicesBuilder {
     config: Config,
     node_api: Option<Arc<dyn NodeAPI>>,
-    receiver: Option<Arc<dyn Receiver>>,
     backup_transport: Option<Arc<dyn BackupTransport>>,
     seed: Option<Vec<u8>>,
     lsp_api: Option<Arc<dyn LspAPI>>,
@@ -2071,7 +2069,6 @@ impl BreezServicesBuilder {
         BreezServicesBuilder {
             config,
             node_api: None,
-            receiver: None,
             seed: None,
             lsp_api: None,
             fiat_api: None,
@@ -2089,11 +2086,6 @@ impl BreezServicesBuilder {
 
     pub fn node_api(&mut self, node_api: Arc<dyn NodeAPI>) -> &mut Self {
         self.node_api = Some(node_api);
-        self
-    }
-
-    pub fn receiver(&mut self, receiver: Arc<dyn Receiver>) -> &mut Self {
-        self.receiver = Some(receiver);
         self
     }
 
@@ -2193,7 +2185,6 @@ impl BreezServicesBuilder {
         let mut node_api = self.node_api.clone();
         let mut backup_transport = self.backup_transport.clone();
         let mut lsp_api = self.lsp_api.clone();
-        let mut receiver = self.receiver.clone();
         if node_api.is_none() {
             let node_impls = node_builder::build_node(
                 self.config.clone(),
@@ -2205,7 +2196,6 @@ impl BreezServicesBuilder {
             node_api = Some(node_impls.node);
             backup_transport = backup_transport.or(Some(node_impls.backup_transport));
             lsp_api = lsp_api.or(node_impls.lsp);
-            receiver = receiver.or(node_impls.receiver);
         }
         let lsp_api = lsp_api.ok_or(ConnectError::Generic {
             err: "LSP Api should be provided".into(),
@@ -2257,10 +2247,6 @@ impl BreezServicesBuilder {
             persister.set_lsp(self.config.default_lsp_id.clone().unwrap(), None)?;
         }
 
-        let payment_receiver = receiver.ok_or(ConnectError::Generic {
-            err: "Receiver should be provided".into(),
-        })?;
-
         let rest_client: Arc<dyn RestClient> = match self.rest_client.clone() {
             Some(rest_client) => rest_client,
             None => Arc::new(ReqwestRestClient::new()?),
@@ -2297,7 +2283,6 @@ impl BreezServicesBuilder {
             network: self.config.network.into(),
             node_api: unwrapped_node_api.clone(),
             node_state_storage: persister.clone(),
-            payment_receiver: payment_receiver.clone(),
             segwit_swapper_api: self
                 .swapper_api
                 .clone()
@@ -2350,7 +2335,6 @@ impl BreezServicesBuilder {
             rest_client,
             btc_receive_swapper,
             btc_send_swapper,
-            payment_receiver,
             event_listener,
             backup_watcher: Arc::new(backup_watcher),
             shutdown_sender,
@@ -2367,15 +2351,6 @@ pub fn mnemonic_to_seed(phrase: String) -> Result<Vec<u8>> {
     let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
     let seed = Seed::new(&mnemonic, "");
     Ok(seed.as_bytes().to_vec())
-}
-
-#[tonic::async_trait]
-pub trait Receiver: Send + Sync {
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError>;
-    async fn receive_payment(
-        &self,
-        req: ReceivePaymentRequest,
-    ) -> Result<ReceivePaymentResponse, ReceivePaymentError>;
 }
 
 /// Convenience method to look up LSP info based on current LSP ID
@@ -2752,7 +2727,6 @@ pub(crate) mod tests {
             .lsp_api(Arc::new(MockBreezServer {}))
             .fiat_api(Arc::new(MockBreezServer {}))
             .node_api(node_api)
-            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
@@ -2914,7 +2888,6 @@ pub(crate) mod tests {
             .taproot_swapper_api(Arc::new(MockBreezServer {}))
             .reverse_swap_service_api(Arc::new(MockReverseSwapperAPI {}))
             .buy_bitcoin_api(Arc::new(MockBuyBitcoinService {}))
-            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .node_api(node_api)
             .rest_client(rest_client)
