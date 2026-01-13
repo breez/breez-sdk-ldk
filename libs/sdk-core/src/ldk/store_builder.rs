@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use bitcoin::bip32::{ChildNumber, Xpriv};
-use bitcoin::key::Secp256k1;
+use bitcoin::secp256k1::Secp256k1;
 use hex::ToHex;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -22,9 +22,10 @@ use vss_client_ng::util::retry::{
     ExponentialBackoffRetryPolicy, FilteredRetryPolicy, JitteredRetryPolicy,
     MaxAttemptsRetryPolicy, MaxTotalDelayRetryPolicy, RetryPolicy,
 };
+use vss_signing_auth::HeaderProvider;
 
 use crate::ldk::store::{PreviousHolder, VssStore};
-use crate::node_api::NodeResult;
+use crate::node_api::{NodeError, NodeResult};
 use crate::persist::error::PersistError;
 use crate::Config;
 
@@ -45,7 +46,7 @@ pub(crate) fn build_vss_store(
     seed: &[u8],
     store_id: &str,
 ) -> NodeResult<VssStore<CustomRetryPolicy>> {
-    let bitcoin_network: crate::bitcoin::Network = config.network.into();
+    let bitcoin_network: bitcoin::Network = config.network.into();
     let xprv = Xpriv::new_master(bitcoin_network, seed)?.derive_priv(
         &Secp256k1::new(),
         &[ChildNumber::Hardened {
@@ -53,14 +54,13 @@ pub(crate) fn build_vss_store(
         }],
     )?;
 
-    let seed = xprv.private_key.secret_bytes();
-    let seed_hash = Sha256::hash(&seed);
+    let vss_seed = xprv.private_key.secret_bytes();
     let store_id = match config.network {
         Network::Regtest => {
             // Regtest instance of VSS does not implement authentication,
             // that is why the hash of the seed is used to avoid collisions.
-            let seed_hash_hex = seed_hash.encode_hex::<String>();
-            format!("{seed_hash_hex}/{store_id}")
+            let seed_hash = Sha256::hash(&vss_seed).encode_hex::<String>();
+            format!("{seed_hash}/{store_id}")
         }
         _ => store_id.to_string(),
     };
@@ -78,8 +78,14 @@ pub(crate) fn build_vss_store(
             )
         }) as _);
 
-    let vss_client = VssClient::new(config.vss_url.clone(), retry_policy);
-    Ok(VssStore::new(vss_client, store_id, seed))
+    let api_key = config.api_key.clone().unwrap_or_default();
+    let header_provider = HeaderProvider::new(seed, config.network.into(), api_key)
+        .map_err(|e| NodeError::Generic(format!("Failed to build VSS header provider: {e}")))?;
+    let header_provider = Arc::new(header_provider);
+
+    let vss_client =
+        VssClient::new_with_headers(config.vss_url.clone(), retry_policy, header_provider);
+    Ok(VssStore::new(vss_client, store_id, vss_seed))
 }
 
 pub(crate) async fn build_mirroring_store(
