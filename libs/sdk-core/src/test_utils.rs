@@ -712,7 +712,6 @@ where
 
 pub fn create_test_config() -> crate::models::Config {
     let mut conf = Config {
-        default_lsp_id: Some(String::from("03cea51f-b654-4fb0-8e82-eca137f236a0")),
         chainnotifier_url: "http://test-chainnotifier.local".to_string(),
         ..Config::production("".into())
     };

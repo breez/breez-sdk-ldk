@@ -2252,11 +2252,6 @@ impl BreezServicesBuilder {
             }
         });
 
-        let current_lsp_id = persister.get_lsp_id()?;
-        if current_lsp_id.is_none() && self.config.default_lsp_id.is_some() {
-            persister.set_lsp(self.config.default_lsp_id.clone().unwrap(), None)?;
-        }
-
         let payment_receiver = receiver.ok_or(ConnectError::Generic {
             err: "Receiver should be provided".into(),
         })?;

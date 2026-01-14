@@ -2103,7 +2103,6 @@ impl SseDecode for crate::models::Config {
         let mut var_workingDir = <String>::sse_decode(deserializer);
         let mut var_network = <crate::binding::Network>::sse_decode(deserializer);
         let mut var_paymentTimeoutSec = <u32>::sse_decode(deserializer);
-        let mut var_defaultLspId = <Option<String>>::sse_decode(deserializer);
         let mut var_apiKey = <Option<String>>::sse_decode(deserializer);
         let mut var_maxfeePercent = <f64>::sse_decode(deserializer);
         let mut var_exemptfeeMsat = <u64>::sse_decode(deserializer);
@@ -2118,7 +2117,6 @@ impl SseDecode for crate::models::Config {
             working_dir: var_workingDir,
             network: var_network,
             payment_timeout_sec: var_paymentTimeoutSec,
-            default_lsp_id: var_defaultLspId,
             api_key: var_apiKey,
             maxfee_percent: var_maxfeePercent,
             exemptfee_msat: var_exemptfeeMsat,
@@ -4465,7 +4463,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::Config {
             self.working_dir.into_into_dart().into_dart(),
             self.network.into_into_dart().into_dart(),
             self.payment_timeout_sec.into_into_dart().into_dart(),
-            self.default_lsp_id.into_into_dart().into_dart(),
             self.api_key.into_into_dart().into_dart(),
             self.maxfee_percent.into_into_dart().into_dart(),
             self.exemptfee_msat.into_into_dart().into_dart(),
@@ -6675,7 +6672,6 @@ impl SseEncode for crate::models::Config {
         <String>::sse_encode(self.working_dir, serializer);
         <crate::binding::Network>::sse_encode(self.network, serializer);
         <u32>::sse_encode(self.payment_timeout_sec, serializer);
-        <Option<String>>::sse_encode(self.default_lsp_id, serializer);
         <Option<String>>::sse_encode(self.api_key, serializer);
         <f64>::sse_encode(self.maxfee_percent, serializer);
         <u64>::sse_encode(self.exemptfee_msat, serializer);
@@ -8859,7 +8855,6 @@ mod io {
                 working_dir: self.working_dir.cst_decode(),
                 network: self.network.cst_decode(),
                 payment_timeout_sec: self.payment_timeout_sec.cst_decode(),
-                default_lsp_id: self.default_lsp_id.cst_decode(),
                 api_key: self.api_key.cst_decode(),
                 maxfee_percent: self.maxfee_percent.cst_decode(),
                 exemptfee_msat: self.exemptfee_msat.cst_decode(),
@@ -10223,7 +10218,6 @@ mod io {
                 working_dir: core::ptr::null_mut(),
                 network: Default::default(),
                 payment_timeout_sec: Default::default(),
-                default_lsp_id: core::ptr::null_mut(),
                 api_key: core::ptr::null_mut(),
                 maxfee_percent: Default::default(),
                 exemptfee_msat: Default::default(),
@@ -12653,7 +12647,6 @@ mod io {
         working_dir: *mut wire_cst_list_prim_u_8_strict,
         network: i32,
         payment_timeout_sec: u32,
-        default_lsp_id: *mut wire_cst_list_prim_u_8_strict,
         api_key: *mut wire_cst_list_prim_u_8_strict,
         maxfee_percent: f64,
         exemptfee_msat: u64,

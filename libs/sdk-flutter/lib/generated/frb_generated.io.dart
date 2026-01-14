@@ -2790,7 +2790,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.working_dir = cst_encode_String(apiObj.workingDir);
     wireObj.network = cst_encode_network(apiObj.network);
     wireObj.payment_timeout_sec = cst_encode_u_32(apiObj.paymentTimeoutSec);
-    wireObj.default_lsp_id = cst_encode_opt_String(apiObj.defaultLspId);
     wireObj.api_key = cst_encode_opt_String(apiObj.apiKey);
     wireObj.maxfee_percent = cst_encode_f_64(apiObj.maxfeePercent);
     wireObj.exemptfee_msat = cst_encode_u_64(apiObj.exemptfeeMsat);
@@ -6490,8 +6489,6 @@ final class wire_cst_config extends ffi.Struct {
 
   @ffi.Uint32()
   external int payment_timeout_sec;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> default_lsp_id;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> api_key;
 

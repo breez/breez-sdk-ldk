@@ -411,13 +411,6 @@ enum BreezSDKMapper {
         guard let paymentTimeoutSec = config["paymentTimeoutSec"] as? UInt32 else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "paymentTimeoutSec", typeName: "Config"))
         }
-        var defaultLspId: String?
-        if hasNonNilKey(data: config, key: "defaultLspId") {
-            guard let defaultLspIdTmp = config["defaultLspId"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "defaultLspId"))
-            }
-            defaultLspId = defaultLspIdTmp
-        }
         var apiKey: String?
         if hasNonNilKey(data: config, key: "apiKey") {
             guard let apiKeyTmp = config["apiKey"] as? String else {
@@ -432,7 +425,7 @@ enum BreezSDKMapper {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "exemptfeeMsat", typeName: "Config"))
         }
 
-        return Config(breezserver: breezserver, chainnotifierUrl: chainnotifierUrl, mempoolspaceUrl: mempoolspaceUrl, esploraUrl: esploraUrl, vssUrl: vssUrl, rgsUrl: rgsUrl, lsps2Address: lsps2Address, workingDir: workingDir, network: network, paymentTimeoutSec: paymentTimeoutSec, defaultLspId: defaultLspId, apiKey: apiKey, maxfeePercent: maxfeePercent, exemptfeeMsat: exemptfeeMsat)
+        return Config(breezserver: breezserver, chainnotifierUrl: chainnotifierUrl, mempoolspaceUrl: mempoolspaceUrl, esploraUrl: esploraUrl, vssUrl: vssUrl, rgsUrl: rgsUrl, lsps2Address: lsps2Address, workingDir: workingDir, network: network, paymentTimeoutSec: paymentTimeoutSec, apiKey: apiKey, maxfeePercent: maxfeePercent, exemptfeeMsat: exemptfeeMsat)
     }
 
     static func dictionaryOf(config: Config) -> [String: Any?] {
@@ -447,7 +440,6 @@ enum BreezSDKMapper {
             "workingDir": config.workingDir,
             "network": valueOf(network: config.network),
             "paymentTimeoutSec": config.paymentTimeoutSec,
-            "defaultLspId": config.defaultLspId == nil ? nil : config.defaultLspId,
             "apiKey": config.apiKey == nil ? nil : config.apiKey,
             "maxfeePercent": config.maxfeePercent,
             "exemptfeeMsat": config.exemptfeeMsat,

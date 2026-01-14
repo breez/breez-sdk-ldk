@@ -134,7 +134,6 @@ class Config {
   final String workingDir;
   final Network network;
   final int paymentTimeoutSec;
-  final String? defaultLspId;
   final String? apiKey;
 
   /// Maps to the CLN `maxfeepercent` config when paying invoices (`lightning-pay`)
@@ -154,7 +153,6 @@ class Config {
     required this.workingDir,
     required this.network,
     required this.paymentTimeoutSec,
-    this.defaultLspId,
     this.apiKey,
     required this.maxfeePercent,
     required this.exemptfeeMsat,
@@ -172,7 +170,6 @@ class Config {
       workingDir.hashCode ^
       network.hashCode ^
       paymentTimeoutSec.hashCode ^
-      defaultLspId.hashCode ^
       apiKey.hashCode ^
       maxfeePercent.hashCode ^
       exemptfeeMsat.hashCode;
@@ -192,7 +189,6 @@ class Config {
           workingDir == other.workingDir &&
           network == other.network &&
           paymentTimeoutSec == other.paymentTimeoutSec &&
-          defaultLspId == other.defaultLspId &&
           apiKey == other.apiKey &&
           maxfeePercent == other.maxfeePercent &&
           exemptfeeMsat == other.exemptfeeMsat;
