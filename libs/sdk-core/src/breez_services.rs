@@ -2097,6 +2097,7 @@ impl BreezServicesBuilder {
         self
     }
 
+    #[cfg(test)]
     pub fn lsp_api(&mut self, lsp_api: Arc<dyn LspAPI>) -> &mut Self {
         self.lsp_api = Some(lsp_api.clone());
         self
@@ -2206,7 +2207,9 @@ impl BreezServicesBuilder {
             lsp_api = lsp_api.or(node_impls.lsp);
             receiver = receiver.or(node_impls.receiver);
         }
-        let lsp_api = lsp_api.unwrap_or_else(|| breez_server.clone());
+        let lsp_api = lsp_api.ok_or(ConnectError::Generic {
+            err: "LSP Api should be provided".into(),
+        })?;
 
         if backup_transport.is_none() {
             return Err(ConnectError::Generic {

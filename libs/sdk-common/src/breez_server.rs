@@ -6,7 +6,6 @@ use tonic::metadata::{Ascii, MetadataValue};
 use tonic::service::Interceptor;
 use tonic::{Request, Status};
 
-use crate::grpc::channel_opener_client::ChannelOpenerClient;
 use crate::grpc::information_client::InformationClient;
 use crate::grpc::payment_notifier_client::PaymentNotifierClient;
 use crate::grpc::signer_client::SignerClient;
@@ -52,20 +51,6 @@ impl BreezServer {
             )?)),
             _ => Ok(None),
         }
-    }
-
-    pub async fn get_channel_opener_client(
-        &self,
-    ) -> Result<
-        ChannelOpenerClient<InterceptedService<Transport, ApiKeyInterceptor>>,
-        ServiceConnectivityError,
-    > {
-        let api_key_metadata = self.api_key_metadata()?;
-        let with_interceptor = ChannelOpenerClient::with_interceptor(
-            self.grpc_client.lock().await.clone().into_inner(),
-            ApiKeyInterceptor { api_key_metadata },
-        );
-        Ok(with_interceptor)
     }
 
     pub async fn get_payment_notifier_client(&self) -> PaymentNotifierClient<Transport> {
