@@ -17,10 +17,6 @@ pub trait ChainService: Send + Sync {
     /// See <https://mempool.space/docs/api/rest#get-address-transactions>
     async fn address_transactions(&self, address: String) -> SdkResult<Vec<OnchainTx>>;
     async fn current_tip(&self) -> SdkResult<u32>;
-    /// Gets the spending status of all tx outputs for this tx.
-    ///
-    /// See <https://mempool.space/docs/api/rest#get-transaction-outspends>
-    async fn transaction_outspends(&self, txid: String) -> SdkResult<Vec<Outspend>>;
     /// If successful, it returns the transaction ID. Otherwise returns an `Err` describing the error.
     async fn broadcast_transaction(&self, tx: Vec<u8>) -> SdkResult<String>;
 }
@@ -78,20 +74,6 @@ impl ChainService for RedundantChainService {
     async fn current_tip(&self) -> SdkResult<u32> {
         for inst in &self.instances {
             match inst.current_tip().await {
-                Ok(res) => {
-                    return Ok(res);
-                }
-                Err(e) => error!("Call to chain service {} failed: {e}", inst.base_url),
-            }
-        }
-        Err(SdkError::service_connectivity(
-            "All chain service instances failed",
-        ))
-    }
-
-    async fn transaction_outspends(&self, txid: String) -> SdkResult<Vec<Outspend>> {
-        for inst in &self.instances {
-            match inst.transaction_outspends(txid.clone()).await {
                 Ok(res) => {
                     return Ok(res);
                 }
@@ -261,18 +243,6 @@ pub struct Vin {
     pub sequence: u32,
 }
 
-/// Spending status of a transaction output.
-///
-/// If this is an outspend of a confirmed tx, `spent` is true and all other fields are set.
-/// If this is an outspend of an unconfirmed tx, `spent` is false and none of the other fields are set.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Outspend {
-    pub spent: bool,
-    pub txid: Option<String>,
-    pub vin: Option<u32>,
-    pub status: Option<TxStatus>,
-}
-
 impl MempoolSpace {
     #[allow(dead_code)]
     pub fn new(rest_client: Arc<dyn RestClient>) -> MempoolSpace {
@@ -319,15 +289,6 @@ impl ChainService for MempoolSpace {
         Ok(parse_json(&response)?)
     }
 
-    async fn transaction_outspends(&self, txid: String) -> SdkResult<Vec<Outspend>> {
-        let (response, _) = get_and_check_success(
-            self.rest_client.as_ref(),
-            &format!("{}/tx/{txid}/outspends", self.base_url),
-        )
-        .await?;
-        Ok(parse_json(&response)?)
-    }
-
     async fn broadcast_transaction(&self, tx: Vec<u8>) -> SdkResult<String> {
         let (txid_or_error, _) = self
             .rest_client
@@ -349,9 +310,8 @@ impl ChainService for MempoolSpace {
 mod tests {
     use std::sync::Arc;
 
-    use crate::{
-        chain::{MempoolSpace, OnchainTx, RedundantChainService, RedundantChainServiceTrait},
-        error::SdkError,
+    use crate::chain::{
+        MempoolSpace, OnchainTx, RedundantChainService, RedundantChainServiceTrait,
     };
     use anyhow::Result;
     use sdk_common::prelude::{MockResponse, MockRestClient, RestClient};
@@ -495,28 +455,6 @@ mod tests {
         let expected_serialized = serde_json::to_string(&expected_txs)?;
 
         assert_eq!(expected_serialized, serialized_res);
-
-        let outspends = ms
-            .transaction_outspends(
-                "5e0668bf1cd24f2f8656ee82d4886f5303a06b26838e24b7db73afc59e228985".to_string(),
-            )
-            .await?;
-        assert_eq!(outspends.len(), 2);
-
-        let outspends = ms
-            .transaction_outspends(
-                "07c9d3fbffc20f96ea7c93ef3bcdf346c8a8456c25850ea76be62b24a7cf6901".to_string(),
-            )
-            .await;
-        match outspends {
-            Ok(_) => panic!("Expected an error"),
-            Err(e) => match e {
-                SdkError::ServiceConnectivity { err } => {
-                    assert_eq!(err, "GET request https://mempool.space/api/tx/07c9d3fbffc20f96ea7c93ef3bcdf346c8a8456c25850ea76be62b24a7cf6901/outspends failed with status: 404")
-                }
-                _ => panic!("Expected a service connectivity error"),
-            },
-        };
 
         Ok(())
     }
