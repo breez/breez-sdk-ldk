@@ -1,5 +1,4 @@
 pub(crate) mod cache;
-pub(crate) mod channels;
 pub(crate) mod db;
 pub(crate) mod error;
 pub(crate) mod migrations;
