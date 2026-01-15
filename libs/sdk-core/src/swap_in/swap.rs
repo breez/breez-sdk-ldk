@@ -330,7 +330,6 @@ impl BTCReceiveSwap {
         Ok(result)
     }
 
-    #[allow(dead_code)]
     pub(crate) fn list_redeemables(&self) -> ReceiveSwapResult<Vec<SwapInfo>> {
         Ok(self.swap_storage.list_swaps(ListSwapsRequest {
             status: Some(SwapStatus::redeemable()),

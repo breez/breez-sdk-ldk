@@ -31,7 +31,6 @@ pub struct LockingStore<S: VersionedStore + Send + Sync> {
     versioned_tl: Mutex<VersionedTimeLock>,
 }
 
-#[allow(dead_code)]
 impl<S: VersionedStore + Send + Sync> LockingStore<S> {
     const KEY: &str = "lock";
     const LOCK_DURATION: Duration = Duration::from_secs(60);

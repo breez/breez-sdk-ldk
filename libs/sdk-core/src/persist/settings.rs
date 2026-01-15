@@ -2,7 +2,6 @@ use serde::Serialize;
 
 use super::{db::SqliteStorage, error::PersistResult};
 
-#[allow(dead_code)]
 #[derive(Serialize)]
 pub struct SettingItem {
     key: String,
@@ -10,7 +9,7 @@ pub struct SettingItem {
 }
 
 impl SqliteStorage {
-    pub fn update_setting(&self, key: String, value: String) -> PersistResult<()> {
+    fn update_setting(&self, key: String, value: String) -> PersistResult<()> {
         self.get_connection()?.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1,?2)",
             (key, value),
@@ -18,7 +17,7 @@ impl SqliteStorage {
         Ok(())
     }
 
-    pub fn get_setting(&self, key: String) -> PersistResult<Option<String>> {
+    fn get_setting(&self, key: String) -> PersistResult<Option<String>> {
         let res = self.get_connection()?.query_row(
             "SELECT value FROM settings WHERE key = ?1",
             [key],
@@ -27,14 +26,12 @@ impl SqliteStorage {
         Ok(res.ok())
     }
 
-    #[allow(dead_code)]
     pub fn delete_setting(&self, key: String) -> PersistResult<()> {
         self.get_connection()?
             .execute("DELETE FROM settings WHERE key = ?1", [key])?;
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn list_settings(&self) -> PersistResult<Vec<SettingItem>> {
         let con = self.get_connection()?;
         let mut stmt = con.prepare("SELECT * FROM settings ORDER BY key")?;
