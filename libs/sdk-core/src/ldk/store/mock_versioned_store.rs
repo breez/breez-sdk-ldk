@@ -11,7 +11,7 @@ pub type Map = HashMap<String, (Vec<u8>, i64)>;
 ///
 /// This mock store maintains an in-memory HashMap to simulate a versioned key-value store.
 /// It can be configured to return specific errors or simulate various scenarios for testing.
-#[allow(dead_code)]
+#[cfg(test)]
 #[derive(Default, Clone)]
 pub struct MockVersionedStore {
     pub data: Arc<Mutex<Map>>,

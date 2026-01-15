@@ -50,7 +50,6 @@ impl SqliteStorage {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn delete_cached_item(&self, key: &str) -> PersistResult<()> {
         self.get_connection()?
             .execute("DELETE FROM cached_items WHERE key = ?1", [key])?;
@@ -98,12 +97,10 @@ impl SqliteStorage {
         self.update_cached_item(KEY_WEBHOOK_URL, webhook_url)
     }
 
-    #[allow(dead_code)]
     pub fn remove_webhook_url(&self) -> PersistResult<()> {
         self.delete_cached_item(KEY_WEBHOOK_URL)
     }
 
-    #[allow(dead_code)]
     pub fn get_webhook_url(&self) -> PersistResult<Option<String>> {
         self.get_cached_item(KEY_WEBHOOK_URL)
     }
