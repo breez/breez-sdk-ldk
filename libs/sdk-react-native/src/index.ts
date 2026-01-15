@@ -80,7 +80,6 @@ export interface Config {
     workingDir: string
     network: Network
     paymentTimeoutSec: number
-    defaultLspId?: string
     apiKey?: string
     maxfeePercent: number
     exemptfeeMsat: number

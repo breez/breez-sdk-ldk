@@ -372,7 +372,6 @@ fun asConfig(config: ReadableMap): Config? {
     val workingDir = config.getString("workingDir")!!
     val network = config.getString("network")?.let { asNetwork(it) }!!
     val paymentTimeoutSec = config.getInt("paymentTimeoutSec").toUInt()
-    val defaultLspId = if (hasNonNullKey(config, "defaultLspId")) config.getString("defaultLspId") else null
     val apiKey = if (hasNonNullKey(config, "apiKey")) config.getString("apiKey") else null
     val maxfeePercent = config.getDouble("maxfeePercent")
     val exemptfeeMsat = config.getDouble("exemptfeeMsat").toULong()
@@ -387,7 +386,6 @@ fun asConfig(config: ReadableMap): Config? {
         workingDir,
         network,
         paymentTimeoutSec,
-        defaultLspId,
         apiKey,
         maxfeePercent,
         exemptfeeMsat,
@@ -406,7 +404,6 @@ fun readableMapOf(config: Config): ReadableMap =
         "workingDir" to config.workingDir,
         "network" to snakeToLowerCamelCase(config.network.name),
         "paymentTimeoutSec" to config.paymentTimeoutSec,
-        "defaultLspId" to config.defaultLspId,
         "apiKey" to config.apiKey,
         "maxfeePercent" to config.maxfeePercent,
         "exemptfeeMsat" to config.exemptfeeMsat,

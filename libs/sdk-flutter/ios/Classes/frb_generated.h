@@ -321,7 +321,6 @@ typedef struct wire_cst_config {
   struct wire_cst_list_prim_u_8_strict *working_dir;
   int32_t network;
   uint32_t payment_timeout_sec;
-  struct wire_cst_list_prim_u_8_strict *default_lsp_id;
   struct wire_cst_list_prim_u_8_strict *api_key;
   double maxfee_percent;
   uint64_t exemptfee_msat;

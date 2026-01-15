@@ -1995,7 +1995,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   Config dco_decode_config(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 14) throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
+    if (arr.length != 13) throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
     return Config(
       breezserver: dco_decode_String(arr[0]),
       chainnotifierUrl: dco_decode_String(arr[1]),
@@ -2007,10 +2007,9 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       workingDir: dco_decode_String(arr[7]),
       network: dco_decode_network(arr[8]),
       paymentTimeoutSec: dco_decode_u_32(arr[9]),
-      defaultLspId: dco_decode_opt_String(arr[10]),
-      apiKey: dco_decode_opt_String(arr[11]),
-      maxfeePercent: dco_decode_f_64(arr[12]),
-      exemptfeeMsat: dco_decode_u_64(arr[13]),
+      apiKey: dco_decode_opt_String(arr[10]),
+      maxfeePercent: dco_decode_f_64(arr[11]),
+      exemptfeeMsat: dco_decode_u_64(arr[12]),
     );
   }
 
@@ -3915,7 +3914,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_workingDir = sse_decode_String(deserializer);
     var var_network = sse_decode_network(deserializer);
     var var_paymentTimeoutSec = sse_decode_u_32(deserializer);
-    var var_defaultLspId = sse_decode_opt_String(deserializer);
     var var_apiKey = sse_decode_opt_String(deserializer);
     var var_maxfeePercent = sse_decode_f_64(deserializer);
     var var_exemptfeeMsat = sse_decode_u_64(deserializer);
@@ -3930,7 +3928,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       workingDir: var_workingDir,
       network: var_network,
       paymentTimeoutSec: var_paymentTimeoutSec,
-      defaultLspId: var_defaultLspId,
       apiKey: var_apiKey,
       maxfeePercent: var_maxfeePercent,
       exemptfeeMsat: var_exemptfeeMsat,
@@ -6265,7 +6262,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.workingDir, serializer);
     sse_encode_network(self.network, serializer);
     sse_encode_u_32(self.paymentTimeoutSec, serializer);
-    sse_encode_opt_String(self.defaultLspId, serializer);
     sse_encode_opt_String(self.apiKey, serializer);
     sse_encode_f_64(self.maxfeePercent, serializer);
     sse_encode_u_64(self.exemptfeeMsat, serializer);
