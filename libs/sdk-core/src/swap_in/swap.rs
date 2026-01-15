@@ -20,7 +20,6 @@ use crate::bitcoin::{
 };
 use crate::lightning_invoice::Bolt11Invoice;
 use crate::{
-    breez_services::Receiver,
     chain::ChainService,
     error::ReceivePaymentError,
     node_api::{FetchBolt11Result, NodeAPI},
@@ -198,7 +197,6 @@ pub(crate) struct BTCReceiveSwap {
     network: Network,
     node_api: Arc<dyn NodeAPI>,
     node_state_storage: Arc<dyn NodeStateStorage>,
-    payment_receiver: Arc<dyn Receiver>,
     segwit: SegwitReceiveSwap,
     status_changes_notifier: broadcast::Sender<BreezEvent>,
     swap_storage: Arc<dyn SwapStorage>,
@@ -211,7 +209,6 @@ pub(crate) struct BTCReceiveSwapParameters {
     pub network: Network,
     pub node_api: Arc<dyn NodeAPI>,
     pub node_state_storage: Arc<dyn NodeStateStorage>,
-    pub payment_receiver: Arc<dyn Receiver>,
     pub segwit_swapper_api: Arc<dyn SwapperAPI>,
     pub swap_storage: Arc<dyn SwapStorage>,
     pub taproot_swapper_api: Arc<dyn TaprootSwapperAPI>,
@@ -226,7 +223,6 @@ impl BTCReceiveSwap {
             network: params.network,
             node_api: params.node_api,
             node_state_storage: params.node_state_storage,
-            payment_receiver: params.payment_receiver,
             segwit: SegwitReceiveSwap::new(params.segwit_swapper_api),
             status_changes_notifier: broadcast::channel(100).0,
             swap_storage: params.swap_storage,
@@ -833,7 +829,7 @@ impl BTCReceiveSwap {
         }
 
         // This is not an open channel invoice, check liquidity.
-        if self.payment_receiver.open_channel_needed(amount_msat)? {
+        if self.node_api.open_channel_needed(amount_msat)? {
             debug!("Existing swap payment request is not an open channel invoice, but liquidity is no longer sufficient. Recreating payment request.");
             self.node_api.delete_invoice(bolt11_result.bolt11).await?;
             return Ok(None);
@@ -992,7 +988,7 @@ impl BTCReceiveSwap {
         // Note that if the accepted opening fee params is no longer valid, a new one will be issued by the
         // receive_payment function. It is checked in the response.
         let receive_resp = self
-            .payment_receiver
+            .node_api
             .receive_payment(ReceivePaymentRequest {
                 // TODO: Substract fees here once swapper supports them.
                 amount_msat,
@@ -1249,9 +1245,7 @@ mod tests {
             taproot_server::MockTaprootSwapperAPI,
             BTCReceiveSwap, BTCReceiveSwapParameters,
         },
-        test_utils::{
-            MockBreezServer, MockChainService, MockNodeAPI, MockReceiver, MockSwapperAPI,
-        },
+        test_utils::{MockBreezServer, MockChainService, MockNodeAPI, MockSwapperAPI},
         ListSwapsRequest, NodeState, OpeningFeeParams, Payment, SwapInfo, SwapStatus,
     };
 
@@ -1315,7 +1309,6 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockTaprootSwapperAPI::new()),
@@ -1376,7 +1369,6 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockTaprootSwapperAPI::new()),
@@ -1425,7 +1417,6 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockBreezServer {}),
@@ -1535,7 +1526,6 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(MockNodeStateStorage::new()),
-            payment_receiver: Arc::new(MockReceiver::default()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockBreezServer {}),

@@ -20,7 +20,7 @@ use tokio::time::{sleep, MissedTickBehavior};
 use crate::backup::{BackupRequest, BackupTransport, BackupWatcher};
 use crate::buy::{BuyBitcoinApi, BuyBitcoinService};
 use crate::chain::{
-    ChainService, Outspend, RecommendedFees, RedundantChainService, RedundantChainServiceTrait,
+    ChainService, RecommendedFees, RedundantChainService, RedundantChainServiceTrait,
     DEFAULT_MEMPOOL_SPACE_URL,
 };
 use crate::error::{
@@ -31,9 +31,9 @@ use crate::lnurl::auth::SdkLnurlAuthSigner;
 use crate::lnurl::pay::*;
 use crate::lsp::LspInformation;
 use crate::models::{
-    sanitize::*, ChannelState, ClosedChannelPaymentDetails, Config, EnvironmentType, LspAPI,
-    NodeState, Payment, PaymentDetails, PaymentType, ReverseSwapPairInfo, ReverseSwapServiceAPI,
-    SwapInfo, SwapperAPI, INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
+    sanitize::*, Config, EnvironmentType, LspAPI, NodeState, Payment, PaymentDetails, PaymentType,
+    ReverseSwapPairInfo, ReverseSwapServiceAPI, SwapInfo, SwapperAPI,
+    INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
 };
 use crate::node_api::NodeAPI;
 use crate::persist::cache::NodeStateStorage;
@@ -151,7 +151,6 @@ pub struct BreezServices {
     chain_service: Arc<dyn ChainService>,
     persister: Arc<SqliteStorage>,
     rest_client: Arc<dyn RestClient>,
-    payment_receiver: Arc<dyn Receiver>,
     btc_receive_swapper: Arc<BTCReceiveSwap>,
     btc_send_swapper: Arc<BTCSendSwap>,
     event_listener: Option<Box<dyn EventListener>>,
@@ -509,7 +508,7 @@ impl BreezServices {
         &self,
         req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
-        self.payment_receiver.receive_payment(req).await
+        self.node_api.receive_payment(req).await
     }
 
     /// Report an issue.
@@ -987,7 +986,7 @@ impl BreezServices {
             .btc_send_swapper
             .convert_reverse_swap_info(full_rsi.clone())
             .await?;
-        self.do_sync(false).await?;
+        self.do_sync().await?;
 
         if let Some(webhook_url) = self.persister.get_webhook_url()? {
             let address = &full_rsi
@@ -1043,64 +1042,28 @@ impl BreezServices {
     /// This method syncs the local state with the remote node state.
     /// The synced items are as follows:
     /// * node state - General information about the node and its liquidity status
-    /// * channels - The list of channels and their status
     /// * payments - The incoming/outgoing payments
     pub async fn sync(&self) -> SdkResult<()> {
-        Ok(self.do_sync(false).await?)
+        Ok(self.do_sync().await?)
     }
 
-    async fn do_sync(&self, match_local_balance: bool) -> Result<()> {
+    async fn do_sync(&self) -> Result<()> {
         let start = Instant::now();
         let node_pubkey = self.node_api.node_id().await?;
         self.connect_lsp_peer(node_pubkey).await?;
 
-        // First query the changes since last sync state.
-        let sync_state = self.persister.get_sync_state()?;
-        let new_data = &self
-            .node_api
-            .pull_changed(sync_state.clone(), match_local_balance)
-            .await?;
-
-        debug!(
-            "pull changed old state={:?} new state={:?}",
-            sync_state, new_data.sync_state
-        );
+        let new_data = &self.node_api.pull_changed().await?;
 
         // update node state and channels state
         self.persister.set_node_state(&new_data.node_state)?;
 
-        let channels_before_update = self.persister.list_channels()?;
-        self.persister.update_channels(&new_data.channels)?;
-        let channels_after_update = self.persister.list_channels()?;
+        let payments = new_data.payments.clone();
 
-        // Fetch the static backup if needed and persist it
-        if channels_before_update.len() != channels_after_update.len() {
-            info!("fetching static backup file from node");
-            let backup = self.node_api.static_backup().await?;
-            self.persister.set_static_backup(backup)?;
-        }
-
-        //fetch closed_channel and convert them to Payment items.
-        let mut closed_channel_payments: Vec<Payment> = vec![];
-        for closed_channel in
-            self.persister.list_channels()?.into_iter().filter(|c| {
-                c.state == ChannelState::Closed || c.state == ChannelState::PendingClose
-            })
-        {
-            let closed_channel_tx = self.closed_channel_to_transaction(closed_channel).await?;
-            closed_channel_payments.push(closed_channel_tx);
-        }
-
-        // update both closed channels and lightning transaction payments
-        let mut payments = closed_channel_payments;
-        payments.extend(new_data.payments.clone());
         self.persister.delete_pseudo_payments()?;
         self.persister.insert_or_update_payments(&payments, false)?;
         let duration = start.elapsed();
         info!("Sync duration: {duration:?}");
 
-        // update the cached sync state
-        self.persister.set_sync_state(&new_data.sync_state)?;
         self.notify_event_listeners(BreezEvent::Synced).await?;
         Ok(())
     }
@@ -1206,7 +1169,7 @@ impl BreezServices {
         invoice: Option<LNInvoice>,
         payment_res: Result<Payment, SendPaymentError>,
     ) -> Result<Payment, SendPaymentError> {
-        self.do_sync(false).await?;
+        self.do_sync().await?;
         match payment_res {
             Ok(payment) => {
                 self.notify_event_listeners(BreezEvent::PaymentSucceed {
@@ -1276,11 +1239,8 @@ impl BreezServices {
     /// Get the static backup data from the persistent storage.
     /// This data enables the user to recover the node in an external core lightning node.
     /// See here for instructions on how to recover using this data: <https://docs.corelightning.org/docs/backup-and-recovery#backing-up-using-static-channel-backup>
-    pub fn static_backup(req: StaticBackupRequest) -> SdkResult<StaticBackupResponse> {
-        let storage = SqliteStorage::new(req.working_dir);
-        Ok(StaticBackupResponse {
-            backup: storage.get_static_backup()?,
-        })
+    pub fn static_backup(_req: StaticBackupRequest) -> SdkResult<StaticBackupResponse> {
+        Err(SdkError::generic("To remove"))
     }
 
     /// Fetches the service health check from the support API.
@@ -1533,7 +1493,7 @@ impl BreezServices {
                             },
                         })
                         .await;
-                    if let Err(e) = cloned.do_sync(true).await {
+                    if let Err(e) = cloned.do_sync().await {
                         error!("failed to sync after paid invoice: {e:?}");
                     }
                 }
@@ -1684,104 +1644,6 @@ impl BreezServices {
         log::set_max_level(LevelFilter::Trace);
 
         Ok(())
-    }
-
-    async fn lookup_chain_service_closing_outspend(
-        &self,
-        channel: crate::models::Channel,
-    ) -> Result<Option<Outspend>> {
-        match channel.funding_outnum {
-            None => Ok(None),
-            Some(outnum) => {
-                // Find the output tx that was used to fund the channel
-                let outspends = self
-                    .chain_service
-                    .transaction_outspends(channel.funding_txid.clone())
-                    .await?;
-
-                Ok(outspends.get(outnum as usize).cloned())
-            }
-        }
-    }
-
-    /// Chain service lookup of relevant channel closing fields (closed_at, closing_txid).
-    ///
-    /// Should be used sparingly because it involves a network lookup.
-    async fn lookup_channel_closing_data(
-        &self,
-        channel: &crate::models::Channel,
-    ) -> Result<(Option<u64>, Option<String>)> {
-        let maybe_outspend_res = self
-            .lookup_chain_service_closing_outspend(channel.clone())
-            .await;
-        let maybe_outspend: Option<Outspend> = match maybe_outspend_res {
-            Ok(s) => s,
-            Err(e) => {
-                error!("Failed to lookup channel closing data: {e:?}");
-                None
-            }
-        };
-
-        let maybe_closed_at = maybe_outspend
-            .clone()
-            .and_then(|outspend| outspend.status)
-            .and_then(|s| s.block_time);
-        let maybe_closing_txid = maybe_outspend.and_then(|outspend| outspend.txid);
-
-        Ok((maybe_closed_at, maybe_closing_txid))
-    }
-
-    async fn closed_channel_to_transaction(
-        &self,
-        channel: crate::models::Channel,
-    ) -> Result<Payment> {
-        let (payment_time, closing_txid) = match (channel.closed_at, channel.closing_txid.clone()) {
-            (Some(closed_at), Some(closing_txid)) => (closed_at as i64, Some(closing_txid)),
-            (_, _) => {
-                // If any of the two closing-related fields are empty, we look them up and persist them
-                let (maybe_closed_at, maybe_closing_txid) =
-                    self.lookup_channel_closing_data(&channel).await?;
-
-                let processed_closed_at = match maybe_closed_at {
-                    None => {
-                        warn!("Blocktime could not be determined for from closing outspend, defaulting closed_at to epoch time");
-                        SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()
-                    }
-                    Some(block_time) => block_time,
-                };
-
-                let mut updated_channel = channel.clone();
-                updated_channel.closed_at = Some(processed_closed_at);
-                // If no closing txid found, we persist it as None, so it will be looked-up next time
-                updated_channel.closing_txid.clone_from(&maybe_closing_txid);
-                self.persister.insert_or_update_channel(updated_channel)?;
-
-                (processed_closed_at as i64, maybe_closing_txid)
-            }
-        };
-
-        Ok(Payment {
-            id: channel.funding_txid.clone(),
-            payment_type: PaymentType::ClosedChannel,
-            payment_time,
-            amount_msat: channel.local_balance_msat,
-            fee_msat: 0,
-            status: match channel.state {
-                ChannelState::PendingClose => PaymentStatus::Pending,
-                _ => PaymentStatus::Complete,
-            },
-            description: Some("Closed Channel".to_string()),
-            details: PaymentDetails::ClosedChannel {
-                data: ClosedChannelPaymentDetails {
-                    short_channel_id: channel.short_channel_id,
-                    state: channel.state,
-                    funding_txid: channel.funding_txid,
-                    closing_txid,
-                },
-            },
-            error: None,
-            metadata: None,
-        })
     }
 
     /// Register for webhook callbacks at the given `webhook_url`.
@@ -1992,7 +1854,6 @@ impl BreezServices {
                 .persister
                 .list_payments(ListPaymentsRequest::default())?,
         )?;
-        let channels = crate::serializer::value::to_value(&self.persister.list_channels()?)?;
         let settings = crate::serializer::value::to_value(&self.persister.list_settings()?)?;
         let reverse_swaps = crate::serializer::value::to_value(
             self.persister.list_reverse_swaps().map(sanitize_vec)?,
@@ -2008,7 +1869,6 @@ impl BreezServices {
             "version": version,
             "node_state": state,
             "payments": payments,
-            "channels": channels,
             "settings": settings,
             "reverse_swaps": reverse_swaps,
             "swaps": swaps,
@@ -2048,7 +1908,6 @@ impl log::Log for GlobalSdkLogger {
 struct BreezServicesBuilder {
     config: Config,
     node_api: Option<Arc<dyn NodeAPI>>,
-    receiver: Option<Arc<dyn Receiver>>,
     backup_transport: Option<Arc<dyn BackupTransport>>,
     seed: Option<Vec<u8>>,
     lsp_api: Option<Arc<dyn LspAPI>>,
@@ -2071,7 +1930,6 @@ impl BreezServicesBuilder {
         BreezServicesBuilder {
             config,
             node_api: None,
-            receiver: None,
             seed: None,
             lsp_api: None,
             fiat_api: None,
@@ -2089,11 +1947,6 @@ impl BreezServicesBuilder {
 
     pub fn node_api(&mut self, node_api: Arc<dyn NodeAPI>) -> &mut Self {
         self.node_api = Some(node_api);
-        self
-    }
-
-    pub fn receiver(&mut self, receiver: Arc<dyn Receiver>) -> &mut Self {
-        self.receiver = Some(receiver);
         self
     }
 
@@ -2193,7 +2046,6 @@ impl BreezServicesBuilder {
         let mut node_api = self.node_api.clone();
         let mut backup_transport = self.backup_transport.clone();
         let mut lsp_api = self.lsp_api.clone();
-        let mut receiver = self.receiver.clone();
         if node_api.is_none() {
             let node_impls = node_builder::build_node(
                 self.config.clone(),
@@ -2205,7 +2057,6 @@ impl BreezServicesBuilder {
             node_api = Some(node_impls.node);
             backup_transport = backup_transport.or(Some(node_impls.backup_transport));
             lsp_api = lsp_api.or(node_impls.lsp);
-            receiver = receiver.or(node_impls.receiver);
         }
         let lsp_api = lsp_api.ok_or(ConnectError::Generic {
             err: "LSP Api should be provided".into(),
@@ -2257,10 +2108,6 @@ impl BreezServicesBuilder {
             persister.set_lsp(self.config.default_lsp_id.clone().unwrap(), None)?;
         }
 
-        let payment_receiver = receiver.ok_or(ConnectError::Generic {
-            err: "Receiver should be provided".into(),
-        })?;
-
         let rest_client: Arc<dyn RestClient> = match self.rest_client.clone() {
             Some(rest_client) => rest_client,
             None => Arc::new(ReqwestRestClient::new()?),
@@ -2297,7 +2144,6 @@ impl BreezServicesBuilder {
             network: self.config.network.into(),
             node_api: unwrapped_node_api.clone(),
             node_state_storage: persister.clone(),
-            payment_receiver: payment_receiver.clone(),
             segwit_swapper_api: self
                 .swapper_api
                 .clone()
@@ -2350,7 +2196,6 @@ impl BreezServicesBuilder {
             rest_client,
             btc_receive_swapper,
             btc_send_swapper,
-            payment_receiver,
             event_listener,
             backup_watcher: Arc::new(backup_watcher),
             shutdown_sender,
@@ -2367,15 +2212,6 @@ pub fn mnemonic_to_seed(phrase: String) -> Result<Vec<u8>> {
     let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
     let seed = Seed::new(&mnemonic, "");
     Ok(seed.as_bytes().to_vec())
-}
-
-#[tonic::async_trait]
-pub trait Receiver: Send + Sync {
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError>;
-    async fn receive_payment(
-        &self,
-        req: ReceivePaymentRequest,
-    ) -> Result<ReceivePaymentResponse, ReceivePaymentError>;
 }
 
 /// Convenience method to look up LSP info based on current LSP ID
@@ -2752,7 +2588,6 @@ pub(crate) mod tests {
             .lsp_api(Arc::new(MockBreezServer {}))
             .fiat_api(Arc::new(MockBreezServer {}))
             .node_api(node_api)
-            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
@@ -2914,7 +2749,6 @@ pub(crate) mod tests {
             .taproot_swapper_api(Arc::new(MockBreezServer {}))
             .reverse_swap_service_api(Arc::new(MockReverseSwapperAPI {}))
             .buy_bitcoin_api(Arc::new(MockBuyBitcoinService {}))
-            .receiver(Arc::new(MockReceiver::default()))
             .persister(persister)
             .node_api(node_api)
             .rest_client(rest_client)
