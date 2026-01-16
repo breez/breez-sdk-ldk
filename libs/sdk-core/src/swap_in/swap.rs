@@ -20,7 +20,6 @@ use crate::bitcoin::{
 };
 use crate::lightning_invoice::Bolt11Invoice;
 use crate::{
-    breez_services::Receiver,
     chain::ChainService,
     error::ReceivePaymentError,
     node_api::{FetchBolt11Result, NodeAPI},
@@ -28,6 +27,7 @@ use crate::{
         cache::NodeStateStorage, error::PersistResult, swap::SwapStorage,
         transactions::PaymentStorage,
     },
+    receiver::Receiver,
     BreezEvent, ListSwapsRequest, OpeningFeeParams, PrepareRefundRequest, PrepareRefundResponse,
     ReceivePaymentRequest, RefundRequest, RefundResponse, SwapInfo, SwapStatus, SwapperAPI,
 };
@@ -1243,14 +1243,13 @@ mod tests {
         persist::{
             cache::MockNodeStateStorage, swap::MockSwapStorage, transactions::MockPaymentStorage,
         },
+        receiver::MockReceiver,
         swap_in::{
             swap::{compute_tx_fee, SwapOutput, SwapSpend},
             taproot_server::MockTaprootSwapperAPI,
             BTCReceiveSwap, BTCReceiveSwapParameters,
         },
-        test_utils::{
-            MockBreezServer, MockChainService, MockNodeAPI, MockReceiver, MockSwapperAPI,
-        },
+        test_utils::{MockBreezServer, MockChainService, MockNodeAPI, MockSwapperAPI},
         ListSwapsRequest, NodeState, OpeningFeeParams, Payment, SwapInfo, SwapStatus,
     };
 
@@ -1314,7 +1313,7 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
+            payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockTaprootSwapperAPI::new()),
@@ -1375,7 +1374,7 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
+            payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockTaprootSwapperAPI::new()),
@@ -1424,7 +1423,7 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(node_state_storage),
-            payment_receiver: Arc::new(MockReceiver::default()),
+            payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockBreezServer {}),
@@ -1534,7 +1533,7 @@ mod tests {
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
             node_state_storage: Arc::new(MockNodeStateStorage::new()),
-            payment_receiver: Arc::new(MockReceiver::default()),
+            payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
             taproot_swapper_api: Arc::new(MockBreezServer {}),

@@ -32,7 +32,6 @@ use crate::bitcoin::hashes::{sha256, Hash as _};
 use crate::bitcoin::secp256k1::{Message, PublicKey, Secp256k1};
 use crate::bitcoin::taproot::{TaprootBuilder, TaprootSpendInfo};
 use crate::bitcoin::{key::XOnlyPublicKey, Address, Network, ScriptBuf, Sequence};
-use crate::breez_services::Receiver;
 use crate::buy::BuyBitcoinApi;
 use crate::chain::{ChainService, OnchainTx, Outspend, RecommendedFees, TxStatus};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
@@ -45,15 +44,16 @@ use crate::models::{
     LnPaymentDetails, LspAPI, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType,
     ReverseSwapServiceAPI, SwapperAPI, SyncResponse, TlvEntry,
 };
-use crate::node_api::{FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult};
+use crate::node_api::{
+    CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
+};
 use crate::swap_in::TaprootSwapperAPI;
 use crate::swap_out::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapStatus};
 use crate::swap_out::error::{ReverseSwapError, ReverseSwapResult};
 use crate::{
     parse_invoice, BuyBitcoinProvider, Config, CustomMessage, LNInvoice, MaxChannelAmount,
     OpeningFeeParamsMenu, PaymentResponse, PrepareRedeemOnchainFundsRequest,
-    PrepareRedeemOnchainFundsResponse, ReceivePaymentRequest, ReverseSwapPairInfo, RouteHint,
-    RouteHintHop, SwapInfo,
+    PrepareRedeemOnchainFundsResponse, ReverseSwapPairInfo, RouteHint, RouteHintHop, SwapInfo,
 };
 
 pub const MOCK_REVERSE_SWAP_MIN: u64 = 50_000;
@@ -259,33 +259,6 @@ impl TryFrom<Payment> for crate::models::PaymentResponse {
     }
 }
 
-pub struct MockReceiver {
-    pub bolt11: String,
-}
-
-impl Default for MockReceiver {
-    fn default() -> Self {
-        MockReceiver { bolt11: "lnbc500u1p3eerl2dq8w3jhxaqpp5w3w4z63erts5usxtkvpwdy356l29xfd43mnzlq6x2d69kqhjtepsxqyjw5qsp5an4vlkhp8cgahvamrdkn2uzmmcd5neq7yq3j6a8v0sc0q9rlde5s9qrsgqcqpxrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyzancsqqvpsqqqqqqqlgqqqqqzsqygrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyqqqqyqqqqqqqqqqqqlgqqqqqzsqjqacpq7rd5rf7ssza0lps93ehylrwtjhdlk44g0llwp039f8uqxsck52ccr69djxs59mmwqkvvglylpg0cdzaqusg9m9cyju92t7kjpfsqma2lmf".to_string() }
-    }
-}
-
-#[tonic::async_trait]
-impl Receiver for MockReceiver {
-    fn open_channel_needed(&self, _amount_msat: u64) -> Result<bool, ReceivePaymentError> {
-        Ok(true)
-    }
-    async fn receive_payment(
-        &self,
-        _request: ReceivePaymentRequest,
-    ) -> Result<crate::ReceivePaymentResponse, ReceivePaymentError> {
-        Ok(crate::ReceivePaymentResponse {
-            ln_invoice: parse_invoice(&self.bolt11)?,
-            opening_fee_params: _request.opening_fee_params,
-            opening_fee_msat: None,
-        })
-    }
-}
-
 pub struct MockNodeAPI {
     /// Simulated repository of confirmed new outgoing payments.
     ///
@@ -306,6 +279,15 @@ impl NodeAPI for MockNodeAPI {
 
     async fn delete_invoice(&self, _bolt11: String) -> NodeResult<()> {
         Ok(())
+    }
+
+    fn max_receivable_single_payment_msat(&self) -> Result<u64, ReceivePaymentError> {
+        Ok(self.node_state.max_receivable_msat)
+    }
+
+    async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {
+        let invoice = create_invoice(req.description, req.amount_msat, vec![], req.preimage);
+        Ok(invoice.bolt11)
     }
 
     async fn pull_changed(
