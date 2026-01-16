@@ -1,15 +1,8 @@
 use crate::ReverseSwapStatus;
 
 use super::{db::SqliteStorage, error::PersistResult};
-use rusqlite::{named_params, Row, Transaction, TransactionBehavior};
+use rusqlite::{named_params, Transaction, TransactionBehavior};
 use std::path::Path;
-
-#[allow(dead_code)]
-pub(crate) struct SyncVersion {
-    pub created_at: String,
-    pub last_version: u64,
-    pub data: Vec<u8>,
-}
 
 impl SqliteStorage {
     pub(crate) fn backup<P: AsRef<Path>>(&self, dst_path: P) -> PersistResult<()> {
@@ -43,31 +36,6 @@ impl SqliteStorage {
         )?;
 
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn sync_versions_history(&self) -> PersistResult<Vec<SyncVersion>> {
-        let con = self.get_connection()?;
-        let mut stmt = con.prepare(
-            "SELECT created_at, last_version, data FROM sync_versions ORDER BY created_at DESC;",
-        )?;
-
-        let vec: Vec<SyncVersion> = stmt
-            .query_map([], |row| self.sql_row_to_sync_version(row))?
-            .map(|i| i.unwrap())
-            .collect();
-
-        Ok(vec)
-    }
-
-    fn sql_row_to_sync_version(&self, row: &Row) -> PersistResult<SyncVersion, rusqlite::Error> {
-        let version = SyncVersion {
-            created_at: row.get(0)?,
-            last_version: row.get(1)?,
-            data: row.get(2)?,
-        };
-
-        Ok(version)
     }
 
     pub fn get_last_sync_request(&self) -> PersistResult<Option<u64>> {
