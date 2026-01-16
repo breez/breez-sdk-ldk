@@ -395,11 +395,6 @@ impl NodeAPI for Ldk {
         )
     }
 
-    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
-        // Using the main implementation, because legacy way was never used for LDK.
-        self.derive_bip32_key(path).await
-    }
-
     async fn get_open_peers(&self) -> NodeResult<HashSet<Vec<u8>>> {
         Err(NodeError::generic("LDK implementation not yet available"))
     }

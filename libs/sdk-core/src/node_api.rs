@@ -225,7 +225,6 @@ pub trait NodeAPI: Send + Sync {
 
     /// Gets the private key at the path specified
     async fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
-    async fn legacy_derive_bip32_key(&self, path: Vec<ChildNumber>) -> NodeResult<Xpriv>;
 
     /// Get peers with whom we have an open channel
     async fn get_open_peers(&self) -> NodeResult<HashSet<Vec<u8>>>;
