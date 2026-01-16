@@ -415,10 +415,6 @@ impl NodeAPI for MockNodeAPI {
         Ok(Xpriv::new_master(Network::Bitcoin, &[])?)
     }
 
-    async fn legacy_derive_bip32_key(&self, _path: Vec<ChildNumber>) -> NodeResult<Xpriv> {
-        Ok(Xpriv::new_master(Network::Bitcoin, &[])?)
-    }
-
     async fn send_custom_message(&self, message: CustomMessage) -> NodeResult<()> {
         (self.on_send_custom_message)(message)
     }
