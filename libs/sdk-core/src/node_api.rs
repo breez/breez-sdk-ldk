@@ -164,7 +164,7 @@ impl TryFrom<IncomingPayment> for Payment {
 pub trait NodeAPI: Send + Sync {
     async fn configure_node(&self, close_to_address: Option<String>) -> NodeResult<()>;
     async fn delete_invoice(&self, bolt11: String) -> NodeResult<()>;
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError>;
+    fn max_receivable_single_payment_msat(&self) -> Result<u64, ReceivePaymentError>;
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String>;
     /// Fetches an existing BOLT11 invoice from the node
     async fn fetch_bolt11(&self, payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>>;

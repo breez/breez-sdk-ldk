@@ -281,8 +281,8 @@ impl NodeAPI for MockNodeAPI {
         Ok(())
     }
 
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
-        Ok(self.node_state.max_receivable_msat < amount_msat)
+    fn max_receivable_single_payment_msat(&self) -> Result<u64, ReceivePaymentError> {
+        Ok(self.node_state.max_receivable_msat)
     }
 
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {

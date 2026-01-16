@@ -13,6 +13,7 @@ use crate::node_api::{CreateInvoiceRequest, NodeAPI};
 #[cfg_attr(test, mockall::automock)]
 #[tonic::async_trait]
 pub trait Receiver: Send + Sync {
+    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError>;
     async fn receive_payment(
         &self,
         req: ReceivePaymentRequest,
@@ -51,6 +52,10 @@ impl PaymentReceiver {
 
 #[tonic::async_trait]
 impl Receiver for PaymentReceiver {
+    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
+        Ok(self.node_api.max_receivable_single_payment_msat()? < amount_msat)
+    }
+
     async fn receive_payment(
         &self,
         req: ReceivePaymentRequest,
@@ -73,7 +78,7 @@ impl Receiver for PaymentReceiver {
         } = req;
 
         let expiry = expiry.unwrap_or(INVOICE_PAYMENT_FEE_EXPIRY_SECONDS);
-        let open_channel_needed = self.node_api.open_channel_needed(amount_msat)?;
+        let open_channel_needed = self.open_channel_needed(amount_msat)?;
 
         let opening_fee_params = match (open_channel_needed, requested_opening_fee_params) {
             (true, Some(opening_fee_params)) => Some(opening_fee_params),

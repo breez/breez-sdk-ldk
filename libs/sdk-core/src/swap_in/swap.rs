@@ -832,7 +832,7 @@ impl BTCReceiveSwap {
         }
 
         // This is not an open channel invoice, check liquidity.
-        if self.node_api.open_channel_needed(amount_msat)? {
+        if self.payment_receiver.open_channel_needed(amount_msat)? {
             debug!("Existing swap payment request is not an open channel invoice, but liquidity is no longer sufficient. Recreating payment request.");
             self.node_api.delete_invoice(bolt11_result.bolt11).await?;
             return Ok(None);

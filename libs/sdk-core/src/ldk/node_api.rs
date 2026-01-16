@@ -142,14 +142,13 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
-        let max_receivable_single_payment_amount_msat: u64 = self
+    fn max_receivable_single_payment_msat(&self) -> Result<u64, ReceivePaymentError> {
+        Ok(self
             .node
             .list_channels()
             .iter()
             .map(|c| c.inbound_capacity_msat)
-            .sum();
-        Ok(max_receivable_single_payment_amount_msat < amount_msat)
+            .sum())
     }
 
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {
