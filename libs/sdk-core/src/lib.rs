@@ -177,6 +177,7 @@ mod lsps2;
 mod models;
 mod node_builder;
 mod persist;
+mod receiver;
 mod serializer;
 mod support;
 mod swap_in;

@@ -17,7 +17,6 @@ use ldk_node::lightning_types::payment::{PaymentHash, PaymentPreimage};
 use ldk_node::{Builder, CustomTlvRecord, Event, Node};
 use rand::Rng;
 use sdk_common::ensure_sdk;
-use sdk_common::invoice::parse_invoice;
 use sdk_common::prelude::Network;
 use serde_json::{json, Value};
 use tokio::sync::{broadcast, mpsc};
@@ -27,7 +26,6 @@ use tokio_stream::{Stream, StreamExt};
 
 use crate::bitcoin::bip32::{ChildNumber, Xpriv};
 use crate::bitcoin::secp256k1::Secp256k1;
-use crate::breez_services::Receiver;
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::grpc;
 use crate::ldk::event_handling::{start_event_handling, wait_for_payment_success};
@@ -36,11 +34,10 @@ use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
 use crate::ldk::utils::Hex;
-use crate::models::{
-    Config, LspAPI, OpeningFeeParams, OpeningFeeParamsMenu, ReceivePaymentRequest,
-    ReceivePaymentResponse, INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
+use crate::models::{Config, LspAPI, OpeningFeeParams, OpeningFeeParamsMenu};
+use crate::node_api::{
+    CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
-use crate::node_api::{FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult};
 use crate::{
     CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
     PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop,
@@ -133,47 +130,6 @@ impl Ldk {
             remote_lock_shutdown_tx,
         })
     }
-
-    async fn load_default_opening_fee_params(&self, expiry: u32) -> SdkResult<OpeningFeeParams> {
-        self.list_lsps(self.node.node_id().to_string())
-            .await?
-            .into_iter()
-            .next()
-            .ok_or(SdkError::generic("Empty LSP list"))?
-            .cheapest_open_channel_fee(expiry)
-            .cloned()
-            .map_err(Into::into)
-    }
-
-    fn create_invoice(
-        &self,
-        amount_msat: u64,
-        opening_fee_msat: Option<u64>,
-        description: Bolt11InvoiceDescription,
-        preimage: Option<PaymentPreimage>,
-        expiry: u32,
-    ) -> NodeResult<String> {
-        let preimage =
-            preimage.unwrap_or_else(|| PaymentPreimage(rand::thread_rng().gen::<[u8; 32]>()));
-        let payment_hash: PaymentHash = preimage.into();
-        self.store.store_preimage(&payment_hash, &preimage)?;
-
-        let payments = self.node.bolt11_payment();
-        let invoice = match opening_fee_msat {
-            Some(opening_fee_msat) => payments.receive_via_jit_channel_for_hash(
-                amount_msat,
-                &description,
-                expiry,
-                Some(opening_fee_msat),
-                payment_hash,
-            ),
-            None => payments.receive_for_hash(amount_msat, &description, expiry, payment_hash),
-        }?;
-        let bolt11 = invoice.to_string();
-        self.store
-            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11.clone())?;
-        Ok(bolt11)
-    }
 }
 
 #[tonic::async_trait]
@@ -184,6 +140,58 @@ impl NodeAPI for Ldk {
 
     async fn delete_invoice(&self, _bolt11: String) -> NodeResult<()> {
         Err(NodeError::generic("LDK implementation not yet available"))
+    }
+
+    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
+        let max_receivable_single_payment_amount_msat: u64 = self
+            .node
+            .list_channels()
+            .iter()
+            .map(|c| c.inbound_capacity_msat)
+            .sum();
+        Ok(max_receivable_single_payment_amount_msat < amount_msat)
+    }
+
+    async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {
+        let description = if req.use_description_hash.unwrap_or(false) {
+            let hash = Sha256::hash(req.description.as_bytes());
+            Bolt11InvoiceDescription::Hash(ldk_node::lightning_invoice::Sha256(hash))
+        } else {
+            let description = Description::new(req.description).map_err(|e| {
+                NodeError::Generic(format!("Failed to create invoice description: {e}"))
+            })?;
+            Bolt11InvoiceDescription::Direct(description)
+        };
+
+        let preimage = match req.preimage.map(|p| p.as_slice().try_into()) {
+            Some(Ok(preimage)) => Some(PaymentPreimage(preimage)),
+            Some(Err(e)) => {
+                return Err(NodeError::Generic(format!("Invalid preimage given: {e}")));
+            }
+            None => None,
+        };
+        let preimage =
+            preimage.unwrap_or_else(|| PaymentPreimage(rand::thread_rng().gen::<[u8; 32]>()));
+        let payment_hash: PaymentHash = preimage.into();
+        self.store.store_preimage(&payment_hash, &preimage)?;
+
+        let payments = self.node.bolt11_payment();
+        let invoice = match req.opening_fee_msat {
+            Some(opening_fee_msat) => payments.receive_via_jit_channel_for_hash(
+                req.amount_msat,
+                &description,
+                req.expiry,
+                Some(opening_fee_msat),
+                payment_hash,
+            ),
+            None => {
+                payments.receive_for_hash(req.amount_msat, &description, req.expiry, payment_hash)
+            }
+        }?;
+        let bolt11 = invoice.to_string();
+        self.store
+            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11.clone())?;
+        Ok(bolt11)
     }
 
     async fn fetch_bolt11(&self, _payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>> {
@@ -472,84 +480,6 @@ impl LspAPI for Ldk {
         _payment_info: grpc::PaymentInformation,
     ) -> SdkResult<grpc::RegisterPaymentReply> {
         Ok(Default::default())
-    }
-}
-
-#[tonic::async_trait]
-impl Receiver for Ldk {
-    fn open_channel_needed(&self, amount_msat: u64) -> Result<bool, ReceivePaymentError> {
-        let max_receivable_single_payment_amount_msat: u64 = self
-            .node
-            .list_channels()
-            .iter()
-            .map(|c| c.inbound_capacity_msat)
-            .sum();
-        Ok(max_receivable_single_payment_amount_msat < amount_msat)
-    }
-
-    async fn receive_payment(
-        &self,
-        req: ReceivePaymentRequest,
-    ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
-        ensure_sdk!(
-            req.amount_msat > 0,
-            ReceivePaymentError::InvalidAmount {
-                err: "Receive amount must be more than 0".into()
-            }
-        );
-        let amount_msat = req.amount_msat;
-        let expiry = req.expiry.unwrap_or(INVOICE_PAYMENT_FEE_EXPIRY_SECONDS);
-        let open_channel_needed = self.open_channel_needed(amount_msat)?;
-        let opening_fee_params = match (open_channel_needed, req.opening_fee_params) {
-            (true, Some(opening_fee_params)) => Some(opening_fee_params),
-            (true, None) => Some(self.load_default_opening_fee_params(expiry).await?),
-            (false, _) => None,
-        };
-        let opening_fee_msat = opening_fee_params
-            .as_ref()
-            .map(|p| p.get_channel_fees_msat_for(amount_msat));
-        if let Some(opening_fee_msat) = opening_fee_msat {
-            ensure_sdk!(
-                amount_msat >= opening_fee_msat + 1000,
-                ReceivePaymentError::InvalidAmount {
-                    err: format!(
-							"Amount should be more than the minimum fees {opening_fee_msat} msat, but is {amount_msat} msat"
-                        )
-                }
-            );
-        }
-
-        let description = if req.use_description_hash.unwrap_or(false) {
-            let hash = Sha256::hash(req.description.as_bytes());
-            Bolt11InvoiceDescription::Hash(ldk_node::lightning_invoice::Sha256(hash))
-        } else {
-            let description =
-                Description::new(req.description).map_err(|e| ReceivePaymentError::Generic {
-                    err: format!("Failed to create invoice description: {e}"),
-                })?;
-            Bolt11InvoiceDescription::Direct(description)
-        };
-
-        let preimage = match req.preimage.map(|p| p.as_slice().try_into()) {
-            Some(Ok(preimage)) => Some(PaymentPreimage(preimage)),
-            Some(Err(e)) => {
-                return Err(ReceivePaymentError::Generic {
-                    err: format!("Invalid preimage given: {e}"),
-                })
-            }
-            None => None,
-        };
-
-        let invoice =
-            self.create_invoice(amount_msat, opening_fee_msat, description, preimage, expiry)?;
-        info!("Invoice created {invoice}");
-        let ln_invoice = parse_invoice(&invoice)?;
-
-        Ok(ReceivePaymentResponse {
-            ln_invoice,
-            opening_fee_params,
-            opening_fee_msat,
-        })
     }
 }
 
