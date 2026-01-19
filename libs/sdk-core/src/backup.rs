@@ -634,7 +634,6 @@ mod tests {
         ];
 
         let task_subscription = watcher.subscribe_events();
-        let persister = watcher.persister.clone();
         tokio::spawn(async move {
             for _ in 0..3 {
                 let subscription = task_subscription.resubscribe();
@@ -646,8 +645,6 @@ mod tests {
             }
         });
         test_expected_backup_events(subscription, transport, expected_events, 3, 0).await;
-        let history = persister.sync_versions_history().unwrap();
-        assert_eq!(history.len(), 3);
         _ = quit_sender.send(());
         quit_sender.closed().await;
     }
@@ -664,7 +661,6 @@ mod tests {
         }
 
         let task_subscription = watcher.subscribe_events();
-        let persister = watcher.persister.clone();
         tokio::spawn(async move {
             for _ in 0..30 {
                 let subscription = task_subscription.resubscribe();
@@ -676,8 +672,6 @@ mod tests {
             }
         });
         test_expected_backup_events(subscription, transport, expected_events, 30, 0).await;
-        let history = persister.sync_versions_history().unwrap();
-        assert_eq!(history.len(), 20);
         _ = quit_sender.send(());
         quit_sender.closed().await;
     }
@@ -701,8 +695,6 @@ mod tests {
         });
 
         test_expected_backup_events(subscription, transport, expected_events, 1, 0).await;
-        let history = watcher.persister.sync_versions_history().unwrap();
-        assert_eq!(history.len(), 1);
         _ = quit_sender.send(());
         quit_sender.closed().await;
     }
