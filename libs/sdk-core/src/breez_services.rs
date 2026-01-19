@@ -2228,20 +2228,11 @@ impl BreezServicesBuilder {
             ])
             .await?;
 
-        // We calculate the legacy key as a fallback for the case where the backup is still
-        // encrypted with the old key.
-        let legacy_backup_encryption_key = unwrapped_node_api
-            .legacy_derive_bip32_key(vec![
-                ChildNumber::from_hardened_idx(139)?,
-                ChildNumber::from(0),
-            ])
-            .await?;
         let backup_watcher = BackupWatcher::new(
             self.config.clone(),
             unwrapped_backup_transport.clone(),
             persister.clone(),
             backup_encryption_key.to_priv().to_bytes(),
-            legacy_backup_encryption_key.to_priv().to_bytes(),
         );
 
         // Ensure breez server connection is established in the background
