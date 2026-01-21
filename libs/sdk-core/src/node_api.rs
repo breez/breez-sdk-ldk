@@ -11,6 +11,7 @@ use sdk_common::prelude::*;
 
 use crate::{
     bitcoin::bip32::{ChildNumber, Xpriv},
+    error::ReceivePaymentError,
     persist::error::PersistError,
     CustomMessage, LnUrlAuthError, MaxChannelAmount, Payment, PaymentType, PaymentDetails,
     LnPaymentDetails, PaymentStatus, PaymentResponse, PrepareRedeemOnchainFundsRequest,
@@ -97,15 +98,13 @@ impl From<NodeError> for LnUrlAuthError {
     }
 }
 
-#[allow(dead_code)]
 pub struct CreateInvoiceRequest {
     pub amount_msat: u64,
     pub description: String,
-    pub payer_amount_msat: Option<u64>,
-    pub preimage: Option<Vec<u8>>,
     pub use_description_hash: Option<bool>,
-    pub expiry: Option<u32>,
-    pub cltv: Option<u32>,
+    pub preimage: Option<Vec<u8>>,
+	pub opening_fee_msat: Option<u64>,
+    pub expiry: u32,
 }
 
 pub struct FetchBolt11Result {
@@ -165,6 +164,8 @@ impl TryFrom<IncomingPayment> for Payment {
 pub trait NodeAPI: Send + Sync {
     async fn configure_node(&self, close_to_address: Option<String>) -> NodeResult<()>;
     async fn delete_invoice(&self, bolt11: String) -> NodeResult<()>;
+    fn max_receivable_single_payment_msat(&self) -> Result<u64, ReceivePaymentError>;
+    async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String>;
     /// Fetches an existing BOLT11 invoice from the node
     async fn fetch_bolt11(&self, payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>>;
     async fn pull_changed(
