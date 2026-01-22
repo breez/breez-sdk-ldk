@@ -36,7 +36,6 @@ use crate::models::{
     INVOICE_PAYMENT_FEE_EXPIRY_SECONDS,
 };
 use crate::node_api::NodeAPI;
-use crate::persist::cache::NodeStateStorage;
 use crate::persist::db::SqliteStorage;
 use crate::persist::swap::SwapStorage;
 use crate::persist::transactions::PaymentStorage;
@@ -519,35 +518,29 @@ impl BreezServices {
     /// - [ReportIssueRequest::PaymentFailure] sends a payment failure report to the Support API
     ///   using the provided `payment_hash` to lookup the failed payment and the current [NodeState].
     pub async fn report_issue(&self, req: ReportIssueRequest) -> SdkResult<()> {
-        match self.persister.get_node_state()? {
-            Some(node_state) => match req {
-                ReportIssueRequest::PaymentFailure { data } => {
-                    let payment = self
-                        .persister
-                        .get_payment_by_hash(&data.payment_hash)?
-                        .ok_or(SdkError::Generic {
-                            err: "Payment not found".into(),
-                        })?;
-                    let lsp_id = self.persister.get_lsp_id()?;
+        let node_state = self.node_api.get_node_state().await;
+        match req {
+            ReportIssueRequest::PaymentFailure { data } => {
+                let payment = self
+                    .persister
+                    .get_payment_by_hash(&data.payment_hash)?
+                    .ok_or(SdkError::Generic {
+                        err: "Payment not found".into(),
+                    })?;
+                let lsp_id = self.persister.get_lsp_id()?;
 
-                    self.support_api
-                        .report_payment_failure(node_state, payment, lsp_id, data.comment)
-                        .await
-                }
-            },
-            None => Err(SdkError::Generic {
-                err: "Node state not found".into(),
-            }),
+                self.support_api
+                    .report_payment_failure(node_state, payment, lsp_id, data.comment)
+                    .await
+            }
         }
     }
 
     /// Retrieve the node state from the persistent storage.
     ///
     /// Fail if it could not be retrieved or if `None` was found.
-    pub fn node_info(&self) -> SdkResult<NodeState> {
-        self.persister.get_node_state()?.ok_or(SdkError::Generic {
-            err: "Node info not found".into(),
-        })
+    pub async fn node_info(&self) -> NodeState {
+        self.node_api.get_node_state().await
     }
 
     /// Sign given message with the private key of the node id. Returns a zbase
@@ -647,7 +640,7 @@ impl BreezServices {
 
     /// List available LSPs that can be selected by the user
     pub async fn list_lsps(&self) -> SdkResult<Vec<LspInformation>> {
-        self.lsp_api.list_lsps(self.node_info()?.id).await
+        self.lsp_api.list_lsps(self.node_info().await.id).await
     }
 
     /// Select the LSP to be used and provide inbound liquidity
@@ -676,7 +669,7 @@ impl BreezServices {
 
     /// Convenience method to look up [LspInformation] for a given LSP ID
     pub async fn fetch_lsp_info(&self, id: String) -> SdkResult<Option<LspInformation>> {
-        get_lsp_by_id(self.persister.clone(), self.lsp_api.clone(), id.as_str()).await
+        get_lsp_by_id(self.node_info().await.id, self.lsp_api.clone(), id.as_str()).await
     }
 
     /// Gets the fees required to open a channel for a given amount.
@@ -690,7 +683,7 @@ impl BreezServices {
             .cheapest_open_channel_fee(req.expiry.unwrap_or(INVOICE_PAYMENT_FEE_EXPIRY_SECONDS))?
             .clone();
 
-        let node_state = self.node_info()?;
+        let node_state = self.node_info().await;
         let fee_msat = req.amount_msat.map(|req_amount_msat| {
             match node_state.max_receivable_single_payment_amount_msat >= req_amount_msat {
                 // In case we have enough inbound liquidity we return zero fee.
@@ -1054,12 +1047,7 @@ impl BreezServices {
         let node_pubkey = self.node_api.node_id().await?;
         self.connect_lsp_peer(node_pubkey).await?;
 
-        let new_data = &self.node_api.pull_changed().await?;
-
-        // update node state and channels state
-        self.persister.set_node_state(&new_data.node_state)?;
-
-        let payments = new_data.payments.clone();
+        let payments = self.node_api.list_payments().await?;
 
         self.persister.delete_pseudo_payments()?;
         self.persister.insert_or_update_payments(&payments, false)?;
@@ -1086,14 +1074,12 @@ impl BreezServices {
         };
 
         self.persister.set_lsp(lsp.id, Some(lsp.pubkey.clone()))?;
-        let node_state = match self.node_info() {
-            Ok(node_state) => node_state,
-            Err(_) => return Ok(()),
-        };
 
         let node_id = lsp.pubkey;
         let address = lsp.host;
-        let lsp_connected = node_state
+        let lsp_connected = self
+            .node_info()
+            .await
             .connected_peers
             .iter()
             .any(|e| e == node_id.as_str());
@@ -1213,15 +1199,20 @@ impl BreezServices {
             debug!("btc_send_swapper failed to process event {e:?}: {err:?}")
         };
 
-        if self.event_listener.is_some() {
-            self.event_listener.as_ref().unwrap().on_event(e.clone())
+        if let Some(ref event_listener) = self.event_listener {
+            event_listener.on_event(e.clone())
         }
         Ok(())
     }
 
     /// Convenience method to look up LSP info based on current LSP ID
     pub async fn lsp_info(&self) -> SdkResult<LspInformation> {
-        get_lsp(self.persister.clone(), self.lsp_api.clone()).await
+        get_lsp(
+            self.node_info().await.id,
+            self.persister.clone(),
+            self.lsp_api.clone(),
+        )
+        .await
     }
 
     /// Get the recommended fees for onchain transactions
@@ -1287,19 +1278,9 @@ impl BreezServices {
         let (shutdown_signer_sender, signer_signer_receiver) = watch::channel(());
         self.start_signer(signer_signer_receiver).await;
 
-        // Sync node state
-        match self.persister.get_node_state()? {
-            Some(node) => {
-                info!("Starting existing node {}", node.id);
-                self.connect_lsp_peer(node.id).await?;
-            }
-            None => {
-                // In case it is a first run we sync in foreground to get the node state.
-                info!("First run, syncing in foreground");
-                self.sync().await?;
-                info!("First run, finished running syncing in foreground");
-            }
-        }
+        let node = self.node_info().await;
+        info!("Starting node {}", node.id);
+        self.connect_lsp_peer(node.id).await?;
 
         // start backup watcher
         self.start_backup_watcher().await?;
@@ -1476,11 +1457,6 @@ impl BreezServices {
                             .persister
                             .insert_or_update_payments(std::slice::from_ref(p), false);
                         debug!("paid invoice was added to payments list {res:?}");
-                        if let Ok(Some(mut node_info)) = cloned.persister.get_node_state() {
-                            node_info.channels_balance_msat += p.amount_msat;
-                            let res = cloned.persister.set_node_state(&node_info);
-                            debug!("channel balance was updated {res:?}");
-                        }
                         payment = cloned
                             .persister
                             .get_payment_by_hash(&p.id)
@@ -1735,7 +1711,7 @@ impl BreezServices {
         // Attempt register call for all relevant LSPs
         let mut error_found = false;
         for lsp_info in get_notification_lsps(
-            self.persister.clone(),
+            self.node_info().await.id,
             self.lsp_api.clone(),
             self.node_api.clone(),
         )
@@ -1777,7 +1753,7 @@ impl BreezServices {
         // Attempt register call for all relevant LSPs
         let mut error_found = false;
         for lsp_info in get_notification_lsps(
-            self.persister.clone(),
+            self.node_info().await.id,
             self.lsp_api.clone(),
             self.node_api.clone(),
         )
@@ -1850,7 +1826,7 @@ impl BreezServices {
     async fn generate_sdk_diagnostic_data(&self) -> SdkResult<Value> {
         let (sdk_version, sdk_git_hash) = Self::get_sdk_version();
         let version = format!("SDK v{sdk_version} ({sdk_git_hash})");
-        let state = crate::serializer::value::to_value(&self.persister.get_node_state()?)?;
+        let state = crate::serializer::value::to_value(&self.node_api.get_node_state().await)?;
         let payments = crate::serializer::value::to_value(
             &self
                 .persister
@@ -2137,7 +2113,6 @@ impl BreezServicesBuilder {
             network: self.config.network.into(),
             node_api: unwrapped_node_api.clone(),
             payment_receiver: receiver.clone(),
-            node_state_storage: persister.clone(),
             segwit_swapper_api: self
                 .swapper_api
                 .clone()
@@ -2211,6 +2186,7 @@ pub fn mnemonic_to_seed(phrase: String) -> Result<Vec<u8>> {
 
 /// Convenience method to look up LSP info based on current LSP ID
 pub(crate) async fn get_lsp(
+    node_pubkey: String,
     persister: Arc<SqliteStorage>,
     lsp_api: Arc<dyn LspAPI>,
 ) -> SdkResult<LspInformation> {
@@ -2218,31 +2194,23 @@ pub(crate) async fn get_lsp(
         .get_lsp_id()?
         .ok_or(SdkError::generic("No LSP ID found"))?;
 
-    get_lsp_by_id(persister, lsp_api, lsp_id.as_str())
+    get_lsp_by_id(node_pubkey, lsp_api, lsp_id.as_str())
         .await?
         .ok_or_else(|| SdkError::Generic {
             err: format!("No LSP found for id {lsp_id}"),
         })
 }
 
-async fn get_lsps(
-    persister: Arc<SqliteStorage>,
-    lsp_api: Arc<dyn LspAPI>,
-) -> SdkResult<Vec<LspInformation>> {
-    let node_pubkey = persister
-        .get_node_state()?
-        .ok_or(SdkError::generic("Node info not found"))?
-        .id;
-
+async fn get_lsps(node_pubkey: String, lsp_api: Arc<dyn LspAPI>) -> SdkResult<Vec<LspInformation>> {
     lsp_api.list_lsps(node_pubkey).await
 }
 
 async fn get_lsp_by_id(
-    persister: Arc<SqliteStorage>,
+    node_pubkey: String,
     lsp_api: Arc<dyn LspAPI>,
     lsp_id: &str,
 ) -> SdkResult<Option<LspInformation>> {
-    Ok(get_lsps(persister, lsp_api)
+    Ok(get_lsps(node_pubkey, lsp_api)
         .await?
         .into_iter()
         .find(|lsp| lsp.id.as_str() == lsp_id))
@@ -2251,14 +2219,10 @@ async fn get_lsp_by_id(
 /// Convenience method to get all LSPs (active and historical) relevant for registering or
 /// unregistering webhook notifications
 async fn get_notification_lsps(
-    persister: Arc<SqliteStorage>,
+    node_pubkey: String,
     lsp_api: Arc<dyn LspAPI>,
     node_api: Arc<dyn NodeAPI>,
 ) -> SdkResult<Vec<LspInformation>> {
-    let node_pubkey = persister
-        .get_node_state()?
-        .ok_or(SdkError::generic("Node info not found"))?
-        .id;
     let mut open_peers = None;
 
     let mut notification_lsps = vec![];
@@ -2589,7 +2553,7 @@ pub(crate) mod tests {
             .await?;
 
         breez_services.sync().await?;
-        let fetched_state = breez_services.node_info()?;
+        let fetched_state = breez_services.node_info().await;
         assert_eq!(fetched_state, dummy_node_state);
 
         let all = breez_services
@@ -2656,7 +2620,7 @@ pub(crate) mod tests {
             .map_err(|e| anyhow!("Failed to get the BreezServices: {e}"))?;
         breez_services.sync().await?;
 
-        let node_pubkey = breez_services.node_info()?.id;
+        let node_pubkey = breez_services.node_info().await.id;
         let lsps = breez_services.lsp_api.list_lsps(node_pubkey).await?;
         assert_eq!(lsps.len(), 1);
 

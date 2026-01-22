@@ -23,10 +23,7 @@ use crate::{
     chain::ChainService,
     error::ReceivePaymentError,
     node_api::{FetchBolt11Result, NodeAPI},
-    persist::{
-        cache::NodeStateStorage, error::PersistResult, swap::SwapStorage,
-        transactions::PaymentStorage,
-    },
+    persist::{error::PersistResult, swap::SwapStorage, transactions::PaymentStorage},
     receiver::Receiver,
     BreezEvent, ListSwapsRequest, OpeningFeeParams, PrepareRefundRequest, PrepareRefundResponse,
     ReceivePaymentRequest, RefundRequest, RefundResponse, SwapInfo, SwapStatus, SwapperAPI,
@@ -197,7 +194,6 @@ pub(crate) struct BTCReceiveSwap {
     current_tip: Mutex<u32>,
     network: Network,
     node_api: Arc<dyn NodeAPI>,
-    node_state_storage: Arc<dyn NodeStateStorage>,
     payment_receiver: Arc<dyn Receiver>,
     segwit: SegwitReceiveSwap,
     status_changes_notifier: broadcast::Sender<BreezEvent>,
@@ -210,7 +206,6 @@ pub(crate) struct BTCReceiveSwapParameters {
     pub payment_storage: Arc<dyn PaymentStorage>,
     pub network: Network,
     pub node_api: Arc<dyn NodeAPI>,
-    pub node_state_storage: Arc<dyn NodeStateStorage>,
     pub payment_receiver: Arc<dyn Receiver>,
     pub segwit_swapper_api: Arc<dyn SwapperAPI>,
     pub swap_storage: Arc<dyn SwapStorage>,
@@ -225,7 +220,6 @@ impl BTCReceiveSwap {
             current_tip: Mutex::new(0),
             network: params.network,
             node_api: params.node_api,
-            node_state_storage: params.node_state_storage,
             payment_receiver: params.payment_receiver,
             segwit: SegwitReceiveSwap::new(params.segwit_swapper_api),
             status_changes_notifier: broadcast::channel(100).0,
@@ -240,10 +234,7 @@ impl BTCReceiveSwap {
         &self,
         opening_fee_params: OpeningFeeParams,
     ) -> ReceiveSwapResult<SwapInfo> {
-        let node_state = self
-            .node_state_storage
-            .get_node_state()?
-            .ok_or(ReceiveSwapError::NodeStateNotFound)?;
+        let node_state = self.node_api.get_node_state().await;
         // Calculate max_allowed_deposit based on absolute max and current node state
         let fn_max_allowed_deposit = |max_allowed_deposit_abs: i64| {
             std::cmp::min(
@@ -1240,9 +1231,7 @@ mod tests {
     use crate::{
         bitcoin::{Network, Weight},
         chain::{OnchainTx, TxStatus, Vin, Vout},
-        persist::{
-            cache::MockNodeStateStorage, swap::MockSwapStorage, transactions::MockPaymentStorage,
-        },
+        persist::{swap::MockSwapStorage, transactions::MockPaymentStorage},
         receiver::MockReceiver,
         swap_in::{
             swap::{compute_tx_fee, SwapOutput, SwapSpend},
@@ -1275,18 +1264,11 @@ mod tests {
     #[tokio::test]
     async fn test_create_swap_uses_unused_taproot_swap() {
         let mut swap_storage = MockSwapStorage::new();
-        let mut node_state_storage = MockNodeStateStorage::new();
         let completed_payment_storage = MockPaymentStorage::new();
         let node_state = NodeState {
             max_receivable_msat: 1_000_000_000,
             ..Default::default()
         };
-
-        let node_state_clone = node_state.clone();
-        // Setup persister expectations
-        node_state_storage
-            .expect_get_node_state()
-            .return_once(move || Ok(Some(node_state_clone)));
 
         let unused_swap = SwapInfo {
             bitcoin_address: TAPROOT_ADDRESS.to_string(),
@@ -1312,7 +1294,6 @@ mod tests {
             payment_storage: Arc::new(completed_payment_storage),
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
-            node_state_storage: Arc::new(node_state_storage),
             payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
@@ -1333,18 +1314,11 @@ mod tests {
     #[tokio::test]
     async fn test_create_swap_uses_unused_taproot_swap_new_balance() {
         let mut swap_storage = MockSwapStorage::new();
-        let mut node_state_storage = MockNodeStateStorage::new();
         let completed_payment_storage = MockPaymentStorage::new();
         let node_state = NodeState {
             max_receivable_msat: 100_000_000,
             ..Default::default()
         };
-
-        let node_state_clone = node_state.clone();
-        // Setup persister expectations
-        node_state_storage
-            .expect_get_node_state()
-            .return_once(move || Ok(Some(node_state_clone)));
 
         let unused_swap = SwapInfo {
             bitcoin_address: TAPROOT_ADDRESS.to_string(),
@@ -1373,7 +1347,6 @@ mod tests {
             payment_storage: Arc::new(completed_payment_storage),
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
-            node_state_storage: Arc::new(node_state_storage),
             payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
@@ -1394,18 +1367,11 @@ mod tests {
     #[tokio::test]
     async fn test_create_swap_creates_new_when_no_unused() {
         let mut swap_storage = MockSwapStorage::new();
-        let mut node_state_storage = MockNodeStateStorage::new();
         let completed_payment_storage = MockPaymentStorage::new();
         let node_state = NodeState {
             max_receivable_msat: 100_000_000,
             ..Default::default()
         };
-
-        let node_state_clone = node_state.clone();
-        // Setup persister expectations
-        node_state_storage
-            .expect_get_node_state()
-            .return_once(move || Ok(Some(node_state_clone)));
 
         swap_storage
             .expect_list_swaps()
@@ -1422,7 +1388,6 @@ mod tests {
             payment_storage: Arc::new(completed_payment_storage),
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
-            node_state_storage: Arc::new(node_state_storage),
             payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
@@ -1532,7 +1497,6 @@ mod tests {
             payment_storage: Arc::new(completed_payment_storage),
             network: Network::Bitcoin,
             node_api: Arc::new(MockNodeAPI::new(node_state)),
-            node_state_storage: Arc::new(MockNodeStateStorage::new()),
             payment_receiver: Arc::new(MockReceiver::new()),
             segwit_swapper_api: Arc::new(MockSwapperAPI {}),
             swap_storage: Arc::new(swap_storage),
