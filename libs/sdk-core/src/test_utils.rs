@@ -33,7 +33,7 @@ use crate::bitcoin::secp256k1::{Message, PublicKey, Secp256k1};
 use crate::bitcoin::taproot::{TaprootBuilder, TaprootSpendInfo};
 use crate::bitcoin::{key::XOnlyPublicKey, Address, Network, ScriptBuf, Sequence};
 use crate::buy::BuyBitcoinApi;
-use crate::chain::{ChainService, OnchainTx, Outspend, RecommendedFees, TxStatus};
+use crate::chain::{ChainService, OnchainTx, RecommendedFees};
 use crate::error::{ReceivePaymentError, SdkError, SdkResult};
 use crate::invoice::{InvoiceError, InvoiceResult};
 use crate::lightning::bitcoin::hashes as ldk_hashes;
@@ -216,20 +216,6 @@ impl ChainService for MockChainService {
         Ok(self.tip)
     }
 
-    async fn transaction_outspends(&self, _txid: String) -> SdkResult<Vec<Outspend>> {
-        Ok(vec![Outspend {
-            spent: true,
-            txid: Some("test-tx-id".into()),
-            vin: Some(0),
-            status: Some(TxStatus {
-                confirmed: true,
-                block_height: Some(123),
-                block_hash: Some("test-hash".into()),
-                block_time: Some(123),
-            }),
-        }])
-    }
-
     async fn broadcast_transaction(&self, _tx: Vec<u8>) -> SdkResult<String> {
         let mut array = [0; 32];
         rand::thread_rng().fill(&mut array);
@@ -290,13 +276,8 @@ impl NodeAPI for MockNodeAPI {
         Ok(invoice.bolt11)
     }
 
-    async fn pull_changed(
-        &self,
-        _sync_state: Option<Value>,
-        _match_local_balance: bool,
-    ) -> NodeResult<SyncResponse> {
+    async fn pull_changed(&self) -> NodeResult<SyncResponse> {
         Ok(SyncResponse {
-            sync_state: Value::Null,
             node_state: self.node_state.clone(),
             payments: self
                 .cloud_payments
@@ -306,7 +287,6 @@ impl NodeAPI for MockNodeAPI {
                 .cloned()
                 .flat_map(TryInto::try_into)
                 .collect(),
-            channels: Vec::new(),
         })
     }
 
@@ -374,10 +354,6 @@ impl NodeAPI for MockNodeAPI {
         &self,
     ) -> NodeResult<Pin<Box<dyn Stream<Item = IncomingPayment> + Send>>> {
         Err(NodeError::Generic("Not implemented".to_string()))
-    }
-
-    async fn static_backup(&self) -> NodeResult<Vec<String>> {
-        Ok(Vec::new())
     }
 
     async fn generate_diagnostic_data(&self) -> NodeResult<Value> {

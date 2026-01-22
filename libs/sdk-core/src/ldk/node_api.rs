@@ -197,11 +197,7 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    async fn pull_changed(
-        &self,
-        _sync_state: Option<Value>,
-        _match_local_balance: bool,
-    ) -> NodeResult<SyncResponse> {
+    async fn pull_changed(&self) -> NodeResult<SyncResponse> {
         self.node.sync_wallets()?;
         let node = &*self.node;
         let local_node_id = node.node_id();
@@ -211,10 +207,8 @@ impl NodeAPI for Ldk {
             .map(|p| convert_payment(p, &local_node_id, &self.store))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(SyncResponse {
-            sync_state: Value::Null,
             node_state: node.into(),
             payments,
-            channels: Vec::new(),
         })
     }
 
@@ -361,10 +355,6 @@ impl NodeAPI for Ldk {
                 .ok()
         });
         Ok(Box::pin(stream))
-    }
-
-    async fn static_backup(&self) -> NodeResult<Vec<String>> {
-        Err(NodeError::generic("LDK implementation not yet available"))
     }
 
     async fn generate_diagnostic_data(&self) -> NodeResult<Value> {

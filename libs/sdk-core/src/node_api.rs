@@ -168,11 +168,7 @@ pub trait NodeAPI: Send + Sync {
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String>;
     /// Fetches an existing BOLT11 invoice from the node
     async fn fetch_bolt11(&self, payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>>;
-    async fn pull_changed(
-        &self,
-        sync_state: Option<Value>,
-        match_local_balance: bool,
-    ) -> NodeResult<SyncResponse>;
+    async fn pull_changed(&self) -> NodeResult<SyncResponse>;
     /// As per the `pb::PayRequest` docs, `amount_msat` is only needed when the invoice doesn't specify an amount
     async fn send_payment(
         &self,
@@ -214,7 +210,6 @@ pub trait NodeAPI: Send + Sync {
     async fn stream_incoming_payments(
         &self,
     ) -> NodeResult<Pin<Box<dyn Stream<Item = IncomingPayment> + Send>>>;
-    async fn static_backup(&self) -> NodeResult<Vec<String>>;
     async fn generate_diagnostic_data(&self) -> NodeResult<Value>;
     async fn sign_message(&self, message: &str) -> NodeResult<String>;
     async fn check_message(&self, message: &str, pubkey: &str, signature: &str)
