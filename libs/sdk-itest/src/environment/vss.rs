@@ -11,7 +11,6 @@ use crate::environment::{ApiCredentials, EnvironmentId};
 const IMAGE_NAME: &str = "vss";
 const IMAGE_TAG: &str = "latest";
 const RPC_PORT: u16 = 3080;
-const CONFIG_PATH: &str = "/etc/vss-server.toml";
 
 pub struct Vss {
     pub api: ApiCredentials,
@@ -30,8 +29,6 @@ impl Vss {
             .start()
             .await?;
         let postgres_host = postgres.get_bridge_ip_address().await?.to_string();
-        let config = include_str!("../../docker/vss-server.toml.template")
-            .replace("{postgres_host}", &postgres_host);
 
         let container = GenericImage::new(IMAGE_NAME, IMAGE_TAG)
             .with_exposed_port(RPC_PORT.into())
@@ -42,8 +39,12 @@ impl Vss {
             )))
             .with_network(environment_id.network_name())
             .with_log_consumer(TracingConsumer::new("vss-server"))
-            .with_copy_to(CONFIG_PATH, config.as_bytes().to_vec())
-            .with_cmd([CONFIG_PATH])
+            .with_env_var("VSS_BIND_ADDRESS", format!("0.0.0.0:{RPC_PORT}"))
+            .with_env_var("VSS_PSQL_ADDRESS", format!("{postgres_host}:5432"))
+            .with_env_var("VSS_PSQL_DEFAULT_DB", "postgres")
+            .with_env_var("VSS_PSQL_PASSWORD", "postgres")
+            .with_env_var("VSS_PSQL_USERNAME", "postgres")
+            .with_env_var("VSS_PSQL_VSS_DB", "postgres")
             .start()
             .await?;
 
