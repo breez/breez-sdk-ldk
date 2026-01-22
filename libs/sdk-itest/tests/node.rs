@@ -78,11 +78,8 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
 
-    let node_pubkey = services.node_info().unwrap().id;
+    let node_pubkey = services.node_info().await.id;
     let lnd_pubkey = lnd.get_id().await.unwrap();
-
-    info!("Waiting for BreezEvent::Synced...");
-    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
 
     // Receiving a JIT payment.
     let huge_amount_msat = 10_000_000;
@@ -104,7 +101,7 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
-    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    let balance_msat = services.node_info().await.channels_balance_msat;
     assert_eq!(balance_msat, huge_amount_msat - opening_fee_msat);
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 1);
@@ -138,9 +135,7 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
-    info!("Waiting for BreezEvent::Synced...");
-    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
-    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    let balance_msat = services.node_info().await.channels_balance_msat;
     assert_eq!(
         balance_msat,
         huge_amount_msat - opening_fee_msat + small_amount_msat

@@ -42,7 +42,7 @@ use crate::lightning_invoice::{Currency, InvoiceBuilder, PaymentSecret, RawBolt1
 use crate::lsp::LspInformation;
 use crate::models::{
     LnPaymentDetails, LspAPI, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType,
-    ReverseSwapServiceAPI, SwapperAPI, SyncResponse, TlvEntry,
+    ReverseSwapServiceAPI, SwapperAPI, TlvEntry,
 };
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
@@ -249,8 +249,8 @@ pub struct MockNodeAPI {
     /// Simulated repository of confirmed new outgoing payments.
     ///
     /// Each call to [MockNodeAPI::add_dummy_payment_for] will add the new payment here such that
-    /// [NodeAPI::pull_changed], which is called in [BreezServices::sync], always retrieves the newly
-    /// added test payments
+    /// [NodeAPI::list_payments], which is called in [BreezServices::sync], always retrieves the newly
+    /// added test payments.
     cloud_payments: Mutex<Vec<Payment>>,
     node_state: NodeState,
     on_send_custom_message: Box<dyn Fn(CustomMessage) -> NodeResult<()> + Sync + Send>,
@@ -276,18 +276,19 @@ impl NodeAPI for MockNodeAPI {
         Ok(invoice.bolt11)
     }
 
-    async fn pull_changed(&self) -> NodeResult<SyncResponse> {
-        Ok(SyncResponse {
-            node_state: self.node_state.clone(),
-            payments: self
-                .cloud_payments
-                .lock()
-                .await
-                .iter()
-                .cloned()
-                .flat_map(TryInto::try_into)
-                .collect(),
-        })
+    async fn get_node_state(&self) -> NodeState {
+        self.node_state.clone()
+    }
+
+    async fn list_payments(&self) -> NodeResult<Vec<Payment>> {
+        Ok(self
+            .cloud_payments
+            .lock()
+            .await
+            .iter()
+            .cloned()
+            .flat_map(TryInto::try_into)
+            .collect())
     }
 
     async fn send_pay(&self, _bolt11: String, _max_hops: u32) -> NodeResult<PaymentResponse> {
@@ -414,7 +415,7 @@ impl MockNodeAPI {
     /// global state.
     ///
     /// This payment and its details are retrieved and stored within [crate::BreezServices::sync]
-    /// by a combination of [NodeAPI::pull_changed] and [crate::persist::db::SqliteStorage::insert_or_update_payments].
+    /// by a combination of [NodeAPI::list_payments] and [crate::persist::db::SqliteStorage::insert_or_update_payments].
     pub(crate) async fn add_dummy_payment_for(
         &self,
         bolt11: String,
@@ -480,7 +481,7 @@ impl MockNodeAPI {
         self.save_payment_for_future_sync_updates(payment).await
     }
 
-    /// Include payment in the result of [MockNodeAPI::pull_changed].
+    /// Include payment in the result of [MockNodeAPI::pull_payments].
     async fn save_payment_for_future_sync_updates(&self, payment: Payment) -> Payment {
         let mut cloud_payments = self.cloud_payments.lock().await;
 
