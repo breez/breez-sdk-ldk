@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -5,27 +6,25 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use bitcoin::bip32::{ChildNumber, Xpriv};
-use bitcoin::secp256k1::Secp256k1;
+use bitcoin::secp256k1::{PublicKey, Secp256k1};
 use hex::ToHex;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use sdk_common::bitcoin::hashes::sha256::Hash as Sha256;
-use sdk_common::bitcoin::hashes::Hash;
 use sdk_common::prelude::Network;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc;
 use vss_client_ng::client::VssClient;
 use vss_client_ng::error::VssError;
+use vss_client_ng::headers::sigs_auth::SigsAuthProvider;
 use vss_client_ng::util::retry::{
     ExponentialBackoffRetryPolicy, FilteredRetryPolicy, JitteredRetryPolicy,
     MaxAttemptsRetryPolicy, MaxTotalDelayRetryPolicy, RetryPolicy,
 };
-use vss_signing_auth::HeaderProvider;
 
 use crate::ldk::store::{PreviousHolder, VssStore};
-use crate::node_api::{NodeError, NodeResult};
+use crate::node_api::NodeResult;
 use crate::persist::error::PersistError;
 use crate::Config;
 
@@ -40,27 +39,32 @@ pub(crate) type LockingStore = crate::ldk::store::LockingStore<VssStore<CustomRe
 pub(crate) type MirroringStore = crate::ldk::store::MirroringStore<Arc<LockingStore>, LockingStore>;
 
 const VSS_HARDENED_CHILD_INDEX: u32 = 877;
+const API_KEY_HEADER: &str = "X-Api-Key";
+const USER_PUBKEY_HEADER: &str = "X-Pubkey";
 
 pub(crate) fn build_vss_store(
     config: &Config,
     seed: &[u8],
     store_id: &str,
 ) -> NodeResult<VssStore<CustomRetryPolicy>> {
+    let secp = Secp256k1::new();
     let bitcoin_network: bitcoin::Network = config.network.into();
     let xprv = Xpriv::new_master(bitcoin_network, seed)?.derive_priv(
-        &Secp256k1::new(),
+        &secp,
         &[ChildNumber::Hardened {
             index: VSS_HARDENED_CHILD_INDEX,
         }],
     )?;
+    let private_key = xprv.private_key;
+    let pubkey = PublicKey::from_secret_key(&secp, &private_key);
+    let pubkey_hex = pubkey.serialize().encode_hex::<String>();
 
     let vss_seed = xprv.private_key.secret_bytes();
     let store_id = match config.network {
         Network::Regtest => {
             // Regtest instance of VSS does not implement authentication,
-            // that is why the hash of the seed is used to avoid collisions.
-            let seed_hash = Sha256::hash(&vss_seed).encode_hex::<String>();
-            format!("{seed_hash}/{store_id}")
+            // that is why the pubkey is used to avoid collisions.
+            format!("{pubkey_hex}/{store_id}")
         }
         _ => store_id.to_string(),
     };
@@ -79,8 +83,11 @@ pub(crate) fn build_vss_store(
         }) as _);
 
     let api_key = config.api_key.clone().unwrap_or_default();
-    let header_provider = HeaderProvider::new(seed, config.network.into(), api_key)
-        .map_err(|e| NodeError::Generic(format!("Failed to build VSS header provider: {e}")))?;
+    let headers = HashMap::from([
+        (API_KEY_HEADER.to_string(), api_key),
+        (USER_PUBKEY_HEADER.to_string(), pubkey_hex),
+    ]);
+    let header_provider = SigsAuthProvider::new(private_key, headers);
     let header_provider = Arc::new(header_provider);
 
     let vss_client =
