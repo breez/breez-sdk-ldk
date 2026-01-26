@@ -367,12 +367,6 @@ impl SdkError {
             err: err.to_string(),
         }
     }
-
-    pub(crate) fn service_connectivity(err: &str) -> Self {
-        Self::ServiceConnectivity {
-            err: err.to_string(),
-        }
-    }
 }
 
 impl From<ServiceConnectivityError> for SdkError {

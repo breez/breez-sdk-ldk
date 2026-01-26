@@ -19,10 +19,7 @@ use tokio::time::{sleep, MissedTickBehavior};
 
 use crate::backup::{BackupRequest, BackupTransport, BackupWatcher};
 use crate::buy::{BuyBitcoinApi, BuyBitcoinService};
-use crate::chain::{
-    ChainService, RecommendedFees, RedundantChainService, RedundantChainServiceTrait,
-    DEFAULT_MEMPOOL_SPACE_URL,
-};
+use crate::chain::{ChainService, MempoolSpace, RecommendedFees, DEFAULT_MEMPOOL_SPACE_URL};
 use crate::error::{
     ConnectError, ReceiveOnchainError, ReceiveOnchainResult, ReceivePaymentError,
     RedeemOnchainResult, SdkError, SdkResult, SendOnchainError, SendPaymentError,
@@ -1306,8 +1303,6 @@ impl BreezServices {
             shutdown_signer_sender.closed().await;
         });
 
-        self.init_chainservice_urls().await?;
-
         Ok(())
     }
 
@@ -1524,29 +1519,6 @@ impl BreezServices {
                 current_block = next_block
             }
         });
-    }
-
-    async fn init_chainservice_urls(&self) -> Result<()> {
-        let breez_server = Arc::new(BreezServer::new(
-            PRODUCTION_BREEZSERVER_URL.to_string(),
-            None,
-        )?);
-        let persister = &self.persister;
-
-        let cloned_breez_server = breez_server.clone();
-        let cloned_persister = persister.clone();
-        tokio::spawn(async move {
-            match cloned_breez_server.fetch_mempoolspace_urls().await {
-                Ok(fresh_urls) => {
-                    if let Err(e) = cloned_persister.set_mempoolspace_base_urls(fresh_urls) {
-                        error!("Failed to cache mempool.space URLs: {e}");
-                    }
-                }
-                Err(e) => error!("Failed to fetch mempool.space URLs: {e}"),
-            }
-        });
-
-        Ok(())
     }
 
     /// Configures a global SDK logger that will log to file and will forward log events to
@@ -2078,28 +2050,14 @@ impl BreezServicesBuilder {
         };
 
         // mempool space is used to monitor the chain
-        let mempoolspace_urls = match self.config.mempoolspace_url.clone() {
-            None => {
-                let cached = persister.get_mempoolspace_base_urls()?;
-                match cached.len() {
-                    // If we have no cached values, or we cached an empty list, fetch new ones
-                    0 => {
-                        let fresh_urls = breez_server
-                            .fetch_mempoolspace_urls()
-                            .await
-                            .unwrap_or(vec![DEFAULT_MEMPOOL_SPACE_URL.into()]);
-                        persister.set_mempoolspace_base_urls(fresh_urls.clone())?;
-                        fresh_urls
-                    }
-                    // If we already have cached values, return those
-                    _ => cached,
-                }
-            }
-            Some(mempoolspace_url_from_config) => vec![mempoolspace_url_from_config],
-        };
-        let chain_service = Arc::new(RedundantChainService::from_base_urls(
+        let mempoolspace_url = self
+            .config
+            .mempoolspace_url
+            .as_deref()
+            .unwrap_or(DEFAULT_MEMPOOL_SPACE_URL);
+        let chain_service = Arc::new(MempoolSpace::from_base_url(
             rest_client.clone(),
-            mempoolspace_urls,
+            mempoolspace_url,
         ));
 
         let receiver: Arc<dyn Receiver> = Arc::new(PaymentReceiver::new(

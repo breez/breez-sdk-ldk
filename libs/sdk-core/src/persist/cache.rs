@@ -2,7 +2,6 @@ use super::{db::SqliteStorage, error::PersistResult};
 
 const KEY_LAST_BACKUP_TIME: &str = "last_backup_time";
 const KEY_WEBHOOK_URL: &str = "webhook_url";
-const KEY_MEMPOOLSPACE_BASE_URLS: &str = "mempoolspace_base_urls";
 
 impl SqliteStorage {
     pub fn get_cached_item(&self, key: &str) -> PersistResult<Option<String>> {
@@ -50,23 +49,6 @@ impl SqliteStorage {
 
     pub fn get_webhook_url(&self) -> PersistResult<Option<String>> {
         self.get_cached_item(KEY_WEBHOOK_URL)
-    }
-
-    pub fn set_mempoolspace_base_urls(
-        &self,
-        mempool_space_endpoints: Vec<String>,
-    ) -> PersistResult<()> {
-        let serialized = serde_json::to_string(&mempool_space_endpoints)?;
-        self.update_cached_item(KEY_MEMPOOLSPACE_BASE_URLS, serialized)
-    }
-
-    pub fn get_mempoolspace_base_urls(&self) -> PersistResult<Vec<String>> {
-        let res = match self.get_cached_item(KEY_MEMPOOLSPACE_BASE_URLS)? {
-            Some(str) => serde_json::from_str(str.as_str())?,
-            None => vec![],
-        };
-
-        Ok(res)
     }
 }
 

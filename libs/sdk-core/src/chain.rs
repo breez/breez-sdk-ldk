@@ -21,85 +21,6 @@ pub trait ChainService: Send + Sync {
     async fn broadcast_transaction(&self, tx: Vec<u8>) -> SdkResult<String>;
 }
 
-pub trait RedundantChainServiceTrait: ChainService {
-    fn from_base_urls(rest_client: Arc<dyn RestClient>, base_urls: Vec<String>) -> Self;
-}
-
-#[derive(Clone)]
-pub struct RedundantChainService {
-    instances: Vec<MempoolSpace>,
-}
-impl RedundantChainServiceTrait for RedundantChainService {
-    fn from_base_urls(rest_client: Arc<dyn RestClient>, base_urls: Vec<String>) -> Self {
-        Self {
-            instances: base_urls
-                .iter()
-                .map(|url: &String| url.trim_end_matches('/'))
-                .map(|url| MempoolSpace::from_base_url(rest_client.clone(), url))
-                .collect(),
-        }
-    }
-}
-
-#[tonic::async_trait]
-impl ChainService for RedundantChainService {
-    async fn recommended_fees(&self) -> SdkResult<RecommendedFees> {
-        for inst in &self.instances {
-            match inst.recommended_fees().await {
-                Ok(res) => {
-                    return Ok(res);
-                }
-                Err(e) => error!("Call to chain service {} failed: {e}", inst.base_url),
-            }
-        }
-        Err(SdkError::service_connectivity(
-            "All chain service instances failed",
-        ))
-    }
-
-    async fn address_transactions(&self, address: String) -> SdkResult<Vec<OnchainTx>> {
-        for inst in &self.instances {
-            match inst.address_transactions(address.clone()).await {
-                Ok(res) => {
-                    return Ok(res);
-                }
-                Err(e) => error!("Call to chain service {} failed: {e}", inst.base_url),
-            }
-        }
-        Err(SdkError::service_connectivity(
-            "All chain service instances failed",
-        ))
-    }
-
-    async fn current_tip(&self) -> SdkResult<u32> {
-        for inst in &self.instances {
-            match inst.current_tip().await {
-                Ok(res) => {
-                    return Ok(res);
-                }
-                Err(e) => error!("Call to chain service {} failed: {e}", inst.base_url),
-            }
-        }
-        Err(SdkError::service_connectivity(
-            "All chain service instances failed",
-        ))
-    }
-
-    async fn broadcast_transaction(&self, tx: Vec<u8>) -> SdkResult<String> {
-        for inst in &self.instances {
-            match inst.broadcast_transaction(tx.clone()).await {
-                Ok(res) => {
-                    return Ok(res);
-                }
-                Err(e) => error!("Call to chain service {} failed: {e}", inst.base_url),
-            }
-        }
-        Err(SdkError::service_connectivity(
-            "All chain service instances failed",
-        ))
-    }
-}
-
 #[derive(Clone)]
 pub struct Utxo {
     pub out: OutPoint,
@@ -179,7 +100,7 @@ pub(crate) fn get_utxos(
 #[derive(Clone)]
 pub(crate) struct MempoolSpace {
     rest_client: Arc<dyn RestClient>,
-    pub(crate) base_url: String,
+    base_url: String,
 }
 
 /// Wrapper containing the result of the recommended fees query, in sat/vByte, based on mempool.space data
@@ -310,9 +231,7 @@ impl ChainService for MempoolSpace {
 mod tests {
     use std::sync::Arc;
 
-    use crate::chain::{
-        MempoolSpace, OnchainTx, RedundantChainService, RedundantChainServiceTrait,
-    };
+    use crate::chain::{MempoolSpace, OnchainTx};
     use anyhow::Result;
     use sdk_common::prelude::{MockResponse, MockRestClient, RestClient};
     use serde_json::json;
@@ -364,63 +283,17 @@ mod tests {
             400,
             unreachable_response_body.to_string(),
         ));
-        mock_rest_client.add_response(MockResponse::new(
-            400,
-            unreachable_response_body.to_string(),
-        ));
-        mock_rest_client.add_response(MockResponse::new(200, response_body.to_string()));
-        mock_rest_client.add_response(MockResponse::new(
-            400,
-            unreachable_response_body.to_string(),
-        ));
-        mock_rest_client.add_response(MockResponse::new(
-            400,
-            unreachable_response_body.to_string(),
-        ));
-        mock_rest_client.add_response(MockResponse::new(
-            400,
-            unreachable_response_body.to_string(),
-        ));
-        mock_rest_client.add_response(MockResponse::new(
-            400,
-            unreachable_response_body.to_string(),
-        ));
         mock_rest_client.add_response(MockResponse::new(200, response_body.to_string()));
 
         let rest_client: Arc<dyn RestClient> = Arc::new(mock_rest_client);
 
-        let ms = RedundantChainService::from_base_urls(
+        let ms = MempoolSpace::from_base_url(
             rest_client.clone(),
-            vec!["https://mempool-url-unreachable.space/api/".into()],
+            "https://mempool-url-unreachable.space/api/",
         );
         assert!(ms.recommended_fees().await.is_err());
 
-        let ms = RedundantChainService::from_base_urls(
-            rest_client.clone(),
-            vec![
-                "https://mempool-url-unreachable.space/api/".into(),
-                "https://mempool.emzy.de/api/".into(),
-            ],
-        );
-        assert!(ms.recommended_fees().await.is_ok());
-
-        let ms = RedundantChainService::from_base_urls(
-            rest_client.clone(),
-            vec![
-                "https://mempool-url-unreachable.space/api/".into(),
-                "https://another-mempool-url-unreachable.space/api/".into(),
-            ],
-        );
-        assert!(ms.recommended_fees().await.is_err());
-
-        let ms = RedundantChainService::from_base_urls(
-            rest_client,
-            vec![
-                "https://mempool-url-unreachable.space/api/".into(),
-                "https://another-mempool-url-unreachable.space/api/".into(),
-                "https://mempool.emzy.de/api/".into(),
-            ],
-        );
+        let ms = MempoolSpace::from_base_url(rest_client.clone(), "https://mempool.emzy.de/api/");
         assert!(ms.recommended_fees().await.is_ok());
 
         Ok(())
