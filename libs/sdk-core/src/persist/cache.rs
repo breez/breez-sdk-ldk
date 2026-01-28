@@ -1,32 +1,8 @@
-use crate::models::NodeState;
-
 use super::{db::SqliteStorage, error::PersistResult};
 
 const KEY_LAST_BACKUP_TIME: &str = "last_backup_time";
-const KEY_NODE_STATE: &str = "node_state";
 const KEY_WEBHOOK_URL: &str = "webhook_url";
 const KEY_MEMPOOLSPACE_BASE_URLS: &str = "mempoolspace_base_urls";
-
-#[cfg_attr(test, mockall::automock)]
-pub(crate) trait NodeStateStorage: Send + Sync {
-    fn get_node_state(&self) -> PersistResult<Option<NodeState>>;
-    fn set_node_state(&self, state: &NodeState) -> PersistResult<()>;
-}
-
-impl NodeStateStorage for SqliteStorage {
-    fn set_node_state(&self, state: &NodeState) -> PersistResult<()> {
-        let serialized_state = serde_json::to_string(state)?;
-        self.update_cached_item(KEY_NODE_STATE, serialized_state)
-    }
-
-    fn get_node_state(&self) -> PersistResult<Option<NodeState>> {
-        let state_str = self.get_cached_item(KEY_NODE_STATE)?;
-        Ok(match state_str {
-            Some(str) => serde_json::from_str(str.as_str())?,
-            None => None,
-        })
-    }
-}
 
 impl SqliteStorage {
     pub fn get_cached_item(&self, key: &str) -> PersistResult<Option<String>> {

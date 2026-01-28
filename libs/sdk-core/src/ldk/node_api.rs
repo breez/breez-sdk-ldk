@@ -34,14 +34,13 @@ use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
 use crate::ldk::utils::Hex;
-use crate::models::{Config, LspAPI, OpeningFeeParams, OpeningFeeParamsMenu};
+use crate::models::{Config, LspAPI, NodeState, OpeningFeeParams, OpeningFeeParamsMenu};
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
 use crate::{
     CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
-    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop,
-    SyncResponse, TlvEntry,
+    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop, TlvEntry,
 };
 
 pub(crate) struct Ldk {
@@ -197,19 +196,21 @@ impl NodeAPI for Ldk {
         Err(NodeError::generic("LDK implementation not yet available"))
     }
 
-    async fn pull_changed(&self) -> NodeResult<SyncResponse> {
-        self.node.sync_wallets()?;
+    async fn get_node_state(&self) -> NodeState {
+        if let Err(e) = self.node.sync_wallets() {
+            warn!("Failed to sync LDK wallets: {e}");
+        }
         let node = &*self.node;
-        let local_node_id = node.node_id();
-        let payments = node
+        node.into()
+    }
+
+    async fn list_payments(&self) -> NodeResult<Vec<Payment>> {
+        let local_node_id = self.node.node_id();
+        self.node
             .list_payments()
             .into_iter()
             .map(|p| convert_payment(p, &local_node_id, &self.store))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(SyncResponse {
-            node_state: node.into(),
-            payments,
-        })
+            .collect::<Result<Vec<_>, _>>()
     }
 
     async fn send_payment(&self, bolt11: String, amount_msat: Option<u64>) -> NodeResult<Payment> {

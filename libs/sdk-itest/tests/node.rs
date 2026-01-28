@@ -3,10 +3,11 @@ mod event_listener;
 use std::time::Duration;
 
 use bitcoin::Amount;
-use breez_sdk_core::error::ConnectError;
+use breez_sdk_core::error::{ConnectError, SendPaymentError};
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, LnPaymentDetails, PaymentDetails,
-    PaymentType, ReceivePaymentRequest, SendPaymentRequest, SendSpontaneousPaymentRequest,
+    BreezEvent, BreezServices, Config, ConnectRequest, ListPaymentsRequest, LnPaymentDetails,
+    PaymentDetails, PaymentStatus, PaymentType, ReceivePaymentRequest, SendPaymentRequest,
+    SendSpontaneousPaymentRequest,
 };
 use rand::Rng;
 use rstest::*;
@@ -21,6 +22,7 @@ use tracing::info;
 use crate::event_listener::EventListenerImpl;
 
 const SECOND: Duration = Duration::from_secs(1);
+const UNPAYABLE_BOLT11: &str = "lnbcrt10u1p5h5g5kpp5asutj0mvuxr7g5asar2cu0l0mreyxp6a88mmerjuzk5r64zqpyxsdq9f38ygcqzzsxq97zvuqsp5hagpy8n954f86y7ca3kx5alr36a9nr4md6cyzfz9anmkf33nv63q9qxpqysgqrnjfrk9j6q6zl7alg287mhf8qfj5wawk6kk7n7rkgx82zd9y50sy8w4edmsetqatfpv5ezjkv7wxse2p7m63ax6mt7gkllwr3jmw0mcp9urhh9";
 
 #[rstest]
 #[tokio::test(flavor = "multi_thread")]
@@ -78,11 +80,8 @@ async fn test_node_receive_payments() {
         .await
         .unwrap();
 
-    let node_pubkey = services.node_info().unwrap().id;
+    let node_pubkey = services.node_info().await.id;
     let lnd_pubkey = lnd.get_id().await.unwrap();
-
-    info!("Waiting for BreezEvent::Synced...");
-    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
 
     // Receiving a JIT payment.
     let huge_amount_msat = 10_000_000;
@@ -104,7 +103,7 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
-    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    let balance_msat = services.node_info().await.channels_balance_msat;
     assert_eq!(balance_msat, huge_amount_msat - opening_fee_msat);
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 1);
@@ -138,9 +137,7 @@ async fn test_node_receive_payments() {
         events.recv().await,
         Some(BreezEvent::InvoicePaid { .. })
     ));
-    info!("Waiting for BreezEvent::Synced...");
-    assert!(matches!(events.recv().await, Some(BreezEvent::Synced)));
-    let balance_msat = services.node_info().unwrap().channels_balance_msat;
+    let balance_msat = services.node_info().await.channels_balance_msat;
     assert_eq!(
         balance_msat,
         huge_amount_msat - opening_fee_msat + small_amount_msat
@@ -162,17 +159,85 @@ async fn test_node_receive_payments() {
     // Ensure that the next payment does not occur at the same time (down to the second).
     sleep(SECOND).await;
 
+    // Trying to pay an invoice from an unreachable node.
+    let sent_payment = {
+        let services = services.clone();
+        tokio::spawn(async move {
+            services
+                .send_payment(SendPaymentRequest {
+                    bolt11: UNPAYABLE_BOLT11.to_string(),
+                    amount_msat: None,
+                })
+                .await
+        })
+    };
+    wait_for!(
+        services
+            .list_payments(Default::default())
+            .await
+            .unwrap()
+            .len()
+            == 3
+    );
+    // The pending payment is observed.
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 3);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.status, PaymentStatus::Pending);
+
+    assert!(matches!(
+        sent_payment.await.unwrap(),
+        Err(SendPaymentError::PaymentFailed { .. })
+    ));
+    info!("Waiting for BreezEvent::PaymentFailed...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::PaymentFailed { .. })
+    ));
+
+    let payments = services
+        .list_payments(ListPaymentsRequest {
+            include_failures: Some(true),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(payments.len(), 3);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.status, PaymentStatus::Failed);
+
     // Paying BOLT-11 invoice.
     let amount = Amount::from_sat(1000);
     let bolt11 = lnd.receive(&amount).await.unwrap();
-    let payment = services
-        .send_payment(SendPaymentRequest {
-            bolt11: bolt11.clone(),
-            amount_msat: None,
+
+    let sent_payment = {
+        let services = services.clone();
+        let bolt11 = bolt11.clone();
+        tokio::spawn(async move {
+            services
+                .send_payment(SendPaymentRequest {
+                    bolt11,
+                    amount_msat: None,
+                })
+                .await
         })
-        .await
-        .unwrap()
-        .payment;
+    };
+    wait_for!(
+        services
+            .list_payments(Default::default())
+            .await
+            .unwrap()
+            .len()
+            == 3
+    );
+    // The pending payment is observed.
+    let payments = services.list_payments(Default::default()).await.unwrap();
+    assert_eq!(payments.len(), 3);
+    let payment = payments.first().cloned().unwrap();
+    assert_eq!(payment.status, PaymentStatus::Pending);
+
+    let payment = sent_payment.await.unwrap().unwrap().payment;
+    assert_eq!(payment.status, PaymentStatus::Complete);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
     assert!(matches!(
