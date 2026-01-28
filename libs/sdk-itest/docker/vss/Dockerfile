@@ -21,7 +21,7 @@ RUN git init && \
     git fetch --depth 1 origin "$VERSION" && \
     git checkout FETCH_HEAD
 
-RUN cargo install --path rust/server
+RUN cargo install --path rust/server --no-default-features --features sigs --locked
 
 FROM debian:bookworm-slim AS final
 
