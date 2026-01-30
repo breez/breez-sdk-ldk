@@ -146,7 +146,7 @@ impl BlockingBreezServices {
     }
 
     pub fn node_info(&self) -> SdkResult<NodeState> {
-        self.breez_services.node_info()
+        rt().block_on(async { Ok(self.breez_services.node_info().await) })
     }
 
     pub fn sign_message(&self, req: SignMessageRequest) -> SdkResult<SignMessageResponse> {

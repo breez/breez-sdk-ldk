@@ -13,9 +13,10 @@ use crate::{
     bitcoin::bip32::{ChildNumber, Xpriv},
     error::ReceivePaymentError,
     persist::error::PersistError,
-    CustomMessage, LnUrlAuthError, MaxChannelAmount, Payment, PaymentType, PaymentDetails,
-    LnPaymentDetails, PaymentStatus, PaymentResponse, PrepareRedeemOnchainFundsRequest,
-    PrepareRedeemOnchainFundsResponse, RouteHintHop, SyncResponse, TlvEntry,
+    CustomMessage, LnUrlAuthError, MaxChannelAmount, NodeState, Payment, PaymentDetails,
+    LnPaymentDetails, PaymentResponse, PaymentStatus, PaymentType,
+    PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop,
+    TlvEntry,
 };
 
 pub type NodeResult<T, E = NodeError> = Result<T, E>;
@@ -168,7 +169,8 @@ pub trait NodeAPI: Send + Sync {
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String>;
     /// Fetches an existing BOLT11 invoice from the node
     async fn fetch_bolt11(&self, payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>>;
-    async fn pull_changed(&self) -> NodeResult<SyncResponse>;
+    async fn get_node_state(&self) -> NodeState;
+    async fn list_payments(&self) -> NodeResult<Vec<Payment>>;
     /// As per the `pb::PayRequest` docs, `amount_msat` is only needed when the invoice doesn't specify an amount
     async fn send_payment(
         &self,

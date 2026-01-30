@@ -338,7 +338,7 @@ impl CommandHandler {
                 serde_json::to_string_pretty(&res).map_err(|e| e.into())
             }
             Commands::NodeInfo {} => {
-                serde_json::to_string_pretty(&self.sdk()?.node_info()?).map_err(|e| e.into())
+                serde_json::to_string_pretty(&self.sdk()?.node_info().await).map_err(|e| e.into())
             }
             Commands::ConfigureNode { close_to_address } => {
                 self.sdk()?

@@ -385,12 +385,8 @@ pub fn sync() -> Result<()> {
 
 /// See [BreezServices::node_info]
 pub fn node_info() -> Result<NodeState> {
-    block_on(async {
-        get_breez_services()
-            .await?
-            .node_info()
-            .map_err(anyhow::Error::new::<SdkError>)
-    })
+    block_on(async { Ok(get_breez_services().await?.node_info().await) })
+        .map_err(anyhow::Error::new::<SdkError>)
 }
 
 /// See [BreezServices::configure_node]
