@@ -350,9 +350,6 @@ class LnPaymentDetails {
   /// Only set for [PaymentType::Sent] payments that were sent in the context of a reverse swap
   final ReverseSwapInfo? reverseSwapInfo;
 
-  /// Only set for [PaymentStatus::Pending] payments that are inflight.
-  final int? pendingExpirationBlock;
-
   const LnPaymentDetails({
     required this.paymentHash,
     required this.destinationPubkey,
@@ -367,7 +364,6 @@ class LnPaymentDetails {
     this.lnurlWithdrawEndpoint,
     this.swapInfo,
     this.reverseSwapInfo,
-    this.pendingExpirationBlock,
   });
 
   @override
@@ -384,8 +380,7 @@ class LnPaymentDetails {
       lnurlMetadata.hashCode ^
       lnurlWithdrawEndpoint.hashCode ^
       swapInfo.hashCode ^
-      reverseSwapInfo.hashCode ^
-      pendingExpirationBlock.hashCode;
+      reverseSwapInfo.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -404,8 +399,7 @@ class LnPaymentDetails {
           lnurlMetadata == other.lnurlMetadata &&
           lnurlWithdrawEndpoint == other.lnurlWithdrawEndpoint &&
           swapInfo == other.swapInfo &&
-          reverseSwapInfo == other.reverseSwapInfo &&
-          pendingExpirationBlock == other.pendingExpirationBlock;
+          reverseSwapInfo == other.reverseSwapInfo;
 }
 
 /// Internal SDK log entry

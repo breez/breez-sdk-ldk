@@ -912,16 +912,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         } else {
             null
         }
-    val pendingExpirationBlock =
-        if (hasNonNullKey(
-                lnPaymentDetails,
-                "pendingExpirationBlock",
-            )
-        ) {
-            lnPaymentDetails.getInt("pendingExpirationBlock").toUInt()
-        } else {
-            null
-        }
     return LnPaymentDetails(
         paymentHash,
         destinationPubkey,
@@ -936,7 +926,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         lnurlWithdrawEndpoint,
         swapInfo,
         reverseSwapInfo,
-        pendingExpirationBlock,
     )
 }
 
@@ -955,7 +944,6 @@ fun readableMapOf(lnPaymentDetails: LnPaymentDetails): ReadableMap =
         "lnurlWithdrawEndpoint" to lnPaymentDetails.lnurlWithdrawEndpoint,
         "swapInfo" to lnPaymentDetails.swapInfo?.let { readableMapOf(it) },
         "reverseSwapInfo" to lnPaymentDetails.reverseSwapInfo?.let { readableMapOf(it) },
-        "pendingExpirationBlock" to lnPaymentDetails.pendingExpirationBlock,
     )
 
 fun asLnPaymentDetailsList(arr: ReadableArray): List<LnPaymentDetails> {

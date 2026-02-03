@@ -178,7 +178,6 @@ export interface LnPaymentDetails {
     lnurlWithdrawEndpoint?: string
     swapInfo?: SwapInfo
     reverseSwapInfo?: ReverseSwapInfo
-    pendingExpirationBlock?: number
 }
 
 export interface LnUrlAuthRequestData {

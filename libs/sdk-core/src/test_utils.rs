@@ -472,7 +472,6 @@ impl MockNodeAPI {
                     lnurl_withdraw_endpoint: None,
                     swap_info: None,
                     reverse_swap_info: None,
-                    pending_expiration_block: None,
                 },
             },
             metadata: None,

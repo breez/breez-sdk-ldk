@@ -2666,7 +2666,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_swapInfo = <Option<crate::models::SwapInfo>>::sse_decode(deserializer);
         let mut var_reverseSwapInfo =
             <Option<crate::models::ReverseSwapInfo>>::sse_decode(deserializer);
-        let mut var_pendingExpirationBlock = <Option<u32>>::sse_decode(deserializer);
         return crate::models::LnPaymentDetails {
             payment_hash: var_paymentHash,
             destination_pubkey: var_destinationPubkey,
@@ -2681,7 +2680,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
             lnurl_withdraw_endpoint: var_lnurlWithdrawEndpoint,
             swap_info: var_swapInfo,
             reverse_swap_info: var_reverseSwapInfo,
-            pending_expiration_block: var_pendingExpirationBlock,
         };
     }
 }
@@ -4830,7 +4828,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
             self.lnurl_withdraw_endpoint.into_into_dart().into_dart(),
             self.swap_info.into_into_dart().into_dart(),
             self.reverse_swap_info.into_into_dart().into_dart(),
-            self.pending_expiration_block.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -7106,7 +7103,6 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <Option<String>>::sse_encode(self.lnurl_withdraw_endpoint, serializer);
         <Option<crate::models::SwapInfo>>::sse_encode(self.swap_info, serializer);
         <Option<crate::models::ReverseSwapInfo>>::sse_encode(self.reverse_swap_info, serializer);
-        <Option<u32>>::sse_encode(self.pending_expiration_block, serializer);
     }
 }
 
@@ -9254,7 +9250,6 @@ mod io {
                 lnurl_withdraw_endpoint: self.lnurl_withdraw_endpoint.cst_decode(),
                 swap_info: self.swap_info.cst_decode(),
                 reverse_swap_info: self.reverse_swap_info.cst_decode(),
-                pending_expiration_block: self.pending_expiration_block.cst_decode(),
             }
         }
     }
@@ -10417,7 +10412,6 @@ mod io {
                 lnurl_withdraw_endpoint: core::ptr::null_mut(),
                 swap_info: core::ptr::null_mut(),
                 reverse_swap_info: core::ptr::null_mut(),
-                pending_expiration_block: core::ptr::null_mut(),
             }
         }
     }
@@ -12937,7 +12931,6 @@ mod io {
         lnurl_withdraw_endpoint: *mut wire_cst_list_prim_u_8_strict,
         swap_info: *mut wire_cst_swap_info,
         reverse_swap_info: *mut wire_cst_reverse_swap_info,
-        pending_expiration_block: *mut u32,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]

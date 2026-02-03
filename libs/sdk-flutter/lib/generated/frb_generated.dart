@@ -2326,7 +2326,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   LnPaymentDetails dco_decode_ln_payment_details(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 14) throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
+    if (arr.length != 13) throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
     return LnPaymentDetails(
       paymentHash: dco_decode_String(arr[0]),
       destinationPubkey: dco_decode_String(arr[1]),
@@ -2341,7 +2341,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       lnurlWithdrawEndpoint: dco_decode_opt_String(arr[10]),
       swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[11]),
       reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[12]),
-      pendingExpirationBlock: dco_decode_opt_box_autoadd_u_32(arr[13]),
     );
   }
 
@@ -4398,7 +4397,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_lnurlWithdrawEndpoint = sse_decode_opt_String(deserializer);
     var var_swapInfo = sse_decode_opt_box_autoadd_swap_info(deserializer);
     var var_reverseSwapInfo = sse_decode_opt_box_autoadd_reverse_swap_info(deserializer);
-    var var_pendingExpirationBlock = sse_decode_opt_box_autoadd_u_32(deserializer);
     return LnPaymentDetails(
       paymentHash: var_paymentHash,
       destinationPubkey: var_destinationPubkey,
@@ -4413,7 +4411,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       lnurlWithdrawEndpoint: var_lnurlWithdrawEndpoint,
       swapInfo: var_swapInfo,
       reverseSwapInfo: var_reverseSwapInfo,
-      pendingExpirationBlock: var_pendingExpirationBlock,
     );
   }
 
@@ -6620,7 +6617,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_opt_String(self.lnurlWithdrawEndpoint, serializer);
     sse_encode_opt_box_autoadd_swap_info(self.swapInfo, serializer);
     sse_encode_opt_box_autoadd_reverse_swap_info(self.reverseSwapInfo, serializer);
-    sse_encode_opt_box_autoadd_u_32(self.pendingExpirationBlock, serializer);
   }
 
   @protected
