@@ -235,7 +235,7 @@ impl SqliteStorage {
         Ok(vec)
     }
 
-    pub fn select_payments_query(
+    fn select_payments_query(
         &self,
         where_clause: &str,
         offset: u32,

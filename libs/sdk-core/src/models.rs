@@ -40,7 +40,7 @@ pub enum PaymentType {
 }
 
 #[derive(Debug)]
-pub struct CustomMessage {
+pub(crate) struct CustomMessage {
     pub peer_id: Vec<u8>,
     pub message_type: u16,
     pub payload: Vec<u8>,
@@ -80,22 +80,9 @@ pub trait LspAPI: Send + Sync {
     ) -> SdkResult<grpc::RegisterPaymentReply>;
 }
 
-/// Summary of an ongoing swap
-pub struct Swap {
-    pub bitcoin_address: String,
-    pub swapper_pubkey: Vec<u8>,
-    pub lock_height: i64,
-    pub error_message: String,
-    pub required_reserve: i64,
-    /// Absolute minimum amount, in sats, allowed by the swapper for a successful swap
-    pub swapper_min_payable: i64,
-    /// Absolute maximum amount, in sats, allowed by the swapper for a successful swap
-    pub swapper_max_payable: i64,
-}
-
 /// Trait covering functionality involving swaps
 #[tonic::async_trait]
-pub trait SwapperAPI: Send + Sync {
+pub(crate) trait SwapperAPI: Send + Sync {
     async fn complete_swap(&self, bolt11: String) -> Result<()>;
 }
 
@@ -125,7 +112,7 @@ pub struct ReverseSwapPairInfo {
 
 /// Details of past or ongoing reverse swaps, as stored in the Breez local DB
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct FullReverseSwapInfo {
+pub(crate) struct FullReverseSwapInfo {
     /// The reverse swap ID, as reported by the Boltz API in case of a successful creation
     pub id: String,
 
@@ -164,7 +151,7 @@ pub struct FullReverseSwapInfo {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ReverseSwapInfoCached {
+pub(crate) struct ReverseSwapInfoCached {
     pub status: ReverseSwapStatus,
     pub lockup_txid: Option<String>,
     pub claim_txid: Option<String>,
@@ -674,7 +661,7 @@ pub struct Payment {
 
 /// Represents a payments external information.
 #[derive(Default)]
-pub struct PaymentExternalInfo {
+pub(crate) struct PaymentExternalInfo {
     pub lnurl_pay_success_action: Option<SuccessActionProcessed>,
     pub lnurl_pay_domain: Option<String>,
     pub lnurl_pay_comment: Option<String>,
