@@ -2975,7 +2975,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.lnurl_withdraw_endpoint = cst_encode_opt_String(apiObj.lnurlWithdrawEndpoint);
     wireObj.swap_info = cst_encode_opt_box_autoadd_swap_info(apiObj.swapInfo);
     wireObj.reverse_swap_info = cst_encode_opt_box_autoadd_reverse_swap_info(apiObj.reverseSwapInfo);
-    wireObj.pending_expiration_block = cst_encode_opt_box_autoadd_u_32(apiObj.pendingExpirationBlock);
   }
 
   @protected
@@ -6249,8 +6248,6 @@ final class wire_cst_ln_payment_details extends ffi.Struct {
   external ffi.Pointer<wire_cst_swap_info> swap_info;
 
   external ffi.Pointer<wire_cst_reverse_swap_info> reverse_swap_info;
-
-  external ffi.Pointer<ffi.Uint32> pending_expiration_block;
 }
 
 final class wire_cst_PaymentDetails_Ln extends ffi.Struct {

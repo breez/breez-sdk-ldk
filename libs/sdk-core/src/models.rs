@@ -733,14 +733,6 @@ impl Default for PaymentDetails {
     }
 }
 
-impl PaymentDetails {
-    pub fn add_pending_expiration_block(&mut self, htlc: Htlc) {
-        if let PaymentDetails::Ln { data } = self {
-            data.pending_expiration_block = Some(htlc.expiry)
-        }
-    }
-}
-
 /// Details of a LN payment, as included in a [Payment]
 #[derive(Default, PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
 pub struct LnPaymentDetails {
@@ -774,9 +766,6 @@ pub struct LnPaymentDetails {
 
     /// Only set for [PaymentType::Sent] payments that were sent in the context of a reverse swap
     pub reverse_swap_info: Option<ReverseSwapInfo>,
-
-    /// Only set for [PaymentStatus::Pending] payments that are inflight.
-    pub pending_expiration_block: Option<u32>,
 }
 
 /// Represents the funds that were on the user side of the channel at the time it was closed.

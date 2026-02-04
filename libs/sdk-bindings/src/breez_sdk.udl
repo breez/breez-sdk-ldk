@@ -328,7 +328,6 @@ dictionary LnPaymentDetails {
     string? lnurl_withdraw_endpoint;
     SwapInfo? swap_info;
     ReverseSwapInfo? reverse_swap_info;
-    u32? pending_expiration_block;
 };
 
 dictionary ClosedChannelPaymentDetails {

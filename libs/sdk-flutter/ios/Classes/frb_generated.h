@@ -159,7 +159,6 @@ typedef struct wire_cst_ln_payment_details {
   struct wire_cst_list_prim_u_8_strict *lnurl_withdraw_endpoint;
   struct wire_cst_swap_info *swap_info;
   struct wire_cst_reverse_swap_info *reverse_swap_info;
-  uint32_t *pending_expiration_block;
 } wire_cst_ln_payment_details;
 
 typedef struct wire_cst_PaymentDetails_Ln {
