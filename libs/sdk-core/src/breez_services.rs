@@ -37,6 +37,7 @@ use crate::models::{
 };
 use crate::node_api::NodeAPI;
 use crate::persist::db::SqliteStorage;
+use crate::persist::payment_store::PaymentStore;
 use crate::persist::swap::SwapStorage;
 use crate::persist::transactions::PaymentStorage;
 use crate::receiver::{PaymentReceiver, Receiver};
@@ -144,6 +145,7 @@ pub struct BreezServices {
     config: Config,
     started: Mutex<bool>,
     node_api: Arc<dyn NodeAPI>,
+    payment_store: Arc<dyn PaymentStore>,
     lsp_api: Arc<dyn LspAPI>,
     receiver: Arc<dyn Receiver>,
     fiat_api: Arc<dyn FiatAPI>,
@@ -297,6 +299,16 @@ impl BreezServices {
             return Err(SendPaymentError::AlreadyPaid);
         }
 
+        let info = LnPaymentInfo {
+            bolt11: parsed_invoice.bolt11.clone(),
+            payment_hash: parsed_invoice.payment_hash.clone(),
+            destination_pubkey: parsed_invoice.payee_pubkey.clone(),
+            description: parsed_invoice.description.clone(),
+        };
+        self.payment_store
+            .set_ln_info(&parsed_invoice.payment_hash, &info)
+            .await?;
+
         self.persist_pending_payment(&parsed_invoice, amount_msat)?;
 
         debug!("attempting normal payment");
@@ -414,9 +426,24 @@ impl BreezServices {
 
                 let lnurl_pay_domain = match req.data.ln_address {
                     Some(_) => None,
-                    None => Some(req.data.domain),
+                    None => Some(req.data.domain.clone()),
                 };
                 // Store SA (if available) + LN Address in separate table, associated to payment_hash
+                let target = match &req.data.ln_address {
+                    Some(address) => LnUrlPayTarget::LnAddress(address.clone()),
+                    None => LnUrlPayTarget::Domain(req.data.domain),
+                };
+                let info = LnUrlPayInfo {
+                    target,
+                    metadata: req.data.metadata_str.clone(),
+                    comment: req.comment.clone(),
+                    success_action: maybe_sa_processed.clone(),
+                };
+                let info = LnUrlInfo::Pay(info);
+                self.payment_store
+                    .set_lnurl_info(&invoice.payment_hash, &info)
+                    .await?;
+
                 self.persister.insert_payment_external_info(
                     &details.payment_hash,
                     PaymentExternalInfo {
@@ -465,6 +492,14 @@ impl BreezServices {
         let res = validate_lnurl_withdraw(self.rest_client.as_ref(), req.data, invoice).await?;
 
         if let LnUrlWithdrawResult::Ok { ref data } = res {
+            let info = LnUrlWithdrawInfo {
+                endpoint: lnurl_w_endpoint.clone(),
+            };
+            let info = LnUrlInfo::Withdraw(info);
+            self.payment_store
+                .set_lnurl_info(&data.invoice.payment_hash, &info)
+                .await?;
+
             // If endpoint was successfully called, store the LNURL-withdraw endpoint URL as metadata linked to the invoice
             self.persister.insert_payment_external_info(
                 &data.invoice.payment_hash,
@@ -1887,6 +1922,7 @@ struct BreezServicesBuilder {
     node_api: Option<Arc<dyn NodeAPI>>,
     backup_transport: Option<Arc<dyn BackupTransport>>,
     seed: Option<Vec<u8>>,
+    payment_store: Option<Arc<dyn PaymentStore>>,
     lsp_api: Option<Arc<dyn LspAPI>>,
     fiat_api: Option<Arc<dyn FiatAPI>>,
     persister: Option<Arc<SqliteStorage>>,
@@ -1908,6 +1944,7 @@ impl BreezServicesBuilder {
             config,
             node_api: None,
             seed: None,
+            payment_store: None,
             lsp_api: None,
             fiat_api: None,
             persister: None,
@@ -1924,6 +1961,11 @@ impl BreezServicesBuilder {
 
     pub fn node_api(&mut self, node_api: Arc<dyn NodeAPI>) -> &mut Self {
         self.node_api = Some(node_api);
+        self
+    }
+
+    pub fn payment_store(&mut self, payment_store: Arc<dyn PaymentStore>) -> &mut Self {
+        self.payment_store = Some(payment_store);
         self
     }
 
@@ -2023,6 +2065,7 @@ impl BreezServicesBuilder {
         let mut node_api = self.node_api.clone();
         let mut backup_transport = self.backup_transport.clone();
         let mut lsp_api = self.lsp_api.clone();
+        let mut payment_store = self.payment_store.clone();
         if node_api.is_none() {
             let node_impls = node_builder::build_node(
                 self.config.clone(),
@@ -2034,7 +2077,11 @@ impl BreezServicesBuilder {
             node_api = Some(node_impls.node);
             backup_transport = backup_transport.or(Some(node_impls.backup_transport));
             lsp_api = lsp_api.or(node_impls.lsp);
+            payment_store = payment_store.or(Some(node_impls.payment_store));
         }
+        let payment_store = payment_store.ok_or(ConnectError::Generic {
+            err: "Payment store should be provided".into(),
+        })?;
         let lsp_api = lsp_api.ok_or(ConnectError::Generic {
             err: "LSP Api should be provided".into(),
         })?;
@@ -2149,6 +2196,7 @@ impl BreezServicesBuilder {
             config: self.config.clone(),
             started: Mutex::new(false),
             node_api: unwrapped_node_api.clone(),
+            payment_store,
             lsp_api,
             receiver,
             fiat_api: self
@@ -2542,6 +2590,7 @@ pub(crate) mod tests {
             .fiat_api(Arc::new(MockBreezServer {}))
             .node_api(node_api)
             .persister(persister)
+            .payment_store(Arc::new(MockPaymentStore::default()))
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
             .await?;
@@ -2705,6 +2754,7 @@ pub(crate) mod tests {
             .persister(persister)
             .node_api(node_api)
             .rest_client(rest_client)
+            .payment_store(Arc::new(MockPaymentStore::default()))
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
             .await?;

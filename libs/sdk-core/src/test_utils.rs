@@ -41,12 +41,13 @@ use crate::lightning::bitcoin::secp256k1 as ldk_secp256k1;
 use crate::lightning_invoice::{Currency, InvoiceBuilder, PaymentSecret, RawBolt11Invoice};
 use crate::lsp::LspInformation;
 use crate::models::{
-    LnPaymentDetails, LspAPI, NodeState, Payment, PaymentDetails, PaymentStatus, PaymentType,
-    ReverseSwapServiceAPI, SwapperAPI, TlvEntry,
+    LnPaymentDetails, LnPaymentInfo, LnUrlInfo, LspAPI, NodeState, Payment, PaymentDetails,
+    PaymentStatus, PaymentType, ReverseSwapServiceAPI, SwapperAPI, TlvEntry,
 };
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
+use crate::persist::payment_store::PaymentStore;
 use crate::swap_in::TaprootSwapperAPI;
 use crate::swap_out::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapStatus};
 use crate::swap_out::error::{ReverseSwapError, ReverseSwapResult};
@@ -161,6 +162,42 @@ impl ReverseSwapServiceAPI for MockReverseSwapperAPI {
 
     async fn get_route_hints(&self, _routing_node_id: String) -> ReverseSwapResult<Vec<RouteHint>> {
         Err(ReverseSwapError::generic("Not implemented"))
+    }
+}
+
+#[derive(Default)]
+pub struct MockPaymentStore {
+    ln_info: std::sync::Mutex<HashMap<String, LnPaymentInfo>>,
+    lnurl_info: std::sync::Mutex<HashMap<String, LnUrlInfo>>,
+}
+
+#[tonic::async_trait]
+impl PaymentStore for MockPaymentStore {
+    async fn set_ln_info(&self, payment_id: &str, info: &LnPaymentInfo) -> SdkResult<()> {
+        self.ln_info
+            .lock()
+            .unwrap()
+            .insert(payment_id.to_string(), info.clone());
+        Ok(())
+    }
+
+    async fn set_lnurl_info(&self, payment_id: &str, info: &LnUrlInfo) -> SdkResult<()> {
+        self.lnurl_info
+            .lock()
+            .unwrap()
+            .insert(payment_id.to_string(), info.clone());
+        Ok(())
+    }
+
+    async fn get_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnPaymentInfo>> {
+        let ln_info = self.ln_info.lock().unwrap();
+        let mut res = HashMap::new();
+        for payment_id in payment_ids {
+            if let Some(info) = ln_info.get(*payment_id) {
+                res.insert((*payment_id).to_string(), info.clone());
+            }
+        }
+        Ok(res)
     }
 }
 
