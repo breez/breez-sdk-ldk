@@ -20,6 +20,6 @@ impl EventListenerImpl {
 impl EventListener for EventListenerImpl {
     fn on_event(&self, e: BreezEvent) {
         info!("Event: {e:?}");
-        tokio::task::block_in_place(|| self.handle.block_on(self.tx.send(e))).unwrap();
+        let _ = tokio::task::block_in_place(|| self.handle.block_on(self.tx.send(e)));
     }
 }
