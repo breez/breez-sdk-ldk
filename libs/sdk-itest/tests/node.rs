@@ -33,15 +33,19 @@ async fn test_node_receive_payments() {
         env.esplora_api(),
         env.mempool_api(),
         env.vss_api(),
-        env.lsp_external_address(),
+        env.lsp(),
         env.lnd_with_channel(),
         env.rgs()
     )
     .unwrap();
+    let lsp_id = lsp.get_node_id().await.unwrap();
+    let lsp_address = lsp.lightning_api.external_address();
+    let lsp_address = format!("{lsp_id}@{lsp_address}");
+
     info!("Esplora is running: {}", esplora.external_endpoint());
     info!("Mempool is running: {}", mempool.external_endpoint());
     info!("    VSS is running: {}", vss.external_endpoint());
-    info!("    LSP is running: {lsp}");
+    info!("    LSP is running: {lsp_address}");
     info!("    LND is running");
     info!("    RGS is running: {}", rgs.external_endpoint());
 
@@ -51,7 +55,7 @@ async fn test_node_receive_payments() {
     config.esplora_url = esplora.external_endpoint();
     config.vss_url = vss.external_endpoint();
     config.rgs_url = rgs.external_endpoint();
-    config.lsps2_address = lsp;
+    config.lsps2_address = lsp_address;
 
     let seed = rand::rng().random::<[u8; 64]>().to_vec();
     {
@@ -118,6 +122,11 @@ async fn test_node_receive_payments() {
     } else {
         panic!("Expected LN payment details");
     }
+
+    // Paying a BOLT-12 payment.
+    let amount_msat = 10_000;
+    let offer = lsp.get_offer(Some(amount_msat)).await.unwrap();
+    info!("Offer to pay: {offer}");
 
     // Receiving a normal payment.
     let small_amount_msat = 10_000;
