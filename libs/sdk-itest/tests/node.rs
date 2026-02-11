@@ -24,6 +24,14 @@ use crate::event_listener::EventListenerImpl;
 const SECOND: Duration = Duration::from_secs(1);
 const UNPAYABLE_BOLT11: &str = "lnbcrt10u1p5h5g5kpp5asutj0mvuxr7g5asar2cu0l0mreyxp6a88mmerjuzk5r64zqpyxsdq9f38ygcqzzsxq97zvuqsp5hagpy8n954f86y7ca3kx5alr36a9nr4md6cyzfz9anmkf33nv63q9qxpqysgqrnjfrk9j6q6zl7alg287mhf8qfj5wawk6kk7n7rkgx82zd9y50sy8w4edmsetqatfpv5ezjkv7wxse2p7m63ax6mt7gkllwr3jmw0mcp9urhh9";
 
+#[ignore = "Manual test for testing the environment itself"]
+#[rstest]
+#[tokio::test(flavor = "multi_thread")]
+#[test_log::test]
+async fn test_environment() {
+    Environment::default().cln_with_channel().await.unwrap();
+}
+
 #[rstest]
 #[tokio::test(flavor = "multi_thread")]
 #[test_log::test]
