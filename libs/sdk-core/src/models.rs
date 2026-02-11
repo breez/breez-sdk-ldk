@@ -628,12 +628,6 @@ pub struct NodeState {
     pub total_inbound_liquidity_msats: u64,
 }
 
-/// Internal response to a [crate::node_api::NodeAPI::pull_changed] call
-pub struct SyncResponse {
-    pub node_state: NodeState,
-    pub payments: Vec<crate::models::Payment>,
-}
-
 /// The status of a payment
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum PaymentStatus {
@@ -1195,43 +1189,6 @@ impl OpeningFeeParamsMenu {
         valid_min_48h.first().cloned().ok_or_else(|| {
             anyhow!("The LSP doesn't support opening fees that are valid for at least 48 hours")
         })
-    }
-}
-
-/// Lightning channel
-#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
-pub struct Channel {
-    pub funding_txid: String,
-    pub short_channel_id: Option<String>,
-    pub state: ChannelState,
-    pub spendable_msat: u64,
-    pub local_balance_msat: u64,
-    pub receivable_msat: u64,
-    pub closed_at: Option<u64>,
-    /// The output number of the funding tx which opened the channel
-    pub funding_outnum: Option<u32>,
-    pub alias_local: Option<String>,
-    pub alias_remote: Option<String>,
-    /// Only set for closed channels.
-    ///
-    /// This may be empty for older closed channels, if it was not possible to retrieve the closing txid.
-    pub closing_txid: Option<String>,
-
-    pub htlcs: Vec<Htlc>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
-pub struct Htlc {
-    pub expiry: u32,
-    pub payment_hash: Vec<u8>,
-}
-
-impl Htlc {
-    pub fn from(expiry: u32, payment_hash: Vec<u8>) -> Self {
-        Htlc {
-            expiry,
-            payment_hash,
-        }
     }
 }
 
