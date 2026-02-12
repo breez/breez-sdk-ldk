@@ -9,6 +9,7 @@ use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
 use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::lightning::ln::msgs::SocketAddress;
+use ldk_node::lightning::offers::offer::Offer;
 use ldk_node::lightning::routing::router::{
     RouteParametersConfig, DEFAULT_MAX_TOTAL_CLTV_EXPIRY_DELTA,
 };
@@ -231,6 +232,28 @@ impl NodeAPI for Ldk {
             Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),
             None => payments.send(&invoice, params),
         }?;
+
+        let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
+        convert_payment(payment, &self.node.node_id(), &self.store)
+    }
+
+    async fn send_bolt12_payment(
+        &self,
+        offer: String,
+        amount_msat: Option<u64>,
+        payer_note: Option<String>,
+    ) -> NodeResult<Payment> {
+        let offer = Offer::from_str(&offer)
+            .map_err(|e| NodeError::Generic(format!("Invalid offer: {e:?}")))?;
+
+        let events = self.events_tx.subscribe(); // Subscribe before we try to send.
+        let payments = self.node.bolt12_payment();
+        let payment_id = if let Some(amount) = amount_msat {
+            payments.send_using_amount(&offer, amount, None, payer_note, None)
+        } else {
+            payments.send(&offer, None, payer_note, None)
+        }
+        .map_err(NodeError::from)?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
         convert_payment(payment, &self.node.node_id(), &self.store)

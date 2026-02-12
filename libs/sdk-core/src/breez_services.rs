@@ -317,6 +317,46 @@ impl BreezServices {
         Ok(SendPaymentResponse { payment })
     }
 
+    pub async fn send_bolt12_payment(
+        &self,
+        req: SendBolt12PaymentRequest,
+    ) -> Result<SendPaymentResponse, SendPaymentError> {
+        let SendBolt12PaymentRequest {
+            offer,
+            amount_msat,
+            payer_note,
+        } = req;
+
+        let current_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        if let Some(absolute_expiry) = offer.absolute_expiry {
+            ensure_sdk!(
+                absolute_expiry > current_time,
+                SendPaymentError::InvoiceExpired {
+                    err: format!("Offer expired at {absolute_expiry}"),
+                }
+            );
+        }
+
+        let get_last_node = || offer.paths.first().and_then(|p| p.blinded_hops.last());
+        let signing_pubkey = offer
+            .signing_pubkey
+            .as_ref()
+            .or_else(get_last_node)
+            .ok_or_else(|| SendPaymentError::InvalidInvoice {
+                err: "Offer does not have signing pubkey nor paths".to_string(),
+            })?;
+
+        let payment_res = self
+            .node_api
+            .send_bolt12_payment(offer.offer, amount_msat, payer_note)
+            .map_err(Into::into)
+            .await;
+        let payment = self
+            .on_payment_completed(signing_pubkey.clone(), None, payment_res)
+            .await?;
+        Ok(SendPaymentResponse { payment })
+    }
+
     /// Pay directly to a node id using keysend
     pub async fn send_spontaneous_payment(
         &self,
