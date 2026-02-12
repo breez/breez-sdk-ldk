@@ -109,7 +109,7 @@ pub async fn wait_for_payment_success(
     p_id: PaymentId,
 ) -> NodeResult<PaymentDetails> {
     debug!("Waiting for payment success id:{p_id}");
-    timeout(Duration::from_secs(30), async {
+    timeout(Duration::from_secs(60), async {
         while let Ok(event) = events_rx.recv().await {
             match event {
                 Event::PaymentSuccessful { payment_id, .. } if payment_id == Some(p_id) => {

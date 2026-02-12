@@ -5,9 +5,9 @@ use std::time::Duration;
 use bitcoin::Amount;
 use breez_sdk_core::error::{ConnectError, SendPaymentError};
 use breez_sdk_core::{
-    BreezEvent, BreezServices, Config, ConnectRequest, ListPaymentsRequest, LnPaymentDetails,
-    PaymentDetails, PaymentStatus, PaymentType, ReceivePaymentRequest, SendPaymentRequest,
-    SendSpontaneousPaymentRequest,
+    BreezEvent, BreezServices, Config, ConnectRequest, InputType, ListPaymentsRequest,
+    LnPaymentDetails, PaymentDetails, PaymentStatus, PaymentType, ReceivePaymentRequest,
+    SendBolt12PaymentRequest, SendPaymentRequest, SendSpontaneousPaymentRequest, parse,
 };
 use rand::Rng;
 use rstest::*;
@@ -41,15 +41,19 @@ async fn test_node_receive_payments() {
         env.esplora_api(),
         env.mempool_api(),
         env.vss_api(),
-        env.lsp_external_address(),
+        env.lsp(),
         env.lnd_with_channel(),
         env.rgs()
     )
     .unwrap();
+    let lsp_id = lsp.get_node_id().await.unwrap();
+    let lsp_address = lsp.lightning_api.external_address();
+    let lsp_address = format!("{lsp_id}@{lsp_address}");
+
     info!("Esplora is running: {}", esplora.external_endpoint());
     info!("Mempool is running: {}", mempool.external_endpoint());
     info!("    VSS is running: {}", vss.external_endpoint());
-    info!("    LSP is running: {lsp}");
+    info!("    LSP is running: {lsp_address}");
     info!("    LND is running");
     info!("    RGS is running: {}", rgs.external_endpoint());
 
@@ -59,7 +63,7 @@ async fn test_node_receive_payments() {
     config.esplora_url = esplora.external_endpoint();
     config.vss_url = vss.external_endpoint();
     config.rgs_url = rgs.external_endpoint();
-    config.lsps2_address = lsp;
+    config.lsps2_address = lsp_address;
 
     let seed = rand::rng().random::<[u8; 64]>().to_vec();
     {
@@ -378,6 +382,29 @@ async fn test_node_receive_payments() {
     } else {
         panic!("Expected LN payment details");
     }
+
+    // Paying a BOLT-12 offer.
+    let offer_amount = Amount::from_sat(10);
+    let offer = lsp.get_offer(Some(offer_amount.to_msat())).await.unwrap();
+    info!("Offer to pay: {offer}");
+    let offer = match parse(&offer, None).await {
+        Ok(InputType::Bolt12Offer { offer, .. }) => offer,
+        result => panic!("Expected offer, got {result:?}"),
+    };
+    let req = SendBolt12PaymentRequest {
+        offer,
+        amount_msat: None,
+        payer_note: None,
+    };
+    let payment = services.send_bolt12_payment(req).await.unwrap().payment;
+    assert_eq!(payment.amount_msat, offer_amount.to_msat());
+    assert_eq!(payment.fee_msat, 0);
+    assert_eq!(payment.payment_type, PaymentType::Sent);
+    assert_eq!(payment.status, PaymentStatus::Complete);
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::PaymentSucceed { .. })
+    ));
 
     services.disconnect().await.unwrap();
     drop(services);

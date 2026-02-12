@@ -176,6 +176,12 @@ pub trait NodeAPI: Send + Sync {
         bolt11: String,
         amount_msat: Option<u64>,
     ) -> NodeResult<Payment>;
+    async fn send_bolt12_payment(
+        &self,
+        offer: String,
+        amount_msat: Option<u64>,
+        payer_note: Option<String>,
+    ) -> NodeResult<Payment>;
     async fn send_spontaneous_payment(
         &self,
         node_id: String,
