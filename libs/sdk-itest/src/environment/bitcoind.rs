@@ -13,7 +13,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use tracing::info;
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const BITCOIND_VERSION: &str = "v28.0";
@@ -51,7 +51,7 @@ impl Bitcoind {
                 "init message: Done loading",
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("bitcoind"))
+            .with_log_consumer(LogConsumer::new("bitcoind"))
             .with_cmd([
                 "-regtest",
                 "-server",

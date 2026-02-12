@@ -10,7 +10,7 @@ use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const LIGHTNING_PORT: u16 = 9735;
@@ -42,7 +42,7 @@ impl Lsp {
                     .with_expected_status_code(200u16),
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("lsps2-server"))
+            .with_log_consumer(LogConsumer::new("lsps2-server"))
             .with_env_var("ESPLORA_URL", esplora_api.endpoint())
             .with_env_var("LISTENING_ADDRESS", format!("0.0.0.0:{LIGHTNING_PORT}"))
             .with_env_var("NETWORK", "regtest")

@@ -4,7 +4,7 @@ use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "ghcr.io/vulpemventures/electrs";
@@ -29,7 +29,7 @@ impl Esplora {
                     .with_expected_status_code(200u16),
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("esplora"))
+            .with_log_consumer(LogConsumer::new("esplora"))
             .with_cmd([
                 "-vvvv",
                 "--network=regtest",

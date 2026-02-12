@@ -14,7 +14,7 @@ use tonic_lnd::lnrpc::{
 };
 
 use crate::environment::container::ContainerExt;
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "lightninglabs/lnd";
@@ -40,7 +40,7 @@ impl Lnd {
             .with_exposed_port(RPC_PORT.into())
             .with_wait_for(WaitFor::message_on_stdout("Server listening on"))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("lnd"))
+            .with_log_consumer(LogConsumer::new("lnd"))
             .with_cmd([
                 "--bitcoin.regtest",
                 "--bitcoin.node=bitcoind",
