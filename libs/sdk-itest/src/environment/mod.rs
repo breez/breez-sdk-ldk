@@ -1,4 +1,6 @@
 mod bitcoind;
+mod cln;
+mod container;
 mod esplora;
 mod lnd;
 mod log;
@@ -11,7 +13,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use bitcoin::Amount;
+use bitcoin::secp256k1::PublicKey;
 use bitcoind::Bitcoind;
+use cln::Cln;
 use esplora::Esplora;
 pub use lnd::Lnd;
 use lsp::Lsp;
@@ -64,6 +68,13 @@ impl std::fmt::Display for EnvironmentId {
 }
 
 #[derive(Default, Clone)]
+pub struct Cert {
+    pub ca_pem: Vec<u8>,
+    pub client_cert: Vec<u8>,
+    pub client_key: Vec<u8>,
+}
+
+#[derive(Default, Clone)]
 pub struct ApiCredentials {
     pub host: String,
     pub port: u16,
@@ -71,6 +82,7 @@ pub struct ApiCredentials {
     pub path: String,
     pub username: String,
     pub password: String,
+    pub cert: Cert,
 }
 
 impl ApiCredentials {
@@ -115,7 +127,9 @@ pub struct Environment {
     vss: OnceCell<Vss>,
     lsp: OnceCell<Lsp>,
     lnd: OnceCell<Lnd>,
+    cln: OnceCell<Cln>,
     channel: OnceCell<()>,
+    cln_channel: OnceCell<()>,
     rgs: OnceCell<Rgs>,
 }
 
@@ -203,6 +217,19 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
+    pub async fn cln(&self) -> Result<&Cln> {
+        self.cln.get_or_try_init(|| self.init_cln()).await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn cln_with_channel(&self) -> Result<&Cln> {
+        self.cln_channel
+            .get_or_try_init(|| self.cln_open_channel())
+            .await?;
+        self.cln().await
+    }
+
+    #[instrument(skip(self))]
     pub async fn rgs(&self) -> Result<&ApiCredentials> {
         let rgs = self
             .rgs
@@ -236,8 +263,16 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
+    async fn init_cln(&self) -> Result<Cln> {
+        info!("Initializing CLN");
+        let bitcoind_api = self.bitcoind_api().await?;
+        let result = Cln::new(&self.environmnet_id, bitcoind_api).await;
+        log_result(result, "CLN")
+    }
+
+    #[instrument(skip(self))]
     async fn open_channel(&self) -> Result<()> {
-        info!("Opening channel...");
+        info!("Opening LND -> LSP channel...");
         let (bitcoind, lsp, lnd) = try_join!(self.bitcoind(), self.lsp(), self.lnd())?;
 
         let amount = Amount::ONE_BTC;
@@ -247,7 +282,7 @@ impl Environment {
         let address = lnd.get_new_address().await?;
         bitcoind.fund_address(&address, amount).await?;
 
-        bitcoind.generate_blocks(6).await?;
+        bitcoind.generate_blocks(1).await?;
         info!("Waiting for LSP to see on-chain funds...");
         wait_for!(lsp.get_balance(true).await?.spendable_onchain_sats >= amount.to_sat());
 
@@ -261,7 +296,33 @@ impl Environment {
         info!("Waiting for LND to see the channel active...");
         wait_for!(!lnd.list_active_channels(&lsp_id).await?.is_empty());
 
-        info!("Channel opened successfully");
+        info!("LND -> LSP channel opened successfully");
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn cln_open_channel(&self) -> Result<()> {
+        info!("Opening CLN -> LND channel...");
+        let (bitcoind, cln, lnd) = try_join!(self.bitcoind(), self.cln(), self.lnd())?;
+
+        let amount = Amount::ONE_BTC;
+        let address = cln.get_new_address().await?;
+        bitcoind.fund_address(&address, amount).await?;
+        bitcoind.generate_blocks(1).await?;
+        info!("Waiting for CLN to see on-chain funds...");
+        wait_for!(cln.spendable_onchain_sats().await? >= amount.to_sat());
+
+        let lnd_id: PublicKey = lnd.get_id().await?.parse()?;
+        let lnd_address = lnd.lightning_api.address();
+        let funding_amount = amount / 2;
+        let push_amount = funding_amount / 2;
+        cln.open_channel(lnd_id, lnd_address, funding_amount, push_amount)
+            .await?;
+        bitcoind.generate_blocks(6).await?;
+        info!("Waiting for CLN to see the channel active...");
+        wait_for!(cln.has_active_channel(&lnd_id).await?);
+
+        info!("CLN -> LND channel opened successfully");
         Ok(())
     }
 

@@ -1,10 +1,9 @@
-use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::{Result, bail};
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
-use testcontainers::core::{ExecCommand, WaitFor};
+use testcontainers::core::WaitFor;
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use tokio::sync::Mutex;
@@ -14,16 +13,19 @@ use tonic_lnd::lnrpc::{
     ListChannelsRequest, NewAddressRequest, OpenChannelRequest, SendRequest,
 };
 
+use crate::environment::container::ContainerExt;
 use crate::environment::log::TracingConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "lightninglabs/lnd";
 const IMAGE_TAG: &str = "v0.19.3-beta";
+const LIGHTNING_PORT: u16 = 9735;
 const RPC_PORT: u16 = 10009;
 
 pub struct Lnd {
-    pub container: ContainerAsync<GenericImage>,
+    pub lightning_api: ApiCredentials,
     client: Mutex<Client>,
+    _container: ContainerAsync<GenericImage>,
 }
 
 impl Lnd {
@@ -34,6 +36,7 @@ impl Lnd {
         bitcoind_zmq_tx: &ApiCredentials,
     ) -> Result<Self> {
         let container = GenericImage::new(IMAGE_NAME, IMAGE_TAG)
+            .with_exposed_port(LIGHTNING_PORT.into())
             .with_exposed_port(RPC_PORT.into())
             .with_wait_for(WaitFor::message_on_stdout("Server listening on"))
             .with_network(environment_id.network_name())
@@ -66,21 +69,26 @@ impl Lnd {
         let working_dir = environment_id.working_dir().join("lnd");
         std::fs::create_dir_all(&working_dir)?;
         let cert_path = working_dir.join("tls.cert");
+        container
+            .copy_file("/root/.lnd/tls.cert", &cert_path)
+            .await?;
         let macaroon_path = working_dir.join("admin.macaroon");
-        copy_files(&container, "/root/.lnd/tls.cert", &cert_path).await?;
-        copy_files(
-            &container,
-            "/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon",
-            &macaroon_path,
-        )
-        .await?;
+        container
+            .copy_file(
+                "/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon",
+                &macaroon_path,
+            )
+            .await?;
+
+        let lightning_api = ApiCredentials::from_container(&container, LIGHTNING_PORT).await?;
         let port = container.get_host_port_ipv4(RPC_PORT).await?;
         let endpoint = format!("https://localhost:{port}");
         let client = tonic_lnd::connect(endpoint, &cert_path, &macaroon_path).await?;
 
         Ok(Self {
-            container,
+            lightning_api,
             client: Mutex::new(client),
+            _container: container,
         })
     }
 
@@ -195,18 +203,4 @@ impl Lnd {
             .await?;
         Ok(resp.into_inner().payment_request)
     }
-}
-
-async fn copy_files(
-    container: &ContainerAsync<GenericImage>,
-    source: &str,
-    destination: &PathBuf,
-) -> Result<()> {
-    let content = container
-        .exec(ExecCommand::new(["cat", source]))
-        .await?
-        .stdout_to_vec()
-        .await?;
-    tokio::fs::write(&destination, content).await?;
-    Ok(())
 }

@@ -3,6 +3,10 @@ test:
 # Set stack size to 16MB, otherwise the test fails with stack overflow.
 	RUST_MIN_STACK=16777216 cargo test -- --nocapture
 
+test-environment:
+# Set stack size to 16MB, otherwise the test fails with stack overflow.
+	RUST_MIN_STACK=16777216 cargo test -- --nocapture --ignored test_environment
+
 .PHONY: build-images
 build-images: build-vss build-rgs build-lsp
 
