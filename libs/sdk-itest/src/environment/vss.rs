@@ -5,7 +5,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use testcontainers_modules::postgres::Postgres;
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "vss";
@@ -25,7 +25,7 @@ impl Vss {
             .with_init_sql(init_sql.to_vec())
             .with_tag("16")
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("vss-postgres"))
+            .with_log_consumer(LogConsumer::new("vss-postgres"))
             .start()
             .await?;
         let postgres_host = postgres.get_bridge_ip_address().await?.to_string();
@@ -38,7 +38,7 @@ impl Vss {
                     .with_expected_status_code(400u16),
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("vss-server"))
+            .with_log_consumer(LogConsumer::new("vss-server"))
             .with_env_var("VSS_BIND_ADDRESS", format!("0.0.0.0:{RPC_PORT}"))
             .with_env_var("VSS_PSQL_ADDRESS", format!("{postgres_host}:5432"))
             .with_env_var("VSS_PSQL_DEFAULT_DB", "postgres")

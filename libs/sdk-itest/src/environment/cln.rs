@@ -9,7 +9,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 
 use crate::environment::container::ContainerExt;
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, Cert, EnvironmentId};
 
 const CA_PEM_FILE: &str = "/data/.lightning/regtest/ca.pem";
@@ -41,7 +41,7 @@ impl Cln {
             ))
             .with_network(environment_id.network_name())
             .with_hostname(CLN_HOSTNAME)
-            .with_log_consumer(TracingConsumer::new("cln"))
+            .with_log_consumer(LogConsumer::new("cln"))
             .with_cmd([
                 "--network=regtest",
                 "--alias=cln",

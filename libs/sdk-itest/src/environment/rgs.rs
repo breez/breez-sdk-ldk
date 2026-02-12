@@ -9,7 +9,7 @@ use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use testcontainers_modules::postgres::Postgres;
 use tokio::try_join;
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId, Lnd};
 
 const IMAGE_NAME: &str = "rgs";
@@ -33,7 +33,7 @@ impl Rgs {
         let postgres = Postgres::default()
             .with_tag("16")
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("rgs-postgres"))
+            .with_log_consumer(LogConsumer::new("rgs-postgres"))
             .start()
             .map_err(anyhow::Error::msg);
         let (postgres, bitcoind_rest_api, lsp_address, _lnd) =
@@ -48,7 +48,7 @@ impl Rgs {
                 "Sleeping until next snapshot capture",
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("rgs-server"))
+            .with_log_consumer(LogConsumer::new("rgs-server"))
             .with_mount(rgs_data)
             .with_env_var("BITCOIN_REST_DOMAIN", &bitcoind_rest_api.host)
             .with_env_var("BITCOIN_REST_PATH", &bitcoind_rest_api.path)
@@ -69,7 +69,7 @@ impl Rgs {
         let nginx = GenericImage::new("nginx", "latest")
             .with_exposed_port(RPC_PORT.into())
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("rgs-nginx"))
+            .with_log_consumer(LogConsumer::new("rgs-nginx"))
             .with_copy_to("/etc/nginx/conf.d/default.conf", nginx_config.to_vec())
             .with_mount(rgs_data)
             .start()

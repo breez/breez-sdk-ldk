@@ -7,7 +7,7 @@ use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use testcontainers_modules::mariadb::Mariadb;
 use tokio::try_join;
 
-use crate::environment::log::TracingConsumer;
+use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "mempool/backend";
@@ -32,7 +32,7 @@ impl Mempool {
             .with_env_var("MARIADB_PASSWORD", "mempool")
             .with_env_var("MARIADB_USER", "mempool")
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("mempool-db"))
+            .with_log_consumer(LogConsumer::new("mempool-db"))
             .start()
             .map_err(anyhow::Error::msg);
 
@@ -47,7 +47,7 @@ impl Mempool {
                     .with_expected_status_code(200u16),
             )))
             .with_network(environment_id.network_name())
-            .with_log_consumer(TracingConsumer::new("mempool"))
+            .with_log_consumer(LogConsumer::new("mempool"))
             .with_env_var("CORE_RPC_HOST", bitcoind_api.host.clone())
             .with_env_var("CORE_RPC_PASSWORD", bitcoind_api.password.clone())
             .with_env_var("CORE_RPC_PORT", bitcoind_api.port.to_string())
