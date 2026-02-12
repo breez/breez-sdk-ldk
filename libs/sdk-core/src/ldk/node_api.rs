@@ -38,6 +38,7 @@ use crate::models::{Config, LspAPI, NodeState, OpeningFeeParams, OpeningFeeParam
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
+use crate::persist::payment_store::PaymentStore;
 use crate::{
     CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
     PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop, TlvEntry,
@@ -128,6 +129,10 @@ impl Ldk {
             store,
             remote_lock_shutdown_tx,
         })
+    }
+
+    pub fn get_payment_store(&self) -> Arc<dyn PaymentStore> {
+        Arc::new(self.store.clone())
     }
 }
 

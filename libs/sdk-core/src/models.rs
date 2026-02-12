@@ -666,6 +666,39 @@ pub(crate) struct PaymentExternalInfo {
     pub attempted_error: Option<String>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) enum LnUrlPayTarget {
+    LnAddress(String),
+    Domain(String),
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct LnUrlPayInfo {
+    pub target: LnUrlPayTarget,
+    pub metadata: String,
+    pub comment: Option<String>,
+    pub success_action: Option<SuccessActionProcessed>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct LnUrlWithdrawInfo {
+    pub endpoint: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) enum LnUrlInfo {
+    Pay(LnUrlPayInfo),
+    Withdraw(LnUrlWithdrawInfo),
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct LnPaymentInfo {
+    pub bolt11: String,
+    pub payment_hash: String,
+    pub destination_pubkey: String,
+    pub description: Option<String>,
+}
+
 /// Represents a list payments request.
 #[derive(Default)]
 pub struct ListPaymentsRequest {
