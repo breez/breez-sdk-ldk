@@ -12,9 +12,9 @@ use crate::environment::container::ContainerExt;
 use crate::environment::log::LogConsumer;
 use crate::environment::{ApiCredentials, Cert, EnvironmentId};
 
-const CA_PEM_FILE: &str = "/data/.lightning/regtest/ca.pem";
-const CLIENT_CERT_FILE: &str = "/data/.lightning/regtest/client.pem";
-const CLIENT_KEY_FILE: &str = "/data/.lightning/regtest/client-key.pem";
+const CA_PEM_FILE: &str = "/root/.lightning/regtest/ca.pem";
+const CLIENT_CERT_FILE: &str = "/root/.lightning/regtest/client.pem";
+const CLIENT_KEY_FILE: &str = "/root/.lightning/regtest/client-key.pem";
 const CLN_HOSTNAME: &str = "cln";
 const GRPC_PORT: u16 = 8888;
 const IMAGE_NAME: &str = "elementsproject/lightningd";

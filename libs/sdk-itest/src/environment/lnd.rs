@@ -19,13 +19,18 @@ use crate::environment::{ApiCredentials, EnvironmentId};
 
 const IMAGE_NAME: &str = "lightninglabs/lnd";
 const IMAGE_TAG: &str = "v0.19.3-beta";
+const SOCAT_IMAGE: &str = "alpine/socat";
+const SOCAT_IMAGE_TAG: &str = "latest";
+const LND_HOSTNAME: &str = "lnd";
 const LIGHTNING_PORT: u16 = 9735;
 const RPC_PORT: u16 = 10009;
 
 pub struct Lnd {
     pub lightning_api: ApiCredentials,
+    pub grpc_api: ApiCredentials,
     client: Mutex<Client>,
     _container: ContainerAsync<GenericImage>,
+    _socat: ContainerAsync<GenericImage>,
 }
 
 impl Lnd {
@@ -40,6 +45,7 @@ impl Lnd {
             .with_exposed_port(RPC_PORT.into())
             .with_wait_for(WaitFor::message_on_stdout("Server listening on"))
             .with_network(environment_id.network_name())
+            .with_hostname(LND_HOSTNAME)
             .with_log_consumer(LogConsumer::new("lnd"))
             .with_cmd([
                 "--bitcoin.regtest",
@@ -72,6 +78,7 @@ impl Lnd {
         container
             .copy_file("/root/.lnd/tls.cert", &cert_path)
             .await?;
+        let tls_cert = container.read_file("/root/.lnd/tls.cert").await?;
         let macaroon_path = working_dir.join("admin.macaroon");
         container
             .copy_file(
@@ -79,15 +86,37 @@ impl Lnd {
                 &macaroon_path,
             )
             .await?;
+        let macaroon = container
+            .read_file("/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon")
+            .await?;
 
         let lightning_api = ApiCredentials::from_container(&container, LIGHTNING_PORT).await?;
         let port = container.get_host_port_ipv4(RPC_PORT).await?;
         let endpoint = format!("https://localhost:{port}");
         let client = tonic_lnd::connect(endpoint, &cert_path, &macaroon_path).await?;
 
+        let socat = GenericImage::new(SOCAT_IMAGE, SOCAT_IMAGE_TAG)
+            .with_exposed_port(RPC_PORT.into())
+            .with_wait_for(WaitFor::message_on_stderr("listening on"))
+            .with_network(environment_id.network_name())
+            .with_log_consumer(LogConsumer::new("lnd-socat"))
+            .with_copy_to("/root/.lnd/tls.cert", tls_cert.clone())
+            .with_cmd([
+                "-dd",
+                format!("TCP-LISTEN:{RPC_PORT},fork").as_str(),
+                format!("OPENSSL:{LND_HOSTNAME}:{RPC_PORT},cafile=/root/.lnd/tls.cert").as_str(),
+            ])
+            .start()
+            .await?;
+
+        let mut grpc_api = ApiCredentials::from_container(&socat, RPC_PORT).await?;
+        grpc_api.macaroon = macaroon;
+
         Ok(Self {
             lightning_api,
+            grpc_api,
             client: Mutex::new(client),
+            _socat: socat,
             _container: container,
         })
     }
