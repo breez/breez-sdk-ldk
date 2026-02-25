@@ -98,8 +98,8 @@ pub struct PaymentFailedData {
 #[derive(Clone, Debug, PartialEq)]
 pub struct InvoicePaidDetails {
     pub payment_hash: String,
-    pub bolt11: String,
-    pub payment: Option<Payment>,
+    pub payment_preimage: String,
+    pub amount_msat: u64,
 }
 
 pub trait LogStream: Send + Sync {
@@ -299,11 +299,17 @@ impl BreezServices {
             return Err(SendPaymentError::AlreadyPaid);
         }
 
+        let description = parsed_invoice
+            .description
+            .as_ref()
+            .or(parsed_invoice.description_hash.as_ref())
+            .cloned()
+            .unwrap_or_default();
         let info = LnPaymentInfo {
             bolt11: parsed_invoice.bolt11.clone(),
             payment_hash: parsed_invoice.payment_hash.clone(),
             destination_pubkey: parsed_invoice.payee_pubkey.clone(),
-            description: parsed_invoice.description.clone(),
+            description,
         };
         self.payment_store
             .set_ln_info(&parsed_invoice.payment_hash, &info)
@@ -319,13 +325,19 @@ impl BreezServices {
             .await;
 
         debug!("payment returned {payment_res:?}");
-        let payment = self
+        let mut payment = self
             .on_payment_completed(
                 parsed_invoice.payee_pubkey.clone(),
                 Some(parsed_invoice),
                 payment_res,
             )
             .await?;
+        if let PaymentDetails::Ln { data } = &mut payment.details {
+            data.bolt11 = info.bolt11;
+            data.payment_hash = info.payment_hash;
+            data.destination_pubkey = info.destination_pubkey;
+            data.description = info.description;
+        }
         Ok(SendPaymentResponse { payment })
     }
 
@@ -374,7 +386,7 @@ impl BreezServices {
                 };
                 let invoice = parse_invoice(cb.pr.as_str())?;
 
-                let payment = match self.send_payment(pay_req).await {
+                let mut payment = match self.send_payment(pay_req).await {
                     Ok(p) => Ok(p),
                     e @ Err(
                         SendPaymentError::InvalidInvoice { .. }
@@ -430,8 +442,12 @@ impl BreezServices {
                 };
                 // Store SA (if available) + LN Address in separate table, associated to payment_hash
                 let target = match &req.data.ln_address {
-                    Some(address) => LnUrlPayTarget::LnAddress(address.clone()),
-                    None => LnUrlPayTarget::Domain(req.data.domain),
+                    Some(address) => LnUrlPayTarget::LnAddress {
+                        address: address.clone(),
+                    },
+                    None => LnUrlPayTarget::Domain {
+                        domain: req.data.domain,
+                    },
                 };
                 let info = LnUrlPayInfo {
                     target,
@@ -439,7 +455,7 @@ impl BreezServices {
                     comment: req.comment.clone(),
                     success_action: maybe_sa_processed.clone(),
                 };
-                let info = LnUrlInfo::Pay(info);
+                let info = LnUrlInfo::Pay { info };
                 self.payment_store
                     .set_lnurl_info(&invoice.payment_hash, &info)
                     .await?;
@@ -458,6 +474,9 @@ impl BreezServices {
                     },
                 )?;
 
+                if let PaymentDetails::Ln { data } = &mut payment.details {
+                    data.lnurl_info = Some(info);
+                }
                 Ok(LnUrlPayResult::EndpointSuccess {
                     data: lnurl::pay::LnUrlPaySuccessData {
                         payment,
@@ -495,7 +514,7 @@ impl BreezServices {
             let info = LnUrlWithdrawInfo {
                 endpoint: lnurl_w_endpoint.clone(),
             };
-            let info = LnUrlInfo::Withdraw(info);
+            let info = LnUrlInfo::Withdraw { info };
             self.payment_store
                 .set_lnurl_info(&data.invoice.payment_hash, &info)
                 .await?;
@@ -544,7 +563,17 @@ impl BreezServices {
         &self,
         req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
-        self.receiver.receive_payment(req).await
+        let response = self.receiver.receive_payment(req.clone()).await?;
+        let info = LnPaymentInfo {
+            bolt11: response.ln_invoice.bolt11.clone(),
+            payment_hash: response.ln_invoice.payment_hash.clone(),
+            destination_pubkey: self.node_api.node_id().await?,
+            description: req.description,
+        };
+        self.payment_store
+            .set_ln_info(&response.ln_invoice.payment_hash, &info)
+            .await?;
+        Ok(response)
     }
 
     /// Report an issue.
@@ -623,12 +652,55 @@ impl BreezServices {
 
     /// List payments matching the given filters, as retrieved from persistent storage
     pub async fn list_payments(&self, req: ListPaymentsRequest) -> SdkResult<Vec<Payment>> {
-        Ok(self.persister.list_payments(req)?)
+        let mut payments = self.persister.list_payments(req)?;
+        let ln_payment_ids: Vec<&str> = payments
+            .iter()
+            .filter(|payment| matches!(payment.details, PaymentDetails::Ln { .. }))
+            .map(|payment| payment.id.as_str())
+            .collect();
+
+        if !ln_payment_ids.is_empty() {
+            let mut ln_info = self.payment_store.get_ln_info(&ln_payment_ids).await?;
+            let mut lnurl_info = self.payment_store.get_lnurl_info(&ln_payment_ids).await?;
+            for payment in &mut payments {
+                if let PaymentDetails::Ln { data } = &mut payment.details {
+                    if let Some(info) = ln_info.remove(payment.id.as_str()) {
+                        data.bolt11 = info.bolt11;
+                        data.payment_hash = info.payment_hash;
+                        data.destination_pubkey = info.destination_pubkey;
+                        data.description = info.description;
+                    }
+                    data.lnurl_info = lnurl_info.remove(payment.id.as_str());
+                }
+            }
+        }
+
+        Ok(payments)
     }
 
     /// Fetch a specific payment by its hash.
     pub async fn payment_by_hash(&self, hash: String) -> SdkResult<Option<Payment>> {
-        Ok(self.persister.get_payment_by_hash(&hash)?)
+        if let Some(mut payment) = self.persister.get_payment_by_hash(&hash)? {
+            if let PaymentDetails::Ln { data } = &mut payment.details {
+                let mut ln_info = self
+                    .payment_store
+                    .get_ln_info(&[payment.id.as_str()])
+                    .await?;
+                let mut lnurl_info = self
+                    .payment_store
+                    .get_lnurl_info(&[payment.id.as_str()])
+                    .await?;
+                if let Some(info) = ln_info.remove(payment.id.as_str()) {
+                    data.bolt11 = info.bolt11;
+                    data.payment_hash = info.payment_hash;
+                    data.destination_pubkey = info.destination_pubkey;
+                    data.description = info.description;
+                }
+                data.lnurl_info = lnurl_info.remove(payment.id.as_str());
+            }
+            return Ok(Some(payment));
+        }
+        Ok(None)
     }
 
     /// Set the external metadata of a payment as a valid JSON string
@@ -1146,7 +1218,6 @@ impl BreezServices {
                 fee_msat: 0,
                 status: PaymentStatus::Pending,
                 error: None,
-                description: invoice.description.clone(),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: invoice.payment_hash.clone(),
@@ -1154,14 +1225,13 @@ impl BreezServices {
                         payment_preimage: String::new(),
                         keysend: false,
                         bolt11: invoice.bolt11.clone(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        ln_address: None,
-                        lnurl_metadata: None,
-                        lnurl_withdraw_endpoint: None,
-                        swap_info: None,
-                        reverse_swap_info: None,
+                        description: invoice
+                            .description
+                            .as_ref()
+                            .or(invoice.description_hash.as_ref())
+                            .cloned()
+                            .unwrap_or_default(),
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -1485,23 +1555,18 @@ impl BreezServices {
                     };
 
                     debug!("invoice stream got new invoice");
-                    let mut payment: Option<crate::models::Payment> = p.clone().try_into().ok();
-                    if let Some(ref p) = payment {
+                    if let Ok(ref p) = p.clone().try_into() {
                         let res = cloned
                             .persister
                             .insert_or_update_payments(std::slice::from_ref(p), false);
                         debug!("paid invoice was added to payments list {res:?}");
-                        payment = cloned
-                            .persister
-                            .get_payment_by_hash(&p.id)
-                            .unwrap_or(payment);
                     }
                     _ = cloned
                         .on_event(BreezEvent::InvoicePaid {
                             details: InvoicePaidDetails {
                                 payment_hash: hex::encode(p.payment_hash),
-                                bolt11: p.bolt11,
-                                payment,
+                                payment_preimage: hex::encode(p.preimage),
+                                amount_msat: p.amount_msat,
                             },
                         })
                         .await;
@@ -2071,7 +2136,6 @@ impl BreezServicesBuilder {
                 self.config.clone(),
                 self.seed.clone().unwrap(),
                 restore_only,
-                persister.clone(),
             )
             .await?;
             node_api = Some(node_impls.node);
@@ -2314,6 +2378,7 @@ pub(crate) mod tests {
     use crate::breez_services::{BreezServices, BreezServicesBuilder};
     use crate::models::{LnPaymentDetails, NodeState, Payment, PaymentDetails, PaymentTypeFilter};
     use crate::node_api::NodeAPI;
+    use crate::persist::payment_store::PaymentStore;
     use crate::persist::swap::SwapStorage;
     use crate::test_utils::*;
     use crate::*;
@@ -2331,6 +2396,21 @@ pub(crate) mod tests {
         let sa = SuccessActionProcessed::Message {
             data: MessageSuccessActionData {
                 message: "test message".into(),
+            },
+        };
+        let lnurl_withdraw_info = LnUrlInfo::Withdraw {
+            info: LnUrlWithdrawInfo {
+                endpoint: test_lnurl_withdraw_endpoint.to_string(),
+            },
+        };
+        let lnurl_pay_info = LnUrlInfo::Pay {
+            info: LnUrlPayInfo {
+                target: LnUrlPayTarget::LnAddress {
+                    address: test_ln_address.to_string(),
+                },
+                metadata: lnurl_metadata.to_string(),
+                comment: None,
+                success_action: Some(sa.clone()),
             },
         };
 
@@ -2407,7 +2487,6 @@ pub(crate) mod tests {
                 fee_msat: 0,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("test receive".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: "1111".to_string(),
@@ -2415,14 +2494,8 @@ pub(crate) mod tests {
                         payment_preimage: "2222".to_string(),
                         keysend: false,
                         bolt11: "1111".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
-                        swap_info: None,
-                        reverse_swap_info: None,
+                        description: "test receive".to_string(),
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -2435,7 +2508,6 @@ pub(crate) mod tests {
                 fee_msat: 0,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("test lnurl-withdraw receive".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_lnurl_withdraw.to_string(),
@@ -2443,14 +2515,10 @@ pub(crate) mod tests {
                         payment_preimage: "3333".to_string(),
                         keysend: false,
                         bolt11: "1111".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: None,
-                        ln_address: None,
+                        description: "test lnurl-withdraw receive".to_string(),
                         lnurl_withdraw_endpoint: Some(test_lnurl_withdraw_endpoint.to_string()),
-                        swap_info: None,
-                        reverse_swap_info: None,
+                        lnurl_info: Some(lnurl_withdraw_info.clone()),
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -2463,7 +2531,6 @@ pub(crate) mod tests {
                 fee_msat: 2,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("test payment".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_success_action.to_string(),
@@ -2471,14 +2538,12 @@ pub(crate) mod tests {
                         payment_preimage: "4444".to_string(),
                         keysend: false,
                         bolt11: "123".to_string(),
+                        description: "test payment".to_string(),
                         lnurl_success_action: Some(sa.clone()),
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
                         lnurl_metadata: Some(lnurl_metadata.to_string()),
                         ln_address: Some(test_ln_address.to_string()),
-                        lnurl_withdraw_endpoint: None,
-                        swap_info: None,
-                        reverse_swap_info: None,
+                        lnurl_info: Some(lnurl_pay_info.clone()),
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -2491,7 +2556,6 @@ pub(crate) mod tests {
                 fee_msat: 0,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("test receive".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_swap),
@@ -2499,14 +2563,9 @@ pub(crate) mod tests {
                         payment_preimage: "5555".to_string(),
                         keysend: false,
                         bolt11: "312".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
+                        description: "test receive".to_string(),
                         swap_info: Some(swap_info.clone()),
-                        reverse_swap_info: None,
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -2519,7 +2578,6 @@ pub(crate) mod tests {
                 fee_msat: 2_000,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("test send onchain".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_rev_swap),
@@ -2527,14 +2585,9 @@ pub(crate) mod tests {
                         payment_preimage: hex::encode(preimage_rev_swap),
                         keysend: false,
                         bolt11: "312".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_metadata: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
-                        swap_info: None,
+                        description: "test send onchain".to_string(),
                         reverse_swap_info: Some(rev_swap_info.clone()),
+                        ..Default::default()
                     },
                 },
                 metadata: None,
@@ -2584,13 +2637,21 @@ pub(crate) mod tests {
             .update_reverse_swap_lockup_txid("rev_swap_id", Some("lockup_txid".to_string()))?;
         persister.update_reverse_swap_claim_txid("rev_swap_id", Some("claim_txid".to_string()))?;
 
+        let payment_store = Arc::new(MockPaymentStore::default());
+        payment_store
+            .set_lnurl_info(payment_hash_lnurl_withdraw, &lnurl_withdraw_info)
+            .await?;
+        payment_store
+            .set_lnurl_info(payment_hash_with_lnurl_success_action, &lnurl_pay_info)
+            .await?;
+
         let mut builder = BreezServicesBuilder::new(test_config.clone());
         let breez_services = builder
             .lsp_api(Arc::new(MockBreezServer {}))
             .fiat_api(Arc::new(MockBreezServer {}))
             .node_api(node_api)
             .persister(persister)
-            .payment_store(Arc::new(MockPaymentStore::default()))
+            .payment_store(payment_store)
             .backup_transport(Arc::new(MockBackupTransport::new()))
             .build(None, None)
             .await?;

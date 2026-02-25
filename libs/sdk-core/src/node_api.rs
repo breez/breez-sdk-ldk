@@ -118,7 +118,6 @@ pub struct IncomingPayment {
     pub payment_hash: Vec<u8>,
     pub preimage: Vec<u8>,
     pub amount_msat: u64,
-    pub bolt11: String,
 }
 
 impl TryFrom<IncomingPayment> for Payment {
@@ -126,7 +125,6 @@ impl TryFrom<IncomingPayment> for Payment {
 
     fn try_from(p: IncomingPayment) -> std::result::Result<Self, Self::Error> {
 		let payment_time = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| NodeError::Generic(format!("{e}")))?.as_secs() as i64;
-        let ln_invoice = parse_invoice(&p.bolt11)?;
         Ok(Payment {
             id: hex::encode(p.payment_hash.clone()),
             payment_type: PaymentType::Received,
@@ -135,22 +133,12 @@ impl TryFrom<IncomingPayment> for Payment {
             fee_msat: 0,
             status: PaymentStatus::Complete,
             error: None,
-            description: ln_invoice.description,
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: hex::encode(p.payment_hash),
-                    destination_pubkey: ln_invoice.payee_pubkey,
                     payment_preimage: hex::encode(p.preimage),
                     keysend: false,
-                    bolt11: p.bolt11,
-                    lnurl_success_action: None, // For received payments, this is None
-                    lnurl_pay_domain: None,     // For received payments, this is None
-                    lnurl_pay_comment: None,    // For received payments, this is None
-                    lnurl_metadata: None,       // For received payments, this is None
-                    ln_address: None,
-                    lnurl_withdraw_endpoint: None,
-                    swap_info: None,
-                    reverse_swap_info: None,
+					..Default::default()
                 },
             },
             metadata: None,

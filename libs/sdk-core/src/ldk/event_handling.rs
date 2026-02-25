@@ -35,33 +35,23 @@ pub async fn start_event_handling(
                 payment_hash,
                 amount_msat,
                 ..
-            } => {
-                match store.load_preimage(&payment_hash) {
-                    Ok(preimage) => {
-                        let bolt11 = match store.load_bolt11(&payment_hash) {
-                            Ok(bolt11) => bolt11,
-                            Err(err) => {
-                                error!("Failed to read bolt11 for payment with id={payment_id:?}: {err}");
-                                None
-                            }
-                        };
-                        let payment = IncomingPayment {
-                            payment_hash: payment_hash.0.to_vec(),
-                            preimage: preimage.0.to_vec(),
-                            amount_msat,
-                            bolt11: bolt11.unwrap_or_default(),
-                        };
-                        if let Err(e) = incoming_payments_tx.send(payment) {
-                            warn!("Failed to send payment to incoming_payments_tx: {e}");
-                        }
-                    }
-                    Err(err) => {
-                        error!(
-                            "Payment received but failed to read preimage for payment with id={payment_id:?}: {err}"
-                        );
+            } => match store.load_preimage(&payment_hash) {
+                Ok(preimage) => {
+                    let payment = IncomingPayment {
+                        payment_hash: payment_hash.0.to_vec(),
+                        preimage: preimage.0.to_vec(),
+                        amount_msat,
+                    };
+                    if let Err(e) = incoming_payments_tx.send(payment) {
+                        warn!("Failed to send payment to incoming_payments_tx: {e}");
                     }
                 }
-            }
+                Err(err) => {
+                    error!(
+                            "Payment received but failed to read preimage for payment with id={payment_id:?}: {err}"
+                        );
+                }
+            },
             Event::PaymentSuccessful { .. } => (),
             Event::PaymentFailed { .. } => (),
             Event::PaymentClaimable {

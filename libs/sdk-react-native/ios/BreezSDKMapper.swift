@@ -649,22 +649,21 @@ enum BreezSDKMapper {
         guard let paymentHash = invoicePaidDetails["paymentHash"] as? String else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "paymentHash", typeName: "InvoicePaidDetails"))
         }
-        guard let bolt11 = invoicePaidDetails["bolt11"] as? String else {
-            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "bolt11", typeName: "InvoicePaidDetails"))
+        guard let paymentPreimage = invoicePaidDetails["paymentPreimage"] as? String else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "paymentPreimage", typeName: "InvoicePaidDetails"))
         }
-        var payment: Payment?
-        if let paymentTmp = invoicePaidDetails["payment"] as? [String: Any?] {
-            payment = try asPayment(payment: paymentTmp)
+        guard let amountMsat = invoicePaidDetails["amountMsat"] as? UInt64 else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "amountMsat", typeName: "InvoicePaidDetails"))
         }
 
-        return InvoicePaidDetails(paymentHash: paymentHash, bolt11: bolt11, payment: payment)
+        return InvoicePaidDetails(paymentHash: paymentHash, paymentPreimage: paymentPreimage, amountMsat: amountMsat)
     }
 
     static func dictionaryOf(invoicePaidDetails: InvoicePaidDetails) -> [String: Any?] {
         return [
             "paymentHash": invoicePaidDetails.paymentHash,
-            "bolt11": invoicePaidDetails.bolt11,
-            "payment": invoicePaidDetails.payment == nil ? nil : dictionaryOf(payment: invoicePaidDetails.payment!),
+            "paymentPreimage": invoicePaidDetails.paymentPreimage,
+            "amountMsat": invoicePaidDetails.amountMsat,
         ]
     }
 
@@ -1046,6 +1045,9 @@ enum BreezSDKMapper {
         guard let bolt11 = lnPaymentDetails["bolt11"] as? String else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "bolt11", typeName: "LnPaymentDetails"))
         }
+        guard let description = lnPaymentDetails["description"] as? String else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "description", typeName: "LnPaymentDetails"))
+        }
         var lnurlSuccessAction: SuccessActionProcessed?
         if let lnurlSuccessActionTmp = lnPaymentDetails["lnurlSuccessAction"] as? [String: Any?] {
             lnurlSuccessAction = try asSuccessActionProcessed(successActionProcessed: lnurlSuccessActionTmp)
@@ -1086,6 +1088,11 @@ enum BreezSDKMapper {
             }
             lnurlWithdrawEndpoint = lnurlWithdrawEndpointTmp
         }
+        var lnurlInfo: LnUrlInfo?
+        if let lnurlInfoTmp = lnPaymentDetails["lnurlInfo"] as? [String: Any?] {
+            lnurlInfo = try asLnUrlInfo(lnUrlInfo: lnurlInfoTmp)
+        }
+
         var swapInfo: SwapInfo?
         if let swapInfoTmp = lnPaymentDetails["swapInfo"] as? [String: Any?] {
             swapInfo = try asSwapInfo(swapInfo: swapInfoTmp)
@@ -1096,7 +1103,7 @@ enum BreezSDKMapper {
             reverseSwapInfo = try asReverseSwapInfo(reverseSwapInfo: reverseSwapInfoTmp)
         }
 
-        return LnPaymentDetails(paymentHash: paymentHash, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, lnurlSuccessAction: lnurlSuccessAction, lnurlPayDomain: lnurlPayDomain, lnurlPayComment: lnurlPayComment, lnurlMetadata: lnurlMetadata, lnAddress: lnAddress, lnurlWithdrawEndpoint: lnurlWithdrawEndpoint, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo)
+        return LnPaymentDetails(paymentHash: paymentHash, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, description: description, lnurlSuccessAction: lnurlSuccessAction, lnurlPayDomain: lnurlPayDomain, lnurlPayComment: lnurlPayComment, lnurlMetadata: lnurlMetadata, lnAddress: lnAddress, lnurlWithdrawEndpoint: lnurlWithdrawEndpoint, lnurlInfo: lnurlInfo, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo)
     }
 
     static func dictionaryOf(lnPaymentDetails: LnPaymentDetails) -> [String: Any?] {
@@ -1106,12 +1113,14 @@ enum BreezSDKMapper {
             "paymentPreimage": lnPaymentDetails.paymentPreimage,
             "keysend": lnPaymentDetails.keysend,
             "bolt11": lnPaymentDetails.bolt11,
+            "description": lnPaymentDetails.description,
             "lnurlSuccessAction": lnPaymentDetails.lnurlSuccessAction == nil ? nil : dictionaryOf(successActionProcessed: lnPaymentDetails.lnurlSuccessAction!),
             "lnurlPayDomain": lnPaymentDetails.lnurlPayDomain == nil ? nil : lnPaymentDetails.lnurlPayDomain,
             "lnurlPayComment": lnPaymentDetails.lnurlPayComment == nil ? nil : lnPaymentDetails.lnurlPayComment,
             "lnurlMetadata": lnPaymentDetails.lnurlMetadata == nil ? nil : lnPaymentDetails.lnurlMetadata,
             "lnAddress": lnPaymentDetails.lnAddress == nil ? nil : lnPaymentDetails.lnAddress,
             "lnurlWithdrawEndpoint": lnPaymentDetails.lnurlWithdrawEndpoint == nil ? nil : lnPaymentDetails.lnurlWithdrawEndpoint,
+            "lnurlInfo": lnPaymentDetails.lnurlInfo == nil ? nil : dictionaryOf(lnUrlInfo: lnPaymentDetails.lnurlInfo!),
             "swapInfo": lnPaymentDetails.swapInfo == nil ? nil : dictionaryOf(swapInfo: lnPaymentDetails.swapInfo!),
             "reverseSwapInfo": lnPaymentDetails.reverseSwapInfo == nil ? nil : dictionaryOf(reverseSwapInfo: lnPaymentDetails.reverseSwapInfo!),
         ]
@@ -1245,6 +1254,56 @@ enum BreezSDKMapper {
 
     static func arrayOf(lnUrlPayErrorDataList: [LnUrlPayErrorData]) -> [Any] {
         return lnUrlPayErrorDataList.map { v -> [String: Any?] in return dictionaryOf(lnUrlPayErrorData: v) }
+    }
+
+    static func asLnUrlPayInfo(lnUrlPayInfo: [String: Any?]) throws -> LnUrlPayInfo {
+        guard let targetTmp = lnUrlPayInfo["target"] as? [String: Any?] else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "target", typeName: "LnUrlPayInfo"))
+        }
+        let target = try asLnUrlPayTarget(lnUrlPayTarget: targetTmp)
+
+        guard let metadata = lnUrlPayInfo["metadata"] as? String else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "metadata", typeName: "LnUrlPayInfo"))
+        }
+        var comment: String?
+        if hasNonNilKey(data: lnUrlPayInfo, key: "comment") {
+            guard let commentTmp = lnUrlPayInfo["comment"] as? String else {
+                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "comment"))
+            }
+            comment = commentTmp
+        }
+        var successAction: SuccessActionProcessed?
+        if let successActionTmp = lnUrlPayInfo["successAction"] as? [String: Any?] {
+            successAction = try asSuccessActionProcessed(successActionProcessed: successActionTmp)
+        }
+
+        return LnUrlPayInfo(target: target, metadata: metadata, comment: comment, successAction: successAction)
+    }
+
+    static func dictionaryOf(lnUrlPayInfo: LnUrlPayInfo) -> [String: Any?] {
+        return [
+            "target": dictionaryOf(lnUrlPayTarget: lnUrlPayInfo.target),
+            "metadata": lnUrlPayInfo.metadata,
+            "comment": lnUrlPayInfo.comment == nil ? nil : lnUrlPayInfo.comment,
+            "successAction": lnUrlPayInfo.successAction == nil ? nil : dictionaryOf(successActionProcessed: lnUrlPayInfo.successAction!),
+        ]
+    }
+
+    static func asLnUrlPayInfoList(arr: [Any]) throws -> [LnUrlPayInfo] {
+        var list = [LnUrlPayInfo]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnUrlPayInfo = try asLnUrlPayInfo(lnUrlPayInfo: val)
+                list.append(lnUrlPayInfo)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnUrlPayInfo"))
+            }
+        }
+        return list
+    }
+
+    static func arrayOf(lnUrlPayInfoList: [LnUrlPayInfo]) -> [Any] {
+        return lnUrlPayInfoList.map { v -> [String: Any?] in return dictionaryOf(lnUrlPayInfo: v) }
     }
 
     static func asLnUrlPayRequest(lnUrlPayRequest: [String: Any?]) throws -> LnUrlPayRequest {
@@ -1415,6 +1474,37 @@ enum BreezSDKMapper {
 
     static func arrayOf(lnUrlPaySuccessDataList: [LnUrlPaySuccessData]) -> [Any] {
         return lnUrlPaySuccessDataList.map { v -> [String: Any?] in return dictionaryOf(lnUrlPaySuccessData: v) }
+    }
+
+    static func asLnUrlWithdrawInfo(lnUrlWithdrawInfo: [String: Any?]) throws -> LnUrlWithdrawInfo {
+        guard let endpoint = lnUrlWithdrawInfo["endpoint"] as? String else {
+            throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "endpoint", typeName: "LnUrlWithdrawInfo"))
+        }
+
+        return LnUrlWithdrawInfo(endpoint: endpoint)
+    }
+
+    static func dictionaryOf(lnUrlWithdrawInfo: LnUrlWithdrawInfo) -> [String: Any?] {
+        return [
+            "endpoint": lnUrlWithdrawInfo.endpoint,
+        ]
+    }
+
+    static func asLnUrlWithdrawInfoList(arr: [Any]) throws -> [LnUrlWithdrawInfo] {
+        var list = [LnUrlWithdrawInfo]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnUrlWithdrawInfo = try asLnUrlWithdrawInfo(lnUrlWithdrawInfo: val)
+                list.append(lnUrlWithdrawInfo)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnUrlWithdrawInfo"))
+            }
+        }
+        return list
+    }
+
+    static func arrayOf(lnUrlWithdrawInfoList: [LnUrlWithdrawInfo]) -> [Any] {
+        return lnUrlWithdrawInfoList.map { v -> [String: Any?] in return dictionaryOf(lnUrlWithdrawInfo: v) }
     }
 
     static func asLnUrlWithdrawRequest(lnUrlWithdrawRequest: [String: Any?]) throws -> LnUrlWithdrawRequest {
@@ -2212,13 +2302,6 @@ enum BreezSDKMapper {
             }
             error = errorTmp
         }
-        var description: String?
-        if hasNonNilKey(data: payment, key: "description") {
-            guard let descriptionTmp = payment["description"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "description"))
-            }
-            description = descriptionTmp
-        }
         guard let detailsTmp = payment["details"] as? [String: Any?] else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "details", typeName: "Payment"))
         }
@@ -2232,7 +2315,7 @@ enum BreezSDKMapper {
             metadata = metadataTmp
         }
 
-        return Payment(id: id, paymentType: paymentType, paymentTime: paymentTime, amountMsat: amountMsat, feeMsat: feeMsat, status: status, error: error, description: description, details: details, metadata: metadata)
+        return Payment(id: id, paymentType: paymentType, paymentTime: paymentTime, amountMsat: amountMsat, feeMsat: feeMsat, status: status, error: error, details: details, metadata: metadata)
     }
 
     static func dictionaryOf(payment: Payment) -> [String: Any?] {
@@ -2244,7 +2327,6 @@ enum BreezSDKMapper {
             "feeMsat": payment.feeMsat,
             "status": valueOf(paymentStatus: payment.status),
             "error": payment.error == nil ? nil : payment.error,
-            "description": payment.description == nil ? nil : payment.description,
             "details": dictionaryOf(paymentDetails: payment.details),
             "metadata": payment.metadata == nil ? nil : payment.metadata,
         ]
@@ -4539,6 +4621,65 @@ enum BreezSDKMapper {
         return list
     }
 
+    static func asLnUrlInfo(lnUrlInfo: [String: Any?]) throws -> LnUrlInfo {
+        let type = lnUrlInfo["type"] as! String
+        if type == "pay" {
+            guard let infoTmp = lnUrlInfo["info"] as? [String: Any?] else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "info", typeName: "LnUrlInfo"))
+            }
+            let _info = try asLnUrlPayInfo(lnUrlPayInfo: infoTmp)
+
+            return LnUrlInfo.pay(info: _info)
+        }
+        if type == "withdraw" {
+            guard let infoTmp = lnUrlInfo["info"] as? [String: Any?] else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "info", typeName: "LnUrlInfo"))
+            }
+            let _info = try asLnUrlWithdrawInfo(lnUrlWithdrawInfo: infoTmp)
+
+            return LnUrlInfo.withdraw(info: _info)
+        }
+
+        throw SdkError.Generic(message: "Unexpected type \(type) for enum LnUrlInfo")
+    }
+
+    static func dictionaryOf(lnUrlInfo: LnUrlInfo) -> [String: Any?] {
+        switch lnUrlInfo {
+        case let .pay(
+            info
+        ):
+            return [
+                "type": "pay",
+                "info": dictionaryOf(lnUrlPayInfo: info),
+            ]
+
+        case let .withdraw(
+            info
+        ):
+            return [
+                "type": "withdraw",
+                "info": dictionaryOf(lnUrlWithdrawInfo: info),
+            ]
+        }
+    }
+
+    static func arrayOf(lnUrlInfoList: [LnUrlInfo]) -> [Any] {
+        return lnUrlInfoList.map { v -> [String: Any?] in return dictionaryOf(lnUrlInfo: v) }
+    }
+
+    static func asLnUrlInfoList(arr: [Any]) throws -> [LnUrlInfo] {
+        var list = [LnUrlInfo]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnUrlInfo = try asLnUrlInfo(lnUrlInfo: val)
+                list.append(lnUrlInfo)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnUrlInfo"))
+            }
+        }
+        return list
+    }
+
     static func asLnUrlPayResult(lnUrlPayResult: [String: Any?]) throws -> LnUrlPayResult {
         let type = lnUrlPayResult["type"] as! String
         if type == "endpointSuccess" {
@@ -4609,6 +4750,61 @@ enum BreezSDKMapper {
                 list.append(lnUrlPayResult)
             } else {
                 throw SdkError.Generic(message: errUnexpectedType(typeName: "LnUrlPayResult"))
+            }
+        }
+        return list
+    }
+
+    static func asLnUrlPayTarget(lnUrlPayTarget: [String: Any?]) throws -> LnUrlPayTarget {
+        let type = lnUrlPayTarget["type"] as! String
+        if type == "lnAddress" {
+            guard let _address = lnUrlPayTarget["address"] as? String else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "address", typeName: "LnUrlPayTarget"))
+            }
+            return LnUrlPayTarget.lnAddress(address: _address)
+        }
+        if type == "domain" {
+            guard let _domain = lnUrlPayTarget["domain"] as? String else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "domain", typeName: "LnUrlPayTarget"))
+            }
+            return LnUrlPayTarget.domain(domain: _domain)
+        }
+
+        throw SdkError.Generic(message: "Unexpected type \(type) for enum LnUrlPayTarget")
+    }
+
+    static func dictionaryOf(lnUrlPayTarget: LnUrlPayTarget) -> [String: Any?] {
+        switch lnUrlPayTarget {
+        case let .lnAddress(
+            address
+        ):
+            return [
+                "type": "lnAddress",
+                "address": address,
+            ]
+
+        case let .domain(
+            domain
+        ):
+            return [
+                "type": "domain",
+                "domain": domain,
+            ]
+        }
+    }
+
+    static func arrayOf(lnUrlPayTargetList: [LnUrlPayTarget]) -> [Any] {
+        return lnUrlPayTargetList.map { v -> [String: Any?] in return dictionaryOf(lnUrlPayTarget: v) }
+    }
+
+    static func asLnUrlPayTargetList(arr: [Any]) throws -> [LnUrlPayTarget] {
+        var list = [LnUrlPayTarget]()
+        for value in arr {
+            if let val = value as? [String: Any?] {
+                var lnUrlPayTarget = try asLnUrlPayTarget(lnUrlPayTarget: val)
+                list.append(lnUrlPayTarget)
+            } else {
+                throw SdkError.Generic(message: errUnexpectedType(typeName: "LnUrlPayTarget"))
             }
         }
         return list

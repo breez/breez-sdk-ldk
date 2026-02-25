@@ -189,11 +189,22 @@ impl PaymentStore for MockPaymentStore {
         Ok(())
     }
 
-    async fn get_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnPaymentInfo>> {
+    async fn get_ln_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnPaymentInfo>> {
         let ln_info = self.ln_info.lock().unwrap();
         let mut res = HashMap::new();
         for payment_id in payment_ids {
             if let Some(info) = ln_info.get(*payment_id) {
+                res.insert((*payment_id).to_string(), info.clone());
+            }
+        }
+        Ok(res)
+    }
+
+    async fn get_lnurl_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnUrlInfo>> {
+        let lnurl_info = self.lnurl_info.lock().unwrap();
+        let mut res = HashMap::new();
+        for payment_id in payment_ids {
+            if let Some(info) = lnurl_info.get(*payment_id) {
                 res.insert((*payment_id).to_string(), info.clone());
             }
         }
@@ -493,7 +504,6 @@ impl MockNodeAPI {
             fee_msat: 0,
             status: status.unwrap_or(PaymentStatus::Complete),
             error: None,
-            description: None,
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: hex::encode(inv.payment_hash()),
@@ -501,14 +511,7 @@ impl MockNodeAPI {
                     payment_preimage: preimage,
                     keysend: false,
                     bolt11: inv.to_string(),
-                    lnurl_success_action: None,
-                    lnurl_pay_domain: None,
-                    lnurl_pay_comment: None,
-                    lnurl_metadata: None,
-                    ln_address: None,
-                    lnurl_withdraw_endpoint: None,
-                    swap_info: None,
-                    reverse_swap_info: None,
+                    ..Default::default()
                 },
             },
             metadata: None,

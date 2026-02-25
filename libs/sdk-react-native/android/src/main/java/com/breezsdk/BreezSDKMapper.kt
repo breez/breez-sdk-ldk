@@ -575,23 +575,24 @@ fun asInvoicePaidDetails(invoicePaidDetails: ReadableMap): InvoicePaidDetails? {
             invoicePaidDetails,
             arrayOf(
                 "paymentHash",
-                "bolt11",
+                "paymentPreimage",
+                "amountMsat",
             ),
         )
     ) {
         return null
     }
     val paymentHash = invoicePaidDetails.getString("paymentHash")!!
-    val bolt11 = invoicePaidDetails.getString("bolt11")!!
-    val payment = if (hasNonNullKey(invoicePaidDetails, "payment")) invoicePaidDetails.getMap("payment")?.let { asPayment(it) } else null
-    return InvoicePaidDetails(paymentHash, bolt11, payment)
+    val paymentPreimage = invoicePaidDetails.getString("paymentPreimage")!!
+    val amountMsat = invoicePaidDetails.getDouble("amountMsat").toULong()
+    return InvoicePaidDetails(paymentHash, paymentPreimage, amountMsat)
 }
 
 fun readableMapOf(invoicePaidDetails: InvoicePaidDetails): ReadableMap =
     readableMapOf(
         "paymentHash" to invoicePaidDetails.paymentHash,
-        "bolt11" to invoicePaidDetails.bolt11,
-        "payment" to invoicePaidDetails.payment?.let { readableMapOf(it) },
+        "paymentPreimage" to invoicePaidDetails.paymentPreimage,
+        "amountMsat" to invoicePaidDetails.amountMsat,
     )
 
 fun asInvoicePaidDetailsList(arr: ReadableArray): List<InvoicePaidDetails> {
@@ -871,6 +872,7 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
                 "paymentPreimage",
                 "keysend",
                 "bolt11",
+                "description",
             ),
         )
     ) {
@@ -881,6 +883,7 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
     val paymentPreimage = lnPaymentDetails.getString("paymentPreimage")!!
     val keysend = lnPaymentDetails.getBoolean("keysend")
     val bolt11 = lnPaymentDetails.getString("bolt11")!!
+    val description = lnPaymentDetails.getString("description")!!
     val lnurlSuccessAction =
         if (hasNonNullKey(lnPaymentDetails, "lnurlSuccessAction")) {
             lnPaymentDetails.getMap("lnurlSuccessAction")?.let {
@@ -903,6 +906,16 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         } else {
             null
         }
+    val lnurlInfo =
+        if (hasNonNullKey(
+                lnPaymentDetails,
+                "lnurlInfo",
+            )
+        ) {
+            lnPaymentDetails.getMap("lnurlInfo")?.let { asLnUrlInfo(it) }
+        } else {
+            null
+        }
     val swapInfo = if (hasNonNullKey(lnPaymentDetails, "swapInfo")) lnPaymentDetails.getMap("swapInfo")?.let { asSwapInfo(it) } else null
     val reverseSwapInfo =
         if (hasNonNullKey(lnPaymentDetails, "reverseSwapInfo")) {
@@ -918,12 +931,14 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         paymentPreimage,
         keysend,
         bolt11,
+        description,
         lnurlSuccessAction,
         lnurlPayDomain,
         lnurlPayComment,
         lnurlMetadata,
         lnAddress,
         lnurlWithdrawEndpoint,
+        lnurlInfo,
         swapInfo,
         reverseSwapInfo,
     )
@@ -936,12 +951,14 @@ fun readableMapOf(lnPaymentDetails: LnPaymentDetails): ReadableMap =
         "paymentPreimage" to lnPaymentDetails.paymentPreimage,
         "keysend" to lnPaymentDetails.keysend,
         "bolt11" to lnPaymentDetails.bolt11,
+        "description" to lnPaymentDetails.description,
         "lnurlSuccessAction" to lnPaymentDetails.lnurlSuccessAction?.let { readableMapOf(it) },
         "lnurlPayDomain" to lnPaymentDetails.lnurlPayDomain,
         "lnurlPayComment" to lnPaymentDetails.lnurlPayComment,
         "lnurlMetadata" to lnPaymentDetails.lnurlMetadata,
         "lnAddress" to lnPaymentDetails.lnAddress,
         "lnurlWithdrawEndpoint" to lnPaymentDetails.lnurlWithdrawEndpoint,
+        "lnurlInfo" to lnPaymentDetails.lnurlInfo?.let { readableMapOf(it) },
         "swapInfo" to lnPaymentDetails.swapInfo?.let { readableMapOf(it) },
         "reverseSwapInfo" to lnPaymentDetails.reverseSwapInfo?.let { readableMapOf(it) },
     )
@@ -1052,6 +1069,50 @@ fun asLnUrlPayErrorDataList(arr: ReadableArray): List<LnUrlPayErrorData> {
     for (value in arr.toArrayList()) {
         when (value) {
             is ReadableMap -> list.add(asLnUrlPayErrorData(value)!!)
+            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
+        }
+    }
+    return list
+}
+
+fun asLnUrlPayInfo(lnUrlPayInfo: ReadableMap): LnUrlPayInfo? {
+    if (!validateMandatoryFields(
+            lnUrlPayInfo,
+            arrayOf(
+                "target",
+                "metadata",
+            ),
+        )
+    ) {
+        return null
+    }
+    val target = lnUrlPayInfo.getMap("target")?.let { asLnUrlPayTarget(it) }!!
+    val metadata = lnUrlPayInfo.getString("metadata")!!
+    val comment = if (hasNonNullKey(lnUrlPayInfo, "comment")) lnUrlPayInfo.getString("comment") else null
+    val successAction =
+        if (hasNonNullKey(lnUrlPayInfo, "successAction")) {
+            lnUrlPayInfo.getMap("successAction")?.let {
+                asSuccessActionProcessed(it)
+            }
+        } else {
+            null
+        }
+    return LnUrlPayInfo(target, metadata, comment, successAction)
+}
+
+fun readableMapOf(lnUrlPayInfo: LnUrlPayInfo): ReadableMap =
+    readableMapOf(
+        "target" to readableMapOf(lnUrlPayInfo.target),
+        "metadata" to lnUrlPayInfo.metadata,
+        "comment" to lnUrlPayInfo.comment,
+        "successAction" to lnUrlPayInfo.successAction?.let { readableMapOf(it) },
+    )
+
+fun asLnUrlPayInfoList(arr: ReadableArray): List<LnUrlPayInfo> {
+    val list = ArrayList<LnUrlPayInfo>()
+    for (value in arr.toArrayList()) {
+        when (value) {
+            is ReadableMap -> list.add(asLnUrlPayInfo(value)!!)
             else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }
@@ -1201,6 +1262,36 @@ fun asLnUrlPaySuccessDataList(arr: ReadableArray): List<LnUrlPaySuccessData> {
     for (value in arr.toArrayList()) {
         when (value) {
             is ReadableMap -> list.add(asLnUrlPaySuccessData(value)!!)
+            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
+        }
+    }
+    return list
+}
+
+fun asLnUrlWithdrawInfo(lnUrlWithdrawInfo: ReadableMap): LnUrlWithdrawInfo? {
+    if (!validateMandatoryFields(
+            lnUrlWithdrawInfo,
+            arrayOf(
+                "endpoint",
+            ),
+        )
+    ) {
+        return null
+    }
+    val endpoint = lnUrlWithdrawInfo.getString("endpoint")!!
+    return LnUrlWithdrawInfo(endpoint)
+}
+
+fun readableMapOf(lnUrlWithdrawInfo: LnUrlWithdrawInfo): ReadableMap =
+    readableMapOf(
+        "endpoint" to lnUrlWithdrawInfo.endpoint,
+    )
+
+fun asLnUrlWithdrawInfoList(arr: ReadableArray): List<LnUrlWithdrawInfo> {
+    val list = ArrayList<LnUrlWithdrawInfo>()
+    for (value in arr.toArrayList()) {
+        when (value) {
+            is ReadableMap -> list.add(asLnUrlWithdrawInfo(value)!!)
             else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }
@@ -1931,10 +2022,9 @@ fun asPayment(payment: ReadableMap): Payment? {
     val feeMsat = payment.getDouble("feeMsat").toULong()
     val status = payment.getString("status")?.let { asPaymentStatus(it) }!!
     val error = if (hasNonNullKey(payment, "error")) payment.getString("error") else null
-    val description = if (hasNonNullKey(payment, "description")) payment.getString("description") else null
     val details = payment.getMap("details")?.let { asPaymentDetails(it) }!!
     val metadata = if (hasNonNullKey(payment, "metadata")) payment.getString("metadata") else null
-    return Payment(id, paymentType, paymentTime, amountMsat, feeMsat, status, error, description, details, metadata)
+    return Payment(id, paymentType, paymentTime, amountMsat, feeMsat, status, error, details, metadata)
 }
 
 fun readableMapOf(payment: Payment): ReadableMap =
@@ -1946,7 +2036,6 @@ fun readableMapOf(payment: Payment): ReadableMap =
         "feeMsat" to payment.feeMsat,
         "status" to snakeToLowerCamelCase(payment.status.name),
         "error" to payment.error,
-        "description" to payment.description,
         "details" to readableMapOf(payment.details),
         "metadata" to payment.metadata,
     )
@@ -3781,6 +3870,47 @@ fun asLnUrlCallbackStatusList(arr: ReadableArray): List<LnUrlCallbackStatus> {
     return list
 }
 
+fun asLnUrlInfo(lnUrlInfo: ReadableMap): LnUrlInfo? {
+    val type = lnUrlInfo.getString("type")
+
+    if (type == "pay") {
+        val info = lnUrlInfo.getMap("info")?.let { asLnUrlPayInfo(it) }!!
+        return LnUrlInfo.Pay(info)
+    }
+    if (type == "withdraw") {
+        val info = lnUrlInfo.getMap("info")?.let { asLnUrlWithdrawInfo(it) }!!
+        return LnUrlInfo.Withdraw(info)
+    }
+    return null
+}
+
+fun readableMapOf(lnUrlInfo: LnUrlInfo): ReadableMap? {
+    val map = Arguments.createMap()
+    when (lnUrlInfo) {
+        is LnUrlInfo.Pay -> {
+            pushToMap(map, "type", "pay")
+            pushToMap(map, "info", readableMapOf(lnUrlInfo.info))
+        }
+
+        is LnUrlInfo.Withdraw -> {
+            pushToMap(map, "type", "withdraw")
+            pushToMap(map, "info", readableMapOf(lnUrlInfo.info))
+        }
+    }
+    return map
+}
+
+fun asLnUrlInfoList(arr: ReadableArray): List<LnUrlInfo> {
+    val list = ArrayList<LnUrlInfo>()
+    for (value in arr.toArrayList()) {
+        when (value) {
+            is ReadableMap -> list.add(asLnUrlInfo(value)!!)
+            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
+        }
+    }
+    return list
+}
+
 fun asLnUrlPayResult(lnUrlPayResult: ReadableMap): LnUrlPayResult? {
     val type = lnUrlPayResult.getString("type")
 
@@ -3825,6 +3955,47 @@ fun asLnUrlPayResultList(arr: ReadableArray): List<LnUrlPayResult> {
     for (value in arr.toArrayList()) {
         when (value) {
             is ReadableMap -> list.add(asLnUrlPayResult(value)!!)
+            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
+        }
+    }
+    return list
+}
+
+fun asLnUrlPayTarget(lnUrlPayTarget: ReadableMap): LnUrlPayTarget? {
+    val type = lnUrlPayTarget.getString("type")
+
+    if (type == "lnAddress") {
+        val address = lnUrlPayTarget.getString("address")!!
+        return LnUrlPayTarget.LnAddress(address)
+    }
+    if (type == "domain") {
+        val domain = lnUrlPayTarget.getString("domain")!!
+        return LnUrlPayTarget.Domain(domain)
+    }
+    return null
+}
+
+fun readableMapOf(lnUrlPayTarget: LnUrlPayTarget): ReadableMap? {
+    val map = Arguments.createMap()
+    when (lnUrlPayTarget) {
+        is LnUrlPayTarget.LnAddress -> {
+            pushToMap(map, "type", "lnAddress")
+            pushToMap(map, "address", lnUrlPayTarget.address)
+        }
+
+        is LnUrlPayTarget.Domain -> {
+            pushToMap(map, "type", "domain")
+            pushToMap(map, "domain", lnUrlPayTarget.domain)
+        }
+    }
+    return map
+}
+
+fun asLnUrlPayTargetList(arr: ReadableArray): List<LnUrlPayTarget> {
+    val list = ArrayList<LnUrlPayTarget>()
+    for (value in arr.toArrayList()) {
+        when (value) {
+            is ReadableMap -> list.add(asLnUrlPayTarget(value)!!)
             else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }

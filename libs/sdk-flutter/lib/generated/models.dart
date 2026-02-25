@@ -324,6 +324,7 @@ class LnPaymentDetails {
   final String paymentPreimage;
   final bool keysend;
   final String bolt11;
+  final String description;
 
   /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
   /// the endpoint returns a success action
@@ -343,6 +344,7 @@ class LnPaymentDetails {
 
   /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
   final String? lnurlWithdrawEndpoint;
+  final LnUrlInfo? lnurlInfo;
 
   /// Only set for [PaymentType::Received] payments that were received in the context of a swap
   final SwapInfo? swapInfo;
@@ -356,12 +358,14 @@ class LnPaymentDetails {
     required this.paymentPreimage,
     required this.keysend,
     required this.bolt11,
+    required this.description,
     this.lnurlSuccessAction,
     this.lnurlPayDomain,
     this.lnurlPayComment,
     this.lnAddress,
     this.lnurlMetadata,
     this.lnurlWithdrawEndpoint,
+    this.lnurlInfo,
     this.swapInfo,
     this.reverseSwapInfo,
   });
@@ -373,12 +377,14 @@ class LnPaymentDetails {
       paymentPreimage.hashCode ^
       keysend.hashCode ^
       bolt11.hashCode ^
+      description.hashCode ^
       lnurlSuccessAction.hashCode ^
       lnurlPayDomain.hashCode ^
       lnurlPayComment.hashCode ^
       lnAddress.hashCode ^
       lnurlMetadata.hashCode ^
       lnurlWithdrawEndpoint.hashCode ^
+      lnurlInfo.hashCode ^
       swapInfo.hashCode ^
       reverseSwapInfo.hashCode;
 
@@ -392,14 +398,68 @@ class LnPaymentDetails {
           paymentPreimage == other.paymentPreimage &&
           keysend == other.keysend &&
           bolt11 == other.bolt11 &&
+          description == other.description &&
           lnurlSuccessAction == other.lnurlSuccessAction &&
           lnurlPayDomain == other.lnurlPayDomain &&
           lnurlPayComment == other.lnurlPayComment &&
           lnAddress == other.lnAddress &&
           lnurlMetadata == other.lnurlMetadata &&
           lnurlWithdrawEndpoint == other.lnurlWithdrawEndpoint &&
+          lnurlInfo == other.lnurlInfo &&
           swapInfo == other.swapInfo &&
           reverseSwapInfo == other.reverseSwapInfo;
+}
+
+@freezed
+sealed class LnUrlInfo with _$LnUrlInfo {
+  const LnUrlInfo._();
+
+  const factory LnUrlInfo.pay({required LnUrlPayInfo info}) = LnUrlInfo_Pay;
+  const factory LnUrlInfo.withdraw({required LnUrlWithdrawInfo info}) = LnUrlInfo_Withdraw;
+}
+
+class LnUrlPayInfo {
+  final LnUrlPayTarget target;
+  final String metadata;
+  final String? comment;
+  final SuccessActionProcessed? successAction;
+
+  const LnUrlPayInfo({required this.target, required this.metadata, this.comment, this.successAction});
+
+  @override
+  int get hashCode => target.hashCode ^ metadata.hashCode ^ comment.hashCode ^ successAction.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LnUrlPayInfo &&
+          runtimeType == other.runtimeType &&
+          target == other.target &&
+          metadata == other.metadata &&
+          comment == other.comment &&
+          successAction == other.successAction;
+}
+
+@freezed
+sealed class LnUrlPayTarget with _$LnUrlPayTarget {
+  const LnUrlPayTarget._();
+
+  const factory LnUrlPayTarget.lnAddress({required String address}) = LnUrlPayTarget_LnAddress;
+  const factory LnUrlPayTarget.domain({required String domain}) = LnUrlPayTarget_Domain;
+}
+
+class LnUrlWithdrawInfo {
+  final String endpoint;
+
+  const LnUrlWithdrawInfo({required this.endpoint});
+
+  @override
+  int get hashCode => endpoint.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LnUrlWithdrawInfo && runtimeType == other.runtimeType && endpoint == other.endpoint;
 }
 
 /// Internal SDK log entry
@@ -696,7 +756,6 @@ class Payment {
   final BigInt feeMsat;
   final PaymentStatus status;
   final String? error;
-  final String? description;
   final PaymentDetails details;
   final String? metadata;
 
@@ -708,7 +767,6 @@ class Payment {
     required this.feeMsat,
     required this.status,
     this.error,
-    this.description,
     required this.details,
     this.metadata,
   });
@@ -722,7 +780,6 @@ class Payment {
       feeMsat.hashCode ^
       status.hashCode ^
       error.hashCode ^
-      description.hashCode ^
       details.hashCode ^
       metadata.hashCode;
 
@@ -738,7 +795,6 @@ class Payment {
           feeMsat == other.feeMsat &&
           status == other.status &&
           error == other.error &&
-          description == other.description &&
           details == other.details &&
           metadata == other.metadata;
 }

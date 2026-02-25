@@ -52,11 +52,10 @@ impl SqliteStorage {
            amount_msat, 
            fee_msat,                 
            status,
-           description,
            details,
            is_pseudo
         )
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8)
         ",
         )?;
 
@@ -68,7 +67,6 @@ impl SqliteStorage {
                 &ln_tx.amount_msat,
                 &ln_tx.fee_msat,
                 &ln_tx.status,
-                &ln_tx.description,
                 &ln_tx.details,
                 &is_pseudo,
             ))?;
@@ -318,7 +316,6 @@ impl SqliteStorage {
             },
             fee_msat: row.get(4)?,
             status,
-            description: row.get(6)?,
             details: row.get(7)?,
             error: row.get(13)?,
             metadata: row.get(14)?,
@@ -545,7 +542,6 @@ mod test {
                 fee_msat: 20,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: None,
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_success_action.to_string(),
@@ -553,12 +549,14 @@ mod test {
                         payment_preimage: "1111".to_string(),
                         keysend: true,
                         bolt11: "bolt11".to_string(),
+                        description: String::new(),
                         lnurl_success_action: Some(sa.clone()),
                         lnurl_pay_domain: None,
                         lnurl_pay_comment: None,
                         lnurl_metadata: Some(lnurl_metadata.to_string()),
                         ln_address: Some(test_ln_address.to_string()),
                         lnurl_withdraw_endpoint: None,
+                        lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
                     },
@@ -573,7 +571,6 @@ mod test {
                 fee_msat: 20,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("desc".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_withdraw.to_string(),
@@ -581,12 +578,14 @@ mod test {
                         payment_preimage: "2222".to_string(),
                         keysend: true,
                         bolt11: "bolt11".to_string(),
+                        description: "desc".to_string(),
                         lnurl_success_action: None,
                         lnurl_pay_domain: None,
                         lnurl_pay_comment: None,
                         lnurl_metadata: None,
                         ln_address: None,
                         lnurl_withdraw_endpoint: Some(lnurl_withdraw_url.to_string()),
+                        lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
                     },
@@ -601,7 +600,6 @@ mod test {
                 fee_msat: 20,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("desc".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_with_swap_info),
@@ -609,12 +607,14 @@ mod test {
                         payment_preimage: "3333".to_string(),
                         keysend: false,
                         bolt11: "swap_bolt11".to_string(),
+                        description: "desc".to_string(),
                         lnurl_success_action: None,
                         lnurl_pay_domain: None,
                         lnurl_pay_comment: None,
                         lnurl_metadata: None,
                         ln_address: None,
                         lnurl_withdraw_endpoint: None,
+                        lnurl_info: None,
                         swap_info: Some(swap_info.clone()),
                         reverse_swap_info: None,
                     },
@@ -629,7 +629,6 @@ mod test {
                 fee_msat: 200,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: Some("desc".to_string()),
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: hex::encode(payment_hash_with_rev_swap_info),
@@ -637,12 +636,14 @@ mod test {
                         payment_preimage: hex::encode(rev_swap_preimage),
                         keysend: false,
                         bolt11: "swap_bolt11".to_string(),
+                        description: "desc".to_string(),
                         lnurl_success_action: None,
                         lnurl_metadata: None,
                         lnurl_pay_domain: None,
                         lnurl_pay_comment: None,
                         ln_address: None,
                         lnurl_withdraw_endpoint: None,
+                        lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: Some(rev_swap_info.clone()),
                     },
@@ -657,7 +658,6 @@ mod test {
                 fee_msat: 20,
                 status: PaymentStatus::Complete,
                 error: None,
-                description: None,
                 details: PaymentDetails::Ln {
                     data: LnPaymentDetails {
                         payment_hash: payment_hash_with_lnurl_domain.to_string(),
@@ -665,12 +665,14 @@ mod test {
                         payment_preimage: "payment_preimage".to_string(),
                         keysend: true,
                         bolt11: "bolt11".to_string(),
+                        description: String::new(),
                         lnurl_success_action: None,
                         lnurl_pay_domain: Some(test_lnurl_pay_domain.to_string()),
                         lnurl_pay_comment: Some(test_lnurl_pay_comment.to_string()),
                         lnurl_metadata: Some(lnurl_metadata.to_string()),
                         ln_address: None,
                         lnurl_withdraw_endpoint: None,
+                        lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
                     },
@@ -686,7 +688,6 @@ mod test {
             fee_msat: 0,
             status: PaymentStatus::Failed,
             error: None,
-            description: Some("desc".to_string()),
             details: PaymentDetails::Ln {
                 data: LnPaymentDetails {
                     payment_hash: "125".to_string(),
@@ -694,12 +695,14 @@ mod test {
                     payment_preimage: "4444".to_string(),
                     keysend: true,
                     bolt11: "bolt11".to_string(),
+                    description: "desc".to_string(),
                     lnurl_success_action: None,
                     lnurl_pay_domain: None,
                     lnurl_pay_comment: None,
                     lnurl_metadata: None,
                     ln_address: None,
                     lnurl_withdraw_endpoint: None,
+                    lnurl_info: None,
                     swap_info: None,
                     reverse_swap_info: None,
                 },

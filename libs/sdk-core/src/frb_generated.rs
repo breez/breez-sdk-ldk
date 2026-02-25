@@ -2298,12 +2298,12 @@ impl SseDecode for crate::breez_services::InvoicePaidDetails {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_paymentHash = <String>::sse_decode(deserializer);
-        let mut var_bolt11 = <String>::sse_decode(deserializer);
-        let mut var_payment = <Option<crate::models::Payment>>::sse_decode(deserializer);
+        let mut var_paymentPreimage = <String>::sse_decode(deserializer);
+        let mut var_amountMsat = <u64>::sse_decode(deserializer);
         return crate::breez_services::InvoicePaidDetails {
             payment_hash: var_paymentHash,
-            bolt11: var_bolt11,
-            payment: var_payment,
+            payment_preimage: var_paymentPreimage,
+            amount_msat: var_amountMsat,
         };
     }
 }
@@ -2656,6 +2656,7 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_paymentPreimage = <String>::sse_decode(deserializer);
         let mut var_keysend = <bool>::sse_decode(deserializer);
         let mut var_bolt11 = <String>::sse_decode(deserializer);
+        let mut var_description = <String>::sse_decode(deserializer);
         let mut var_lnurlSuccessAction =
             <Option<crate::binding::SuccessActionProcessed>>::sse_decode(deserializer);
         let mut var_lnurlPayDomain = <Option<String>>::sse_decode(deserializer);
@@ -2663,6 +2664,7 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_lnAddress = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlMetadata = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlWithdrawEndpoint = <Option<String>>::sse_decode(deserializer);
+        let mut var_lnurlInfo = <Option<crate::models::LnUrlInfo>>::sse_decode(deserializer);
         let mut var_swapInfo = <Option<crate::models::SwapInfo>>::sse_decode(deserializer);
         let mut var_reverseSwapInfo =
             <Option<crate::models::ReverseSwapInfo>>::sse_decode(deserializer);
@@ -2672,12 +2674,14 @@ impl SseDecode for crate::models::LnPaymentDetails {
             payment_preimage: var_paymentPreimage,
             keysend: var_keysend,
             bolt11: var_bolt11,
+            description: var_description,
             lnurl_success_action: var_lnurlSuccessAction,
             lnurl_pay_domain: var_lnurlPayDomain,
             lnurl_pay_comment: var_lnurlPayComment,
             ln_address: var_lnAddress,
             lnurl_metadata: var_lnurlMetadata,
             lnurl_withdraw_endpoint: var_lnurlWithdrawEndpoint,
+            lnurl_info: var_lnurlInfo,
             swap_info: var_swapInfo,
             reverse_swap_info: var_reverseSwapInfo,
         };
@@ -2727,6 +2731,26 @@ impl SseDecode for crate::binding::LnUrlErrorData {
     }
 }
 
+impl SseDecode for crate::models::LnUrlInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_info = <crate::models::LnUrlPayInfo>::sse_decode(deserializer);
+                return crate::models::LnUrlInfo::Pay { info: var_info };
+            }
+            1 => {
+                let mut var_info = <crate::models::LnUrlWithdrawInfo>::sse_decode(deserializer);
+                return crate::models::LnUrlInfo::Withdraw { info: var_info };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseDecode for crate::binding::LnUrlPayErrorData {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2735,6 +2759,23 @@ impl SseDecode for crate::binding::LnUrlPayErrorData {
         return crate::binding::LnUrlPayErrorData {
             payment_hash: var_paymentHash,
             reason: var_reason,
+        };
+    }
+}
+
+impl SseDecode for crate::models::LnUrlPayInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_target = <crate::models::LnUrlPayTarget>::sse_decode(deserializer);
+        let mut var_metadata = <String>::sse_decode(deserializer);
+        let mut var_comment = <Option<String>>::sse_decode(deserializer);
+        let mut var_successAction =
+            <Option<crate::binding::SuccessActionProcessed>>::sse_decode(deserializer);
+        return crate::models::LnUrlPayInfo {
+            target: var_target,
+            metadata: var_metadata,
+            comment: var_comment,
+            success_action: var_successAction,
         };
     }
 }
@@ -2817,6 +2858,38 @@ impl SseDecode for crate::lnurl::pay::LnUrlPaySuccessData {
         return crate::lnurl::pay::LnUrlPaySuccessData {
             payment: var_payment,
             success_action: var_successAction,
+        };
+    }
+}
+
+impl SseDecode for crate::models::LnUrlPayTarget {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_address = <String>::sse_decode(deserializer);
+                return crate::models::LnUrlPayTarget::LnAddress {
+                    address: var_address,
+                };
+            }
+            1 => {
+                let mut var_domain = <String>::sse_decode(deserializer);
+                return crate::models::LnUrlPayTarget::Domain { domain: var_domain };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseDecode for crate::models::LnUrlWithdrawInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_endpoint = <String>::sse_decode(deserializer);
+        return crate::models::LnUrlWithdrawInfo {
+            endpoint: var_endpoint,
         };
     }
 }
@@ -3150,6 +3223,17 @@ impl SseDecode for Option<crate::binding::LNInvoice> {
     }
 }
 
+impl SseDecode for Option<crate::models::LnUrlInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::models::LnUrlInfo>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::lsp::LspInformation> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3354,7 +3438,6 @@ impl SseDecode for crate::models::Payment {
         let mut var_feeMsat = <u64>::sse_decode(deserializer);
         let mut var_status = <crate::models::PaymentStatus>::sse_decode(deserializer);
         let mut var_error = <Option<String>>::sse_decode(deserializer);
-        let mut var_description = <Option<String>>::sse_decode(deserializer);
         let mut var_details = <crate::models::PaymentDetails>::sse_decode(deserializer);
         let mut var_metadata = <Option<String>>::sse_decode(deserializer);
         return crate::models::Payment {
@@ -3365,7 +3448,6 @@ impl SseDecode for crate::models::Payment {
             fee_msat: var_feeMsat,
             status: var_status,
             error: var_error,
-            description: var_description,
             details: var_details,
             metadata: var_metadata,
         };
@@ -4666,8 +4748,8 @@ impl flutter_rust_bridge::IntoDart for crate::breez_services::InvoicePaidDetails
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.payment_hash.into_into_dart().into_dart(),
-            self.bolt11.into_into_dart().into_dart(),
-            self.payment.into_into_dart().into_dart(),
+            self.payment_preimage.into_into_dart().into_dart(),
+            self.amount_msat.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4820,12 +4902,14 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
             self.payment_preimage.into_into_dart().into_dart(),
             self.keysend.into_into_dart().into_dart(),
             self.bolt11.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
             self.lnurl_success_action.into_into_dart().into_dart(),
             self.lnurl_pay_domain.into_into_dart().into_dart(),
             self.lnurl_pay_comment.into_into_dart().into_dart(),
             self.ln_address.into_into_dart().into_dart(),
             self.lnurl_metadata.into_into_dart().into_dart(),
             self.lnurl_withdraw_endpoint.into_into_dart().into_dart(),
+            self.lnurl_info.into_into_dart().into_dart(),
             self.swap_info.into_into_dart().into_dart(),
             self.reverse_swap_info.into_into_dart().into_dart(),
         ]
@@ -4909,6 +4993,28 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::binding::LnUrlErrorData
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::models::LnUrlInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::models::LnUrlInfo::Pay { info } => {
+                [0.into_dart(), info.into_into_dart().into_dart()].into_dart()
+            }
+            crate::models::LnUrlInfo::Withdraw { info } => {
+                [1.into_dart(), info.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::models::LnUrlInfo {}
+impl flutter_rust_bridge::IntoIntoDart<crate::models::LnUrlInfo> for crate::models::LnUrlInfo {
+    fn into_into_dart(self) -> crate::models::LnUrlInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::binding::LnUrlPayErrorData> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4927,6 +5033,26 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::binding::LnUrlPayErrorD
 {
     fn into_into_dart(self) -> FrbWrapper<crate::binding::LnUrlPayErrorData> {
         self.into()
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::models::LnUrlPayInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.target.into_into_dart().into_dart(),
+            self.metadata.into_into_dart().into_dart(),
+            self.comment.into_into_dart().into_dart(),
+            self.success_action.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::models::LnUrlPayInfo {}
+impl flutter_rust_bridge::IntoIntoDart<crate::models::LnUrlPayInfo>
+    for crate::models::LnUrlPayInfo
+{
+    fn into_into_dart(self) -> crate::models::LnUrlPayInfo {
+        self
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -5032,6 +5158,47 @@ impl flutter_rust_bridge::IntoIntoDart<crate::lnurl::pay::LnUrlPaySuccessData>
     for crate::lnurl::pay::LnUrlPaySuccessData
 {
     fn into_into_dart(self) -> crate::lnurl::pay::LnUrlPaySuccessData {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::models::LnUrlPayTarget {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::models::LnUrlPayTarget::LnAddress { address } => {
+                [0.into_dart(), address.into_into_dart().into_dart()].into_dart()
+            }
+            crate::models::LnUrlPayTarget::Domain { domain } => {
+                [1.into_dart(), domain.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::models::LnUrlPayTarget {}
+impl flutter_rust_bridge::IntoIntoDart<crate::models::LnUrlPayTarget>
+    for crate::models::LnUrlPayTarget
+{
+    fn into_into_dart(self) -> crate::models::LnUrlPayTarget {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::models::LnUrlWithdrawInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [self.endpoint.into_into_dart().into_dart()].into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::models::LnUrlWithdrawInfo
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::models::LnUrlWithdrawInfo>
+    for crate::models::LnUrlWithdrawInfo
+{
+    fn into_into_dart(self) -> crate::models::LnUrlWithdrawInfo {
         self
     }
 }
@@ -5460,7 +5627,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::Payment {
             self.fee_msat.into_into_dart().into_dart(),
             self.status.into_into_dart().into_dart(),
             self.error.into_into_dart().into_dart(),
-            self.description.into_into_dart().into_dart(),
             self.details.into_into_dart().into_dart(),
             self.metadata.into_into_dart().into_dart(),
         ]
@@ -6826,8 +6992,8 @@ impl SseEncode for crate::breez_services::InvoicePaidDetails {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.payment_hash, serializer);
-        <String>::sse_encode(self.bolt11, serializer);
-        <Option<crate::models::Payment>>::sse_encode(self.payment, serializer);
+        <String>::sse_encode(self.payment_preimage, serializer);
+        <u64>::sse_encode(self.amount_msat, serializer);
     }
 }
 
@@ -7092,6 +7258,7 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <String>::sse_encode(self.payment_preimage, serializer);
         <bool>::sse_encode(self.keysend, serializer);
         <String>::sse_encode(self.bolt11, serializer);
+        <String>::sse_encode(self.description, serializer);
         <Option<crate::binding::SuccessActionProcessed>>::sse_encode(
             self.lnurl_success_action,
             serializer,
@@ -7101,6 +7268,7 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <Option<String>>::sse_encode(self.ln_address, serializer);
         <Option<String>>::sse_encode(self.lnurl_metadata, serializer);
         <Option<String>>::sse_encode(self.lnurl_withdraw_endpoint, serializer);
+        <Option<crate::models::LnUrlInfo>>::sse_encode(self.lnurl_info, serializer);
         <Option<crate::models::SwapInfo>>::sse_encode(self.swap_info, serializer);
         <Option<crate::models::ReverseSwapInfo>>::sse_encode(self.reverse_swap_info, serializer);
     }
@@ -7141,11 +7309,43 @@ impl SseEncode for crate::binding::LnUrlErrorData {
     }
 }
 
+impl SseEncode for crate::models::LnUrlInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::models::LnUrlInfo::Pay { info } => {
+                <i32>::sse_encode(0, serializer);
+                <crate::models::LnUrlPayInfo>::sse_encode(info, serializer);
+            }
+            crate::models::LnUrlInfo::Withdraw { info } => {
+                <i32>::sse_encode(1, serializer);
+                <crate::models::LnUrlWithdrawInfo>::sse_encode(info, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseEncode for crate::binding::LnUrlPayErrorData {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.payment_hash, serializer);
         <String>::sse_encode(self.reason, serializer);
+    }
+}
+
+impl SseEncode for crate::models::LnUrlPayInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::models::LnUrlPayTarget>::sse_encode(self.target, serializer);
+        <String>::sse_encode(self.metadata, serializer);
+        <Option<String>>::sse_encode(self.comment, serializer);
+        <Option<crate::binding::SuccessActionProcessed>>::sse_encode(
+            self.success_action,
+            serializer,
+        );
     }
 }
 
@@ -7206,6 +7406,32 @@ impl SseEncode for crate::lnurl::pay::LnUrlPaySuccessData {
             self.success_action,
             serializer,
         );
+    }
+}
+
+impl SseEncode for crate::models::LnUrlPayTarget {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::models::LnUrlPayTarget::LnAddress { address } => {
+                <i32>::sse_encode(0, serializer);
+                <String>::sse_encode(address, serializer);
+            }
+            crate::models::LnUrlPayTarget::Domain { domain } => {
+                <i32>::sse_encode(1, serializer);
+                <String>::sse_encode(domain, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseEncode for crate::models::LnUrlWithdrawInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.endpoint, serializer);
     }
 }
 
@@ -7447,6 +7673,16 @@ impl SseEncode for Option<crate::binding::LNInvoice> {
     }
 }
 
+impl SseEncode for Option<crate::models::LnUrlInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::models::LnUrlInfo>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::lsp::LspInformation> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -7622,7 +7858,6 @@ impl SseEncode for crate::models::Payment {
         <u64>::sse_encode(self.fee_msat, serializer);
         <crate::models::PaymentStatus>::sse_encode(self.status, serializer);
         <Option<String>>::sse_encode(self.error, serializer);
-        <Option<String>>::sse_encode(self.description, serializer);
         <crate::models::PaymentDetails>::sse_encode(self.details, serializer);
         <Option<String>>::sse_encode(self.metadata, serializer);
     }
@@ -8475,11 +8710,25 @@ mod io {
             CstDecode::<crate::binding::LnUrlErrorData>::cst_decode(*wrap).into()
         }
     }
+    impl CstDecode<crate::models::LnUrlInfo> for *mut wire_cst_ln_url_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlInfo {
+            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
+            CstDecode::<crate::models::LnUrlInfo>::cst_decode(*wrap).into()
+        }
+    }
     impl CstDecode<crate::binding::LnUrlPayErrorData> for *mut wire_cst_ln_url_pay_error_data {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> crate::binding::LnUrlPayErrorData {
             let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
             CstDecode::<crate::binding::LnUrlPayErrorData>::cst_decode(*wrap).into()
+        }
+    }
+    impl CstDecode<crate::models::LnUrlPayInfo> for *mut wire_cst_ln_url_pay_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlPayInfo {
+            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
+            CstDecode::<crate::models::LnUrlPayInfo>::cst_decode(*wrap).into()
         }
     }
     impl CstDecode<crate::binding::LnUrlPayRequest> for *mut wire_cst_ln_url_pay_request {
@@ -8501,6 +8750,13 @@ mod io {
         fn cst_decode(self) -> crate::lnurl::pay::LnUrlPaySuccessData {
             let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
             CstDecode::<crate::lnurl::pay::LnUrlPaySuccessData>::cst_decode(*wrap).into()
+        }
+    }
+    impl CstDecode<crate::models::LnUrlWithdrawInfo> for *mut wire_cst_ln_url_withdraw_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlWithdrawInfo {
+            let wrap = unsafe { flutter_rust_bridge::for_generated::box_from_leak_ptr(self) };
+            CstDecode::<crate::models::LnUrlWithdrawInfo>::cst_decode(*wrap).into()
         }
     }
     impl CstDecode<crate::binding::LnUrlWithdrawRequest> for *mut wire_cst_ln_url_withdraw_request {
@@ -8967,8 +9223,8 @@ mod io {
         fn cst_decode(self) -> crate::breez_services::InvoicePaidDetails {
             crate::breez_services::InvoicePaidDetails {
                 payment_hash: self.payment_hash.cst_decode(),
-                bolt11: self.bolt11.cst_decode(),
-                payment: self.payment.cst_decode(),
+                payment_preimage: self.payment_preimage.cst_decode(),
+                amount_msat: self.amount_msat.cst_decode(),
             }
         }
     }
@@ -9242,12 +9498,14 @@ mod io {
                 payment_preimage: self.payment_preimage.cst_decode(),
                 keysend: self.keysend.cst_decode(),
                 bolt11: self.bolt11.cst_decode(),
+                description: self.description.cst_decode(),
                 lnurl_success_action: self.lnurl_success_action.cst_decode(),
                 lnurl_pay_domain: self.lnurl_pay_domain.cst_decode(),
                 lnurl_pay_comment: self.lnurl_pay_comment.cst_decode(),
                 ln_address: self.ln_address.cst_decode(),
                 lnurl_metadata: self.lnurl_metadata.cst_decode(),
                 lnurl_withdraw_endpoint: self.lnurl_withdraw_endpoint.cst_decode(),
+                lnurl_info: self.lnurl_info.cst_decode(),
                 swap_info: self.swap_info.cst_decode(),
                 reverse_swap_info: self.reverse_swap_info.cst_decode(),
             }
@@ -9287,12 +9545,43 @@ mod io {
             }
         }
     }
+    impl CstDecode<crate::models::LnUrlInfo> for wire_cst_ln_url_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlInfo {
+            match self.tag {
+                0 => {
+                    let ans = unsafe { self.kind.Pay };
+                    crate::models::LnUrlInfo::Pay {
+                        info: ans.info.cst_decode(),
+                    }
+                }
+                1 => {
+                    let ans = unsafe { self.kind.Withdraw };
+                    crate::models::LnUrlInfo::Withdraw {
+                        info: ans.info.cst_decode(),
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
     impl CstDecode<crate::binding::LnUrlPayErrorData> for wire_cst_ln_url_pay_error_data {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> crate::binding::LnUrlPayErrorData {
             crate::binding::LnUrlPayErrorData {
                 payment_hash: self.payment_hash.cst_decode(),
                 reason: self.reason.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::models::LnUrlPayInfo> for wire_cst_ln_url_pay_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlPayInfo {
+            crate::models::LnUrlPayInfo {
+                target: self.target.cst_decode(),
+                metadata: self.metadata.cst_decode(),
+                comment: self.comment.cst_decode(),
+                success_action: self.success_action.cst_decode(),
             }
         }
     }
@@ -9356,6 +9645,34 @@ mod io {
             crate::lnurl::pay::LnUrlPaySuccessData {
                 payment: self.payment.cst_decode(),
                 success_action: self.success_action.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::models::LnUrlPayTarget> for wire_cst_ln_url_pay_target {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlPayTarget {
+            match self.tag {
+                0 => {
+                    let ans = unsafe { self.kind.LnAddress };
+                    crate::models::LnUrlPayTarget::LnAddress {
+                        address: ans.address.cst_decode(),
+                    }
+                }
+                1 => {
+                    let ans = unsafe { self.kind.Domain };
+                    crate::models::LnUrlPayTarget::Domain {
+                        domain: ans.domain.cst_decode(),
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+    impl CstDecode<crate::models::LnUrlWithdrawInfo> for wire_cst_ln_url_withdraw_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::models::LnUrlWithdrawInfo {
+            crate::models::LnUrlWithdrawInfo {
+                endpoint: self.endpoint.cst_decode(),
             }
         }
     }
@@ -9579,7 +9896,6 @@ mod io {
                 fee_msat: self.fee_msat.cst_decode(),
                 status: self.status.cst_decode(),
                 error: self.error.cst_decode(),
-                description: self.description.cst_decode(),
                 details: self.details.cst_decode(),
                 metadata: self.metadata.cst_decode(),
             }
@@ -10298,8 +10614,8 @@ mod io {
         fn new_with_null_ptr() -> Self {
             Self {
                 payment_hash: core::ptr::null_mut(),
-                bolt11: core::ptr::null_mut(),
-                payment: core::ptr::null_mut(),
+                payment_preimage: core::ptr::null_mut(),
+                amount_msat: Default::default(),
             }
         }
     }
@@ -10404,12 +10720,14 @@ mod io {
                 payment_preimage: core::ptr::null_mut(),
                 keysend: Default::default(),
                 bolt11: core::ptr::null_mut(),
+                description: core::ptr::null_mut(),
                 lnurl_success_action: core::ptr::null_mut(),
                 lnurl_pay_domain: core::ptr::null_mut(),
                 lnurl_pay_comment: core::ptr::null_mut(),
                 ln_address: core::ptr::null_mut(),
                 lnurl_metadata: core::ptr::null_mut(),
                 lnurl_withdraw_endpoint: core::ptr::null_mut(),
+                lnurl_info: core::ptr::null_mut(),
                 swap_info: core::ptr::null_mut(),
                 reverse_swap_info: core::ptr::null_mut(),
             }
@@ -10460,6 +10778,19 @@ mod io {
             Self::new_with_null_ptr()
         }
     }
+    impl NewWithNullPtr for wire_cst_ln_url_info {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                tag: -1,
+                kind: LnUrlInfoKind { nil__: () },
+            }
+        }
+    }
+    impl Default for wire_cst_ln_url_info {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
     impl NewWithNullPtr for wire_cst_ln_url_pay_error_data {
         fn new_with_null_ptr() -> Self {
             Self {
@@ -10469,6 +10800,21 @@ mod io {
         }
     }
     impl Default for wire_cst_ln_url_pay_error_data {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_ln_url_pay_info {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                target: Default::default(),
+                metadata: core::ptr::null_mut(),
+                comment: core::ptr::null_mut(),
+                success_action: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_ln_url_pay_info {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -10531,6 +10877,31 @@ mod io {
         }
     }
     impl Default for wire_cst_ln_url_pay_success_data {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_ln_url_pay_target {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                tag: -1,
+                kind: LnUrlPayTargetKind { nil__: () },
+            }
+        }
+    }
+    impl Default for wire_cst_ln_url_pay_target {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_ln_url_withdraw_info {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                endpoint: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_ln_url_withdraw_info {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -10805,7 +11176,6 @@ mod io {
                 fee_msat: Default::default(),
                 status: Default::default(),
                 error: core::ptr::null_mut(),
-                description: core::ptr::null_mut(),
                 details: Default::default(),
                 metadata: core::ptr::null_mut(),
             }
@@ -11949,10 +12319,26 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_ln_url_info() -> *mut wire_cst_ln_url_info
+    {
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(
+            wire_cst_ln_url_info::new_with_null_ptr(),
+        )
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_ln_url_pay_error_data(
     ) -> *mut wire_cst_ln_url_pay_error_data {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(
             wire_cst_ln_url_pay_error_data::new_with_null_ptr(),
+        )
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_ln_url_pay_info(
+    ) -> *mut wire_cst_ln_url_pay_info {
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(
+            wire_cst_ln_url_pay_info::new_with_null_ptr(),
         )
     }
 
@@ -11977,6 +12363,14 @@ mod io {
     ) -> *mut wire_cst_ln_url_pay_success_data {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(
             wire_cst_ln_url_pay_success_data::new_with_null_ptr(),
+        )
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_breez_sdk_cst_new_box_autoadd_ln_url_withdraw_info(
+    ) -> *mut wire_cst_ln_url_withdraw_info {
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(
+            wire_cst_ln_url_withdraw_info::new_with_null_ptr(),
         )
     }
 
@@ -12745,8 +13139,8 @@ mod io {
     #[derive(Clone, Copy)]
     pub struct wire_cst_invoice_paid_details {
         payment_hash: *mut wire_cst_list_prim_u_8_strict,
-        bolt11: *mut wire_cst_list_prim_u_8_strict,
-        payment: *mut wire_cst_payment,
+        payment_preimage: *mut wire_cst_list_prim_u_8_strict,
+        amount_msat: u64,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -12923,12 +13317,14 @@ mod io {
         payment_preimage: *mut wire_cst_list_prim_u_8_strict,
         keysend: bool,
         bolt11: *mut wire_cst_list_prim_u_8_strict,
+        description: *mut wire_cst_list_prim_u_8_strict,
         lnurl_success_action: *mut wire_cst_success_action_processed,
         lnurl_pay_domain: *mut wire_cst_list_prim_u_8_strict,
         lnurl_pay_comment: *mut wire_cst_list_prim_u_8_strict,
         ln_address: *mut wire_cst_list_prim_u_8_strict,
         lnurl_metadata: *mut wire_cst_list_prim_u_8_strict,
         lnurl_withdraw_endpoint: *mut wire_cst_list_prim_u_8_strict,
+        lnurl_info: *mut wire_cst_ln_url_info,
         swap_info: *mut wire_cst_swap_info,
         reverse_swap_info: *mut wire_cst_reverse_swap_info,
     }
@@ -12964,9 +13360,40 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_ln_url_info {
+        tag: i32,
+        kind: LnUrlInfoKind,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub union LnUrlInfoKind {
+        Pay: wire_cst_LnUrlInfo_Pay,
+        Withdraw: wire_cst_LnUrlInfo_Withdraw,
+        nil__: (),
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_LnUrlInfo_Pay {
+        info: *mut wire_cst_ln_url_pay_info,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_LnUrlInfo_Withdraw {
+        info: *mut wire_cst_ln_url_withdraw_info,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_ln_url_pay_error_data {
         payment_hash: *mut wire_cst_list_prim_u_8_strict,
         reason: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_ln_url_pay_info {
+        target: wire_cst_ln_url_pay_target,
+        metadata: *mut wire_cst_list_prim_u_8_strict,
+        comment: *mut wire_cst_list_prim_u_8_strict,
+        success_action: *mut wire_cst_success_action_processed,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -13024,6 +13451,34 @@ mod io {
     pub struct wire_cst_ln_url_pay_success_data {
         payment: wire_cst_payment,
         success_action: *mut wire_cst_success_action_processed,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_ln_url_pay_target {
+        tag: i32,
+        kind: LnUrlPayTargetKind,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub union LnUrlPayTargetKind {
+        LnAddress: wire_cst_LnUrlPayTarget_LnAddress,
+        Domain: wire_cst_LnUrlPayTarget_Domain,
+        nil__: (),
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_LnUrlPayTarget_LnAddress {
+        address: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_LnUrlPayTarget_Domain {
+        domain: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_ln_url_withdraw_info {
+        endpoint: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -13192,7 +13647,6 @@ mod io {
         fee_msat: u64,
         status: i32,
         error: *mut wire_cst_list_prim_u_8_strict,
-        description: *mut wire_cst_list_prim_u_8_strict,
         details: wire_cst_payment_details,
         metadata: *mut wire_cst_list_prim_u_8_strict,
     }

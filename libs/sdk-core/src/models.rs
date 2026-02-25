@@ -654,7 +654,6 @@ pub struct Payment {
     pub fee_msat: u64,
     pub status: PaymentStatus,
     pub error: Option<String>,
-    pub description: Option<String>,
     pub details: PaymentDetails,
     pub metadata: Option<String>,
 }
@@ -672,37 +671,37 @@ pub(crate) struct PaymentExternalInfo {
     pub attempted_error: Option<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub(crate) enum LnUrlPayTarget {
-    LnAddress(String),
-    Domain(String),
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub enum LnUrlPayTarget {
+    LnAddress { address: String },
+    Domain { domain: String },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct LnUrlPayInfo {
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub struct LnUrlPayInfo {
     pub target: LnUrlPayTarget,
     pub metadata: String,
     pub comment: Option<String>,
     pub success_action: Option<SuccessActionProcessed>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct LnUrlWithdrawInfo {
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub struct LnUrlWithdrawInfo {
     pub endpoint: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub(crate) enum LnUrlInfo {
-    Pay(LnUrlPayInfo),
-    Withdraw(LnUrlWithdrawInfo),
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub enum LnUrlInfo {
+    Pay { info: LnUrlPayInfo },
+    Withdraw { info: LnUrlWithdrawInfo },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Default, PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct LnPaymentInfo {
     pub bolt11: String,
     pub payment_hash: String,
     pub destination_pubkey: String,
-    pub description: Option<String>,
+    pub description: String,
 }
 
 /// Represents a list payments request.
@@ -761,6 +760,7 @@ pub struct LnPaymentDetails {
     pub payment_preimage: String,
     pub keysend: bool,
     pub bolt11: String,
+    pub description: String,
 
     /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
     /// the endpoint returns a success action
@@ -780,6 +780,8 @@ pub struct LnPaymentDetails {
 
     /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
     pub lnurl_withdraw_endpoint: Option<String>,
+
+    pub lnurl_info: Option<LnUrlInfo>,
 
     /// Only set for [PaymentType::Received] payments that were received in the context of a swap
     pub swap_info: Option<SwapInfo>,

@@ -33,7 +33,6 @@ use crate::ldk::node_state::convert_payment;
 use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
-use crate::ldk::utils::Hex;
 use crate::models::{Config, LspAPI, NodeState, OpeningFeeParams, OpeningFeeParamsMenu};
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
@@ -191,10 +190,7 @@ impl NodeAPI for Ldk {
                 payments.receive_for_hash(req.amount_msat, &description, req.expiry, payment_hash)
             }
         }?;
-        let bolt11 = invoice.to_string();
-        self.store
-            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11.clone())?;
-        Ok(bolt11)
+        Ok(invoice.to_string())
     }
 
     async fn fetch_bolt11(&self, _payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>> {
@@ -210,11 +206,10 @@ impl NodeAPI for Ldk {
     }
 
     async fn list_payments(&self) -> NodeResult<Vec<Payment>> {
-        let local_node_id = self.node.node_id();
         self.node
             .list_payments()
             .into_iter()
-            .map(|p| convert_payment(p, &local_node_id, &self.store))
+            .map(convert_payment)
             .collect::<Result<Vec<_>, _>>()
     }
 
@@ -229,16 +224,13 @@ impl NodeAPI for Ldk {
             max_channel_saturation_power_of_half: 2,
         });
 
-        self.store
-            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11)?;
-
         let payment_id = match amount_msat {
             Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),
             None => payments.send(&invoice, params),
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id(), &self.store)
+        convert_payment(payment)
     }
 
     async fn send_spontaneous_payment(
@@ -267,7 +259,7 @@ impl NodeAPI for Ldk {
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id(), &self.store)
+        convert_payment(payment)
     }
 
     async fn node_id(&self) -> NodeResult<String> {

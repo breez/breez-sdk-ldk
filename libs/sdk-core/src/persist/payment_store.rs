@@ -8,6 +8,6 @@ use crate::LnUrlInfo;
 pub trait PaymentStore: Send + Sync {
     async fn set_ln_info(&self, payment_id: &str, info: &LnPaymentInfo) -> SdkResult<()>;
     async fn set_lnurl_info(&self, payment_id: &str, info: &LnUrlInfo) -> SdkResult<()>;
-    #[allow(dead_code)]
-    async fn get_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnPaymentInfo>>;
+    async fn get_ln_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnPaymentInfo>>;
+    async fn get_lnurl_info(&self, payment_ids: &[&str]) -> SdkResult<HashMap<String, LnUrlInfo>>;
 }
