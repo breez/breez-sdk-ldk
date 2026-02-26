@@ -504,7 +504,6 @@ typedef struct wire_cst_receive_payment_request {
   struct wire_cst_list_prim_u_8_strict *description;
   struct wire_cst_list_prim_u_8_strict *preimage;
   struct wire_cst_opening_fee_params *opening_fee_params;
-  bool *use_description_hash;
   uint32_t *expiry;
   uint32_t *cltv;
 } wire_cst_receive_payment_request;

@@ -324,7 +324,7 @@ class LnPaymentDetails {
   final String paymentPreimage;
   final bool keysend;
   final String bolt11;
-  final String description;
+  final String? description;
   final LnUrlInfo? lnurlInfo;
 
   /// Only set for [PaymentType::Received] payments that were received in the context of a swap
@@ -339,7 +339,7 @@ class LnPaymentDetails {
     required this.paymentPreimage,
     required this.keysend,
     required this.bolt11,
-    required this.description,
+    this.description,
     this.lnurlInfo,
     this.swapInfo,
     this.reverseSwapInfo,
@@ -971,9 +971,6 @@ class ReceivePaymentRequest {
   /// Otherwise the default fee options will be used.
   final OpeningFeeParams? openingFeeParams;
 
-  /// If set to true, then the bolt11 invoice returned includes the description hash.
-  final bool? useDescriptionHash;
-
   /// if specified, set the time the invoice is valid for, in seconds.
   final int? expiry;
 
@@ -985,7 +982,6 @@ class ReceivePaymentRequest {
     required this.description,
     this.preimage,
     this.openingFeeParams,
-    this.useDescriptionHash,
     this.expiry,
     this.cltv,
   });
@@ -996,7 +992,6 @@ class ReceivePaymentRequest {
       description.hashCode ^
       preimage.hashCode ^
       openingFeeParams.hashCode ^
-      useDescriptionHash.hashCode ^
       expiry.hashCode ^
       cltv.hashCode;
 
@@ -1009,7 +1004,6 @@ class ReceivePaymentRequest {
           description == other.description &&
           preimage == other.preimage &&
           openingFeeParams == other.openingFeeParams &&
-          useDescriptionHash == other.useDescriptionHash &&
           expiry == other.expiry &&
           cltv == other.cltv;
 }

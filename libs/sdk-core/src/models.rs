@@ -701,7 +701,7 @@ pub(crate) struct LnPaymentInfo {
     pub bolt11: String,
     pub payment_hash: String,
     pub destination_pubkey: String,
-    pub description: String,
+    pub description: Option<String>,
 }
 
 /// Represents a list payments request.
@@ -760,7 +760,7 @@ pub struct LnPaymentDetails {
     pub payment_preimage: String,
     pub keysend: bool,
     pub bolt11: String,
-    pub description: String,
+    pub description: Option<String>,
 
     pub lnurl_info: Option<LnUrlInfo>,
 
@@ -812,8 +812,6 @@ pub struct ReceivePaymentRequest {
     /// If set and valid, these fess options are used when a new channels is needed.
     /// Otherwise the default fee options will be used.
     pub opening_fee_params: Option<OpeningFeeParams>,
-    /// If set to true, then the bolt11 invoice returned includes the description hash.
-    pub use_description_hash: Option<bool>,
     /// if specified, set the time the invoice is valid for, in seconds.
     pub expiry: Option<u32>,
     /// if specified, sets the min_final_cltv_expiry for the invoice

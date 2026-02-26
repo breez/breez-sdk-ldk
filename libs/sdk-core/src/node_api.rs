@@ -102,7 +102,6 @@ impl From<NodeError> for LnUrlAuthError {
 pub struct CreateInvoiceRequest {
     pub amount_msat: u64,
     pub description: String,
-    pub use_description_hash: Option<bool>,
     pub preimage: Option<Vec<u8>>,
 	pub opening_fee_msat: Option<u64>,
     pub expiry: u32,

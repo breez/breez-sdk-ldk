@@ -2656,7 +2656,7 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_paymentPreimage = <String>::sse_decode(deserializer);
         let mut var_keysend = <bool>::sse_decode(deserializer);
         let mut var_bolt11 = <String>::sse_decode(deserializer);
-        let mut var_description = <String>::sse_decode(deserializer);
+        let mut var_description = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlInfo = <Option<crate::models::LnUrlInfo>>::sse_decode(deserializer);
         let mut var_swapInfo = <Option<crate::models::SwapInfo>>::sse_decode(deserializer);
         let mut var_reverseSwapInfo =
@@ -3634,7 +3634,6 @@ impl SseDecode for crate::models::ReceivePaymentRequest {
         let mut var_preimage = <Option<Vec<u8>>>::sse_decode(deserializer);
         let mut var_openingFeeParams =
             <Option<crate::models::OpeningFeeParams>>::sse_decode(deserializer);
-        let mut var_useDescriptionHash = <Option<bool>>::sse_decode(deserializer);
         let mut var_expiry = <Option<u32>>::sse_decode(deserializer);
         let mut var_cltv = <Option<u32>>::sse_decode(deserializer);
         return crate::models::ReceivePaymentRequest {
@@ -3642,7 +3641,6 @@ impl SseDecode for crate::models::ReceivePaymentRequest {
             description: var_description,
             preimage: var_preimage,
             opening_fee_params: var_openingFeeParams,
-            use_description_hash: var_useDescriptionHash,
             expiry: var_expiry,
             cltv: var_cltv,
         };
@@ -5902,7 +5900,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::ReceivePaymentRequest {
             self.description.into_into_dart().into_dart(),
             self.preimage.into_into_dart().into_dart(),
             self.opening_fee_params.into_into_dart().into_dart(),
-            self.use_description_hash.into_into_dart().into_dart(),
             self.expiry.into_into_dart().into_dart(),
             self.cltv.into_into_dart().into_dart(),
         ]
@@ -7239,7 +7236,7 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <String>::sse_encode(self.payment_preimage, serializer);
         <bool>::sse_encode(self.keysend, serializer);
         <String>::sse_encode(self.bolt11, serializer);
-        <String>::sse_encode(self.description, serializer);
+        <Option<String>>::sse_encode(self.description, serializer);
         <Option<crate::models::LnUrlInfo>>::sse_encode(self.lnurl_info, serializer);
         <Option<crate::models::SwapInfo>>::sse_encode(self.swap_info, serializer);
         <Option<crate::models::ReverseSwapInfo>>::sse_encode(self.reverse_swap_info, serializer);
@@ -7992,7 +7989,6 @@ impl SseEncode for crate::models::ReceivePaymentRequest {
         <String>::sse_encode(self.description, serializer);
         <Option<Vec<u8>>>::sse_encode(self.preimage, serializer);
         <Option<crate::models::OpeningFeeParams>>::sse_encode(self.opening_fee_params, serializer);
-        <Option<bool>>::sse_encode(self.use_description_hash, serializer);
         <Option<u32>>::sse_encode(self.expiry, serializer);
         <Option<u32>>::sse_encode(self.cltv, serializer);
     }
@@ -9992,7 +9988,6 @@ mod io {
                 description: self.description.cst_decode(),
                 preimage: self.preimage.cst_decode(),
                 opening_fee_params: self.opening_fee_params.cst_decode(),
-                use_description_hash: self.use_description_hash.cst_decode(),
                 expiry: self.expiry.cst_decode(),
                 cltv: self.cltv.cst_decode(),
             }
@@ -11291,7 +11286,6 @@ mod io {
                 description: core::ptr::null_mut(),
                 preimage: core::ptr::null_mut(),
                 opening_fee_params: core::ptr::null_mut(),
-                use_description_hash: core::ptr::null_mut(),
                 expiry: core::ptr::null_mut(),
                 cltv: core::ptr::null_mut(),
             }
@@ -13696,7 +13690,6 @@ mod io {
         description: *mut wire_cst_list_prim_u_8_strict,
         preimage: *mut wire_cst_list_prim_u_8_strict,
         opening_fee_params: *mut wire_cst_opening_fee_params,
-        use_description_hash: *mut bool,
         expiry: *mut u32,
         cltv: *mut u32,
     }

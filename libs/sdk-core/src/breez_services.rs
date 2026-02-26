@@ -299,17 +299,11 @@ impl BreezServices {
             return Err(SendPaymentError::AlreadyPaid);
         }
 
-        let description = parsed_invoice
-            .description
-            .as_ref()
-            .or(parsed_invoice.description_hash.as_ref())
-            .cloned()
-            .unwrap_or_default();
         let info = LnPaymentInfo {
             bolt11: parsed_invoice.bolt11.clone(),
             payment_hash: parsed_invoice.payment_hash.clone(),
             destination_pubkey: parsed_invoice.payee_pubkey.clone(),
-            description,
+            description: parsed_invoice.description.clone(),
         };
         self.payment_store
             .set_ln_info(&parsed_invoice.payment_hash, &info)
@@ -501,7 +495,6 @@ impl BreezServices {
             .receive_payment(ReceivePaymentRequest {
                 amount_msat: req.amount_msat,
                 description: req.description.unwrap_or_default(),
-                use_description_hash: Some(false),
                 ..Default::default()
             })
             .await?
@@ -568,7 +561,7 @@ impl BreezServices {
             bolt11: response.ln_invoice.bolt11.clone(),
             payment_hash: response.ln_invoice.payment_hash.clone(),
             destination_pubkey: self.node_api.node_id().await?,
-            description: req.description,
+            description: Some(req.description),
         };
         self.payment_store
             .set_ln_info(&response.ln_invoice.payment_hash, &info)
@@ -1225,12 +1218,7 @@ impl BreezServices {
                         payment_preimage: String::new(),
                         keysend: false,
                         bolt11: invoice.bolt11.clone(),
-                        description: invoice
-                            .description
-                            .as_ref()
-                            .or(invoice.description_hash.as_ref())
-                            .cloned()
-                            .unwrap_or_default(),
+                        description: invoice.description.clone(),
                         ..Default::default()
                     },
                 },

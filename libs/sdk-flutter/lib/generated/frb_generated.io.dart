@@ -3069,7 +3069,7 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.payment_preimage = cst_encode_String(apiObj.paymentPreimage);
     wireObj.keysend = cst_encode_bool(apiObj.keysend);
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
-    wireObj.description = cst_encode_String(apiObj.description);
+    wireObj.description = cst_encode_opt_String(apiObj.description);
     wireObj.lnurl_info = cst_encode_opt_box_autoadd_ln_url_info(apiObj.lnurlInfo);
     wireObj.swap_info = cst_encode_opt_box_autoadd_swap_info(apiObj.swapInfo);
     wireObj.reverse_swap_info = cst_encode_opt_box_autoadd_reverse_swap_info(apiObj.reverseSwapInfo);
@@ -3533,7 +3533,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.description = cst_encode_String(apiObj.description);
     wireObj.preimage = cst_encode_opt_list_prim_u_8_strict(apiObj.preimage);
     wireObj.opening_fee_params = cst_encode_opt_box_autoadd_opening_fee_params(apiObj.openingFeeParams);
-    wireObj.use_description_hash = cst_encode_opt_box_autoadd_bool(apiObj.useDescriptionHash);
     wireObj.expiry = cst_encode_opt_box_autoadd_u_32(apiObj.expiry);
     wireObj.cltv = cst_encode_opt_box_autoadd_u_32(apiObj.cltv);
   }
@@ -6960,8 +6959,6 @@ final class wire_cst_receive_payment_request extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> preimage;
 
   external ffi.Pointer<wire_cst_opening_fee_params> opening_fee_params;
-
-  external ffi.Pointer<ffi.Bool> use_description_hash;
 
   external ffi.Pointer<ffi.Uint32> expiry;
 

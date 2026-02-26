@@ -2351,7 +2351,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       paymentPreimage: dco_decode_String(arr[2]),
       keysend: dco_decode_bool(arr[3]),
       bolt11: dco_decode_String(arr[4]),
-      description: dco_decode_String(arr[5]),
+      description: dco_decode_opt_String(arr[5]),
       lnurlInfo: dco_decode_opt_box_autoadd_ln_url_info(arr[6]),
       swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[7]),
       reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[8]),
@@ -3005,15 +3005,14 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   ReceivePaymentRequest dco_decode_receive_payment_request(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7) throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 6) throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return ReceivePaymentRequest(
       amountMsat: dco_decode_u_64(arr[0]),
       description: dco_decode_String(arr[1]),
       preimage: dco_decode_opt_list_prim_u_8_strict(arr[2]),
       openingFeeParams: dco_decode_opt_box_autoadd_opening_fee_params(arr[3]),
-      useDescriptionHash: dco_decode_opt_box_autoadd_bool(arr[4]),
-      expiry: dco_decode_opt_box_autoadd_u_32(arr[5]),
-      cltv: dco_decode_opt_box_autoadd_u_32(arr[6]),
+      expiry: dco_decode_opt_box_autoadd_u_32(arr[4]),
+      cltv: dco_decode_opt_box_autoadd_u_32(arr[5]),
     );
   }
 
@@ -4477,7 +4476,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_paymentPreimage = sse_decode_String(deserializer);
     var var_keysend = sse_decode_bool(deserializer);
     var var_bolt11 = sse_decode_String(deserializer);
-    var var_description = sse_decode_String(deserializer);
+    var var_description = sse_decode_opt_String(deserializer);
     var var_lnurlInfo = sse_decode_opt_box_autoadd_ln_url_info(deserializer);
     var var_swapInfo = sse_decode_opt_box_autoadd_swap_info(deserializer);
     var var_reverseSwapInfo = sse_decode_opt_box_autoadd_reverse_swap_info(deserializer);
@@ -5295,7 +5294,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_description = sse_decode_String(deserializer);
     var var_preimage = sse_decode_opt_list_prim_u_8_strict(deserializer);
     var var_openingFeeParams = sse_decode_opt_box_autoadd_opening_fee_params(deserializer);
-    var var_useDescriptionHash = sse_decode_opt_box_autoadd_bool(deserializer);
     var var_expiry = sse_decode_opt_box_autoadd_u_32(deserializer);
     var var_cltv = sse_decode_opt_box_autoadd_u_32(deserializer);
     return ReceivePaymentRequest(
@@ -5303,7 +5301,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       description: var_description,
       preimage: var_preimage,
       openingFeeParams: var_openingFeeParams,
-      useDescriptionHash: var_useDescriptionHash,
       expiry: var_expiry,
       cltv: var_cltv,
     );
@@ -6772,7 +6769,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.paymentPreimage, serializer);
     sse_encode_bool(self.keysend, serializer);
     sse_encode_String(self.bolt11, serializer);
-    sse_encode_String(self.description, serializer);
+    sse_encode_opt_String(self.description, serializer);
     sse_encode_opt_box_autoadd_ln_url_info(self.lnurlInfo, serializer);
     sse_encode_opt_box_autoadd_swap_info(self.swapInfo, serializer);
     sse_encode_opt_box_autoadd_reverse_swap_info(self.reverseSwapInfo, serializer);
@@ -7418,7 +7415,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_String(self.description, serializer);
     sse_encode_opt_list_prim_u_8_strict(self.preimage, serializer);
     sse_encode_opt_box_autoadd_opening_fee_params(self.openingFeeParams, serializer);
-    sse_encode_opt_box_autoadd_bool(self.useDescriptionHash, serializer);
     sse_encode_opt_box_autoadd_u_32(self.expiry, serializer);
     sse_encode_opt_box_autoadd_u_32(self.cltv, serializer);
   }

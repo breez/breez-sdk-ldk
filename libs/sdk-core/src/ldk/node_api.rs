@@ -5,8 +5,6 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
-use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
-use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::router::{
@@ -155,15 +153,10 @@ impl NodeAPI for Ldk {
     }
 
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {
-        let description = if req.use_description_hash.unwrap_or(false) {
-            let hash = Sha256::hash(req.description.as_bytes());
-            Bolt11InvoiceDescription::Hash(ldk_node::lightning_invoice::Sha256(hash))
-        } else {
-            let description = Description::new(req.description).map_err(|e| {
-                NodeError::Generic(format!("Failed to create invoice description: {e}"))
-            })?;
-            Bolt11InvoiceDescription::Direct(description)
-        };
+        let description = Description::new(req.description).map_err(|e| {
+            NodeError::Generic(format!("Failed to create invoice description: {e}"))
+        })?;
+        let description = Bolt11InvoiceDescription::Direct(description);
 
         let preimage = match req.preimage.map(|p| p.as_slice().try_into()) {
             Some(Ok(preimage)) => Some(PaymentPreimage(preimage)),

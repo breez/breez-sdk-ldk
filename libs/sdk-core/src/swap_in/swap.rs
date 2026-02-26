@@ -991,7 +991,6 @@ impl BTCReceiveSwap {
                 expiry: Some(blocks.saturating_mul(EXPIRY_SECONDS_PER_BLOCK)),
                 opening_fee_params,
                 preimage: Some(swap_info.preimage.clone()),
-                use_description_hash: None,
             })
             .await;
         match receive_resp {

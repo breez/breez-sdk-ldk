@@ -72,7 +72,6 @@ impl Receiver for PaymentReceiver {
             description,
             preimage,
             opening_fee_params: requested_opening_fee_params,
-            use_description_hash,
             expiry,
             cltv: _,
         } = req;
@@ -105,7 +104,6 @@ impl Receiver for PaymentReceiver {
             .create_invoice(CreateInvoiceRequest {
                 amount_msat,
                 description,
-                use_description_hash,
                 preimage,
                 opening_fee_msat,
                 expiry,
