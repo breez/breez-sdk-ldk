@@ -1048,46 +1048,6 @@ enum BreezSDKMapper {
         guard let description = lnPaymentDetails["description"] as? String else {
             throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "description", typeName: "LnPaymentDetails"))
         }
-        var lnurlSuccessAction: SuccessActionProcessed?
-        if let lnurlSuccessActionTmp = lnPaymentDetails["lnurlSuccessAction"] as? [String: Any?] {
-            lnurlSuccessAction = try asSuccessActionProcessed(successActionProcessed: lnurlSuccessActionTmp)
-        }
-
-        var lnurlPayDomain: String?
-        if hasNonNilKey(data: lnPaymentDetails, key: "lnurlPayDomain") {
-            guard let lnurlPayDomainTmp = lnPaymentDetails["lnurlPayDomain"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "lnurlPayDomain"))
-            }
-            lnurlPayDomain = lnurlPayDomainTmp
-        }
-        var lnurlPayComment: String?
-        if hasNonNilKey(data: lnPaymentDetails, key: "lnurlPayComment") {
-            guard let lnurlPayCommentTmp = lnPaymentDetails["lnurlPayComment"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "lnurlPayComment"))
-            }
-            lnurlPayComment = lnurlPayCommentTmp
-        }
-        var lnurlMetadata: String?
-        if hasNonNilKey(data: lnPaymentDetails, key: "lnurlMetadata") {
-            guard let lnurlMetadataTmp = lnPaymentDetails["lnurlMetadata"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "lnurlMetadata"))
-            }
-            lnurlMetadata = lnurlMetadataTmp
-        }
-        var lnAddress: String?
-        if hasNonNilKey(data: lnPaymentDetails, key: "lnAddress") {
-            guard let lnAddressTmp = lnPaymentDetails["lnAddress"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "lnAddress"))
-            }
-            lnAddress = lnAddressTmp
-        }
-        var lnurlWithdrawEndpoint: String?
-        if hasNonNilKey(data: lnPaymentDetails, key: "lnurlWithdrawEndpoint") {
-            guard let lnurlWithdrawEndpointTmp = lnPaymentDetails["lnurlWithdrawEndpoint"] as? String else {
-                throw SdkError.Generic(message: errUnexpectedValue(fieldName: "lnurlWithdrawEndpoint"))
-            }
-            lnurlWithdrawEndpoint = lnurlWithdrawEndpointTmp
-        }
         var lnurlInfo: LnUrlInfo?
         if let lnurlInfoTmp = lnPaymentDetails["lnurlInfo"] as? [String: Any?] {
             lnurlInfo = try asLnUrlInfo(lnUrlInfo: lnurlInfoTmp)
@@ -1103,7 +1063,7 @@ enum BreezSDKMapper {
             reverseSwapInfo = try asReverseSwapInfo(reverseSwapInfo: reverseSwapInfoTmp)
         }
 
-        return LnPaymentDetails(paymentHash: paymentHash, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, description: description, lnurlSuccessAction: lnurlSuccessAction, lnurlPayDomain: lnurlPayDomain, lnurlPayComment: lnurlPayComment, lnurlMetadata: lnurlMetadata, lnAddress: lnAddress, lnurlWithdrawEndpoint: lnurlWithdrawEndpoint, lnurlInfo: lnurlInfo, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo)
+        return LnPaymentDetails(paymentHash: paymentHash, destinationPubkey: destinationPubkey, paymentPreimage: paymentPreimage, keysend: keysend, bolt11: bolt11, description: description, lnurlInfo: lnurlInfo, swapInfo: swapInfo, reverseSwapInfo: reverseSwapInfo)
     }
 
     static func dictionaryOf(lnPaymentDetails: LnPaymentDetails) -> [String: Any?] {
@@ -1114,12 +1074,6 @@ enum BreezSDKMapper {
             "keysend": lnPaymentDetails.keysend,
             "bolt11": lnPaymentDetails.bolt11,
             "description": lnPaymentDetails.description,
-            "lnurlSuccessAction": lnPaymentDetails.lnurlSuccessAction == nil ? nil : dictionaryOf(successActionProcessed: lnPaymentDetails.lnurlSuccessAction!),
-            "lnurlPayDomain": lnPaymentDetails.lnurlPayDomain == nil ? nil : lnPaymentDetails.lnurlPayDomain,
-            "lnurlPayComment": lnPaymentDetails.lnurlPayComment == nil ? nil : lnPaymentDetails.lnurlPayComment,
-            "lnurlMetadata": lnPaymentDetails.lnurlMetadata == nil ? nil : lnPaymentDetails.lnurlMetadata,
-            "lnAddress": lnPaymentDetails.lnAddress == nil ? nil : lnPaymentDetails.lnAddress,
-            "lnurlWithdrawEndpoint": lnPaymentDetails.lnurlWithdrawEndpoint == nil ? nil : lnPaymentDetails.lnurlWithdrawEndpoint,
             "lnurlInfo": lnPaymentDetails.lnurlInfo == nil ? nil : dictionaryOf(lnUrlInfo: lnPaymentDetails.lnurlInfo!),
             "swapInfo": lnPaymentDetails.swapInfo == nil ? nil : dictionaryOf(swapInfo: lnPaymentDetails.swapInfo!),
             "reverseSwapInfo": lnPaymentDetails.reverseSwapInfo == nil ? nil : dictionaryOf(reverseSwapInfo: lnPaymentDetails.reverseSwapInfo!),

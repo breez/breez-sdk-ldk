@@ -762,25 +762,6 @@ pub struct LnPaymentDetails {
     pub bolt11: String,
     pub description: String,
 
-    /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
-    /// the endpoint returns a success action
-    pub lnurl_success_action: Option<SuccessActionProcessed>,
-
-    /// Only set for [PaymentType::Sent] payments if it is not a payment to a Lightning Address
-    pub lnurl_pay_domain: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments if the user sent the comment using LNURL-pay
-    pub lnurl_pay_comment: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments that are sent to a Lightning Address
-    pub ln_address: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments where the receiver endpoint returned LNURL metadata
-    pub lnurl_metadata: Option<String>,
-
-    /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
-    pub lnurl_withdraw_endpoint: Option<String>,
-
     pub lnurl_info: Option<LnUrlInfo>,
 
     /// Only set for [PaymentType::Received] payments that were received in the context of a swap

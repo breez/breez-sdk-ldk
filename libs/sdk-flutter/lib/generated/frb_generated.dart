@@ -2344,7 +2344,7 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
   LnPaymentDetails dco_decode_ln_payment_details(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 15) throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
+    if (arr.length != 9) throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return LnPaymentDetails(
       paymentHash: dco_decode_String(arr[0]),
       destinationPubkey: dco_decode_String(arr[1]),
@@ -2352,15 +2352,9 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       keysend: dco_decode_bool(arr[3]),
       bolt11: dco_decode_String(arr[4]),
       description: dco_decode_String(arr[5]),
-      lnurlSuccessAction: dco_decode_opt_box_autoadd_success_action_processed(arr[6]),
-      lnurlPayDomain: dco_decode_opt_String(arr[7]),
-      lnurlPayComment: dco_decode_opt_String(arr[8]),
-      lnAddress: dco_decode_opt_String(arr[9]),
-      lnurlMetadata: dco_decode_opt_String(arr[10]),
-      lnurlWithdrawEndpoint: dco_decode_opt_String(arr[11]),
-      lnurlInfo: dco_decode_opt_box_autoadd_ln_url_info(arr[12]),
-      swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[13]),
-      reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[14]),
+      lnurlInfo: dco_decode_opt_box_autoadd_ln_url_info(arr[6]),
+      swapInfo: dco_decode_opt_box_autoadd_swap_info(arr[7]),
+      reverseSwapInfo: dco_decode_opt_box_autoadd_reverse_swap_info(arr[8]),
     );
   }
 
@@ -4484,12 +4478,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     var var_keysend = sse_decode_bool(deserializer);
     var var_bolt11 = sse_decode_String(deserializer);
     var var_description = sse_decode_String(deserializer);
-    var var_lnurlSuccessAction = sse_decode_opt_box_autoadd_success_action_processed(deserializer);
-    var var_lnurlPayDomain = sse_decode_opt_String(deserializer);
-    var var_lnurlPayComment = sse_decode_opt_String(deserializer);
-    var var_lnAddress = sse_decode_opt_String(deserializer);
-    var var_lnurlMetadata = sse_decode_opt_String(deserializer);
-    var var_lnurlWithdrawEndpoint = sse_decode_opt_String(deserializer);
     var var_lnurlInfo = sse_decode_opt_box_autoadd_ln_url_info(deserializer);
     var var_swapInfo = sse_decode_opt_box_autoadd_swap_info(deserializer);
     var var_reverseSwapInfo = sse_decode_opt_box_autoadd_reverse_swap_info(deserializer);
@@ -4500,12 +4488,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
       keysend: var_keysend,
       bolt11: var_bolt11,
       description: var_description,
-      lnurlSuccessAction: var_lnurlSuccessAction,
-      lnurlPayDomain: var_lnurlPayDomain,
-      lnurlPayComment: var_lnurlPayComment,
-      lnAddress: var_lnAddress,
-      lnurlMetadata: var_lnurlMetadata,
-      lnurlWithdrawEndpoint: var_lnurlWithdrawEndpoint,
       lnurlInfo: var_lnurlInfo,
       swapInfo: var_swapInfo,
       reverseSwapInfo: var_reverseSwapInfo,
@@ -6791,12 +6773,6 @@ class BreezSdkBindingsApiImpl extends BreezSdkBindingsApiImplPlatform implements
     sse_encode_bool(self.keysend, serializer);
     sse_encode_String(self.bolt11, serializer);
     sse_encode_String(self.description, serializer);
-    sse_encode_opt_box_autoadd_success_action_processed(self.lnurlSuccessAction, serializer);
-    sse_encode_opt_String(self.lnurlPayDomain, serializer);
-    sse_encode_opt_String(self.lnurlPayComment, serializer);
-    sse_encode_opt_String(self.lnAddress, serializer);
-    sse_encode_opt_String(self.lnurlMetadata, serializer);
-    sse_encode_opt_String(self.lnurlWithdrawEndpoint, serializer);
     sse_encode_opt_box_autoadd_ln_url_info(self.lnurlInfo, serializer);
     sse_encode_opt_box_autoadd_swap_info(self.swapInfo, serializer);
     sse_encode_opt_box_autoadd_reverse_swap_info(self.reverseSwapInfo, serializer);

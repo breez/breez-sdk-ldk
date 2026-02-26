@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Type, ValueRef};
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Row;
 use rusqlite::{named_params, params, OptionalExtension};
 use sdk_common::prelude::*;
@@ -322,19 +322,6 @@ impl SqliteStorage {
         };
 
         if let PaymentDetails::Ln { ref mut data } = payment.details {
-            let lnurl_success_action_str: Option<String> = row.get(8)?;
-            data.lnurl_success_action = match lnurl_success_action_str {
-                None => None,
-                Some(s) => serde_json::from_str(&s).map_err(|e| {
-                    rusqlite::Error::FromSqlConversionFailure(8, Type::Text, Box::new(e))
-                })?,
-            };
-
-            data.lnurl_pay_domain = row.get(15)?;
-            data.lnurl_pay_comment = row.get(16)?;
-            data.lnurl_metadata = row.get(9)?;
-            data.ln_address = row.get(10)?;
-            data.lnurl_withdraw_endpoint = row.get(11)?;
             data.swap_info = self.sql_row_to_swap(row, "swaps_").ok();
             if let Ok(fr) = self.sql_row_to_reverse_swap(row, "revswaps_") {
                 data.reverse_swap_info = Some(fr.get_reverse_swap_info_using_cached_values());
@@ -550,12 +537,6 @@ mod test {
                         keysend: true,
                         bolt11: "bolt11".to_string(),
                         description: String::new(),
-                        lnurl_success_action: Some(sa.clone()),
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: Some(lnurl_metadata.to_string()),
-                        ln_address: Some(test_ln_address.to_string()),
-                        lnurl_withdraw_endpoint: None,
                         lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
@@ -579,12 +560,6 @@ mod test {
                         keysend: true,
                         bolt11: "bolt11".to_string(),
                         description: "desc".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: Some(lnurl_withdraw_url.to_string()),
                         lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
@@ -608,12 +583,6 @@ mod test {
                         keysend: false,
                         bolt11: "swap_bolt11".to_string(),
                         description: "desc".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        lnurl_metadata: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
                         lnurl_info: None,
                         swap_info: Some(swap_info.clone()),
                         reverse_swap_info: None,
@@ -637,12 +606,6 @@ mod test {
                         keysend: false,
                         bolt11: "swap_bolt11".to_string(),
                         description: "desc".to_string(),
-                        lnurl_success_action: None,
-                        lnurl_metadata: None,
-                        lnurl_pay_domain: None,
-                        lnurl_pay_comment: None,
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
                         lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: Some(rev_swap_info.clone()),
@@ -666,12 +629,6 @@ mod test {
                         keysend: true,
                         bolt11: "bolt11".to_string(),
                         description: String::new(),
-                        lnurl_success_action: None,
-                        lnurl_pay_domain: Some(test_lnurl_pay_domain.to_string()),
-                        lnurl_pay_comment: Some(test_lnurl_pay_comment.to_string()),
-                        lnurl_metadata: Some(lnurl_metadata.to_string()),
-                        ln_address: None,
-                        lnurl_withdraw_endpoint: None,
                         lnurl_info: None,
                         swap_info: None,
                         reverse_swap_info: None,
@@ -696,12 +653,6 @@ mod test {
                     keysend: true,
                     bolt11: "bolt11".to_string(),
                     description: "desc".to_string(),
-                    lnurl_success_action: None,
-                    lnurl_pay_domain: None,
-                    lnurl_pay_comment: None,
-                    lnurl_metadata: None,
-                    ln_address: None,
-                    lnurl_withdraw_endpoint: None,
                     lnurl_info: None,
                     swap_info: None,
                     reverse_swap_info: None,
@@ -779,15 +730,6 @@ mod test {
         assert_eq!(retrieve_txs.len(), 3);
         assert_eq!(retrieve_txs[0], txs[0]);
         assert_eq!(retrieve_txs[1], txs[3]);
-        assert!(
-            matches!( &retrieve_txs[0].details, PaymentDetails::Ln {data: LnPaymentDetails {lnurl_success_action, ..}} if lnurl_success_action == &Some(sa))
-        );
-        assert!(
-            matches!( &retrieve_txs[0].details, PaymentDetails::Ln {data: LnPaymentDetails {lnurl_pay_domain, ln_address, ..}} if lnurl_pay_domain.is_none() && ln_address == &Some(test_ln_address.to_string()))
-        );
-        assert!(
-            matches!( &retrieve_txs[2].details, PaymentDetails::Ln {data: LnPaymentDetails {lnurl_pay_domain, ln_address, ..}} if lnurl_pay_domain == &Some(test_lnurl_pay_domain.to_string()) && ln_address.is_none())
-        );
         assert!(
             matches!( &retrieve_txs[1].details, PaymentDetails::Ln {data: LnPaymentDetails {reverse_swap_info: rev_swap, ..}} if rev_swap == &Some(rev_swap_info))
         );

@@ -884,28 +884,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
     val keysend = lnPaymentDetails.getBoolean("keysend")
     val bolt11 = lnPaymentDetails.getString("bolt11")!!
     val description = lnPaymentDetails.getString("description")!!
-    val lnurlSuccessAction =
-        if (hasNonNullKey(lnPaymentDetails, "lnurlSuccessAction")) {
-            lnPaymentDetails.getMap("lnurlSuccessAction")?.let {
-                asSuccessActionProcessed(it)
-            }
-        } else {
-            null
-        }
-    val lnurlPayDomain = if (hasNonNullKey(lnPaymentDetails, "lnurlPayDomain")) lnPaymentDetails.getString("lnurlPayDomain") else null
-    val lnurlPayComment = if (hasNonNullKey(lnPaymentDetails, "lnurlPayComment")) lnPaymentDetails.getString("lnurlPayComment") else null
-    val lnurlMetadata = if (hasNonNullKey(lnPaymentDetails, "lnurlMetadata")) lnPaymentDetails.getString("lnurlMetadata") else null
-    val lnAddress = if (hasNonNullKey(lnPaymentDetails, "lnAddress")) lnPaymentDetails.getString("lnAddress") else null
-    val lnurlWithdrawEndpoint =
-        if (hasNonNullKey(
-                lnPaymentDetails,
-                "lnurlWithdrawEndpoint",
-            )
-        ) {
-            lnPaymentDetails.getString("lnurlWithdrawEndpoint")
-        } else {
-            null
-        }
     val lnurlInfo =
         if (hasNonNullKey(
                 lnPaymentDetails,
@@ -932,12 +910,6 @@ fun asLnPaymentDetails(lnPaymentDetails: ReadableMap): LnPaymentDetails? {
         keysend,
         bolt11,
         description,
-        lnurlSuccessAction,
-        lnurlPayDomain,
-        lnurlPayComment,
-        lnurlMetadata,
-        lnAddress,
-        lnurlWithdrawEndpoint,
         lnurlInfo,
         swapInfo,
         reverseSwapInfo,
@@ -952,12 +924,6 @@ fun readableMapOf(lnPaymentDetails: LnPaymentDetails): ReadableMap =
         "keysend" to lnPaymentDetails.keysend,
         "bolt11" to lnPaymentDetails.bolt11,
         "description" to lnPaymentDetails.description,
-        "lnurlSuccessAction" to lnPaymentDetails.lnurlSuccessAction?.let { readableMapOf(it) },
-        "lnurlPayDomain" to lnPaymentDetails.lnurlPayDomain,
-        "lnurlPayComment" to lnPaymentDetails.lnurlPayComment,
-        "lnurlMetadata" to lnPaymentDetails.lnurlMetadata,
-        "lnAddress" to lnPaymentDetails.lnAddress,
-        "lnurlWithdrawEndpoint" to lnPaymentDetails.lnurlWithdrawEndpoint,
         "lnurlInfo" to lnPaymentDetails.lnurlInfo?.let { readableMapOf(it) },
         "swapInfo" to lnPaymentDetails.swapInfo?.let { readableMapOf(it) },
         "reverseSwapInfo" to lnPaymentDetails.reverseSwapInfo?.let { readableMapOf(it) },

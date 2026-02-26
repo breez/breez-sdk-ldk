@@ -2657,13 +2657,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
         let mut var_keysend = <bool>::sse_decode(deserializer);
         let mut var_bolt11 = <String>::sse_decode(deserializer);
         let mut var_description = <String>::sse_decode(deserializer);
-        let mut var_lnurlSuccessAction =
-            <Option<crate::binding::SuccessActionProcessed>>::sse_decode(deserializer);
-        let mut var_lnurlPayDomain = <Option<String>>::sse_decode(deserializer);
-        let mut var_lnurlPayComment = <Option<String>>::sse_decode(deserializer);
-        let mut var_lnAddress = <Option<String>>::sse_decode(deserializer);
-        let mut var_lnurlMetadata = <Option<String>>::sse_decode(deserializer);
-        let mut var_lnurlWithdrawEndpoint = <Option<String>>::sse_decode(deserializer);
         let mut var_lnurlInfo = <Option<crate::models::LnUrlInfo>>::sse_decode(deserializer);
         let mut var_swapInfo = <Option<crate::models::SwapInfo>>::sse_decode(deserializer);
         let mut var_reverseSwapInfo =
@@ -2675,12 +2668,6 @@ impl SseDecode for crate::models::LnPaymentDetails {
             keysend: var_keysend,
             bolt11: var_bolt11,
             description: var_description,
-            lnurl_success_action: var_lnurlSuccessAction,
-            lnurl_pay_domain: var_lnurlPayDomain,
-            lnurl_pay_comment: var_lnurlPayComment,
-            ln_address: var_lnAddress,
-            lnurl_metadata: var_lnurlMetadata,
-            lnurl_withdraw_endpoint: var_lnurlWithdrawEndpoint,
             lnurl_info: var_lnurlInfo,
             swap_info: var_swapInfo,
             reverse_swap_info: var_reverseSwapInfo,
@@ -4903,12 +4890,6 @@ impl flutter_rust_bridge::IntoDart for crate::models::LnPaymentDetails {
             self.keysend.into_into_dart().into_dart(),
             self.bolt11.into_into_dart().into_dart(),
             self.description.into_into_dart().into_dart(),
-            self.lnurl_success_action.into_into_dart().into_dart(),
-            self.lnurl_pay_domain.into_into_dart().into_dart(),
-            self.lnurl_pay_comment.into_into_dart().into_dart(),
-            self.ln_address.into_into_dart().into_dart(),
-            self.lnurl_metadata.into_into_dart().into_dart(),
-            self.lnurl_withdraw_endpoint.into_into_dart().into_dart(),
             self.lnurl_info.into_into_dart().into_dart(),
             self.swap_info.into_into_dart().into_dart(),
             self.reverse_swap_info.into_into_dart().into_dart(),
@@ -7259,15 +7240,6 @@ impl SseEncode for crate::models::LnPaymentDetails {
         <bool>::sse_encode(self.keysend, serializer);
         <String>::sse_encode(self.bolt11, serializer);
         <String>::sse_encode(self.description, serializer);
-        <Option<crate::binding::SuccessActionProcessed>>::sse_encode(
-            self.lnurl_success_action,
-            serializer,
-        );
-        <Option<String>>::sse_encode(self.lnurl_pay_domain, serializer);
-        <Option<String>>::sse_encode(self.lnurl_pay_comment, serializer);
-        <Option<String>>::sse_encode(self.ln_address, serializer);
-        <Option<String>>::sse_encode(self.lnurl_metadata, serializer);
-        <Option<String>>::sse_encode(self.lnurl_withdraw_endpoint, serializer);
         <Option<crate::models::LnUrlInfo>>::sse_encode(self.lnurl_info, serializer);
         <Option<crate::models::SwapInfo>>::sse_encode(self.swap_info, serializer);
         <Option<crate::models::ReverseSwapInfo>>::sse_encode(self.reverse_swap_info, serializer);
@@ -9499,12 +9471,6 @@ mod io {
                 keysend: self.keysend.cst_decode(),
                 bolt11: self.bolt11.cst_decode(),
                 description: self.description.cst_decode(),
-                lnurl_success_action: self.lnurl_success_action.cst_decode(),
-                lnurl_pay_domain: self.lnurl_pay_domain.cst_decode(),
-                lnurl_pay_comment: self.lnurl_pay_comment.cst_decode(),
-                ln_address: self.ln_address.cst_decode(),
-                lnurl_metadata: self.lnurl_metadata.cst_decode(),
-                lnurl_withdraw_endpoint: self.lnurl_withdraw_endpoint.cst_decode(),
                 lnurl_info: self.lnurl_info.cst_decode(),
                 swap_info: self.swap_info.cst_decode(),
                 reverse_swap_info: self.reverse_swap_info.cst_decode(),
@@ -10721,12 +10687,6 @@ mod io {
                 keysend: Default::default(),
                 bolt11: core::ptr::null_mut(),
                 description: core::ptr::null_mut(),
-                lnurl_success_action: core::ptr::null_mut(),
-                lnurl_pay_domain: core::ptr::null_mut(),
-                lnurl_pay_comment: core::ptr::null_mut(),
-                ln_address: core::ptr::null_mut(),
-                lnurl_metadata: core::ptr::null_mut(),
-                lnurl_withdraw_endpoint: core::ptr::null_mut(),
                 lnurl_info: core::ptr::null_mut(),
                 swap_info: core::ptr::null_mut(),
                 reverse_swap_info: core::ptr::null_mut(),
@@ -13318,12 +13278,6 @@ mod io {
         keysend: bool,
         bolt11: *mut wire_cst_list_prim_u_8_strict,
         description: *mut wire_cst_list_prim_u_8_strict,
-        lnurl_success_action: *mut wire_cst_success_action_processed,
-        lnurl_pay_domain: *mut wire_cst_list_prim_u_8_strict,
-        lnurl_pay_comment: *mut wire_cst_list_prim_u_8_strict,
-        ln_address: *mut wire_cst_list_prim_u_8_strict,
-        lnurl_metadata: *mut wire_cst_list_prim_u_8_strict,
-        lnurl_withdraw_endpoint: *mut wire_cst_list_prim_u_8_strict,
         lnurl_info: *mut wire_cst_ln_url_info,
         swap_info: *mut wire_cst_swap_info,
         reverse_swap_info: *mut wire_cst_reverse_swap_info,

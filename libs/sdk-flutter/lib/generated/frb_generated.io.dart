@@ -3070,14 +3070,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.keysend = cst_encode_bool(apiObj.keysend);
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
     wireObj.description = cst_encode_String(apiObj.description);
-    wireObj.lnurl_success_action = cst_encode_opt_box_autoadd_success_action_processed(
-      apiObj.lnurlSuccessAction,
-    );
-    wireObj.lnurl_pay_domain = cst_encode_opt_String(apiObj.lnurlPayDomain);
-    wireObj.lnurl_pay_comment = cst_encode_opt_String(apiObj.lnurlPayComment);
-    wireObj.ln_address = cst_encode_opt_String(apiObj.lnAddress);
-    wireObj.lnurl_metadata = cst_encode_opt_String(apiObj.lnurlMetadata);
-    wireObj.lnurl_withdraw_endpoint = cst_encode_opt_String(apiObj.lnurlWithdrawEndpoint);
     wireObj.lnurl_info = cst_encode_opt_box_autoadd_ln_url_info(apiObj.lnurlInfo);
     wireObj.swap_info = cst_encode_opt_box_autoadd_swap_info(apiObj.swapInfo);
     wireObj.reverse_swap_info = cst_encode_opt_box_autoadd_reverse_swap_info(apiObj.reverseSwapInfo);
@@ -6276,6 +6268,27 @@ final class wire_cst_BreezEvent_InvoicePaid extends ffi.Struct {
   external ffi.Pointer<wire_cst_invoice_paid_details> details;
 }
 
+final class wire_cst_LnUrlPayTarget_LnAddress extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> address;
+}
+
+final class wire_cst_LnUrlPayTarget_Domain extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> domain;
+}
+
+final class LnUrlPayTargetKind extends ffi.Union {
+  external wire_cst_LnUrlPayTarget_LnAddress LnAddress;
+
+  external wire_cst_LnUrlPayTarget_Domain Domain;
+}
+
+final class wire_cst_ln_url_pay_target extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external LnUrlPayTargetKind kind;
+}
+
 final class wire_cst_aes_success_action_data_decrypted extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
 
@@ -6341,27 +6354,6 @@ final class wire_cst_success_action_processed extends ffi.Struct {
   external int tag;
 
   external SuccessActionProcessedKind kind;
-}
-
-final class wire_cst_LnUrlPayTarget_LnAddress extends ffi.Struct {
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> address;
-}
-
-final class wire_cst_LnUrlPayTarget_Domain extends ffi.Struct {
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> domain;
-}
-
-final class LnUrlPayTargetKind extends ffi.Union {
-  external wire_cst_LnUrlPayTarget_LnAddress LnAddress;
-
-  external wire_cst_LnUrlPayTarget_Domain Domain;
-}
-
-final class wire_cst_ln_url_pay_target extends ffi.Struct {
-  @ffi.Int32()
-  external int tag;
-
-  external LnUrlPayTargetKind kind;
 }
 
 final class wire_cst_ln_url_pay_info extends ffi.Struct {
@@ -6513,18 +6505,6 @@ final class wire_cst_ln_payment_details extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> bolt11;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
-
-  external ffi.Pointer<wire_cst_success_action_processed> lnurl_success_action;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_pay_domain;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_pay_comment;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> ln_address;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_metadata;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_withdraw_endpoint;
 
   external ffi.Pointer<wire_cst_ln_url_info> lnurl_info;
 

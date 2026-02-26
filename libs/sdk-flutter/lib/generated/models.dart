@@ -325,25 +325,6 @@ class LnPaymentDetails {
   final bool keysend;
   final String bolt11;
   final String description;
-
-  /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
-  /// the endpoint returns a success action
-  final SuccessActionProcessed? lnurlSuccessAction;
-
-  /// Only set for [PaymentType::Sent] payments if it is not a payment to a Lightning Address
-  final String? lnurlPayDomain;
-
-  /// Only set for [PaymentType::Sent] payments if the user sent the comment using LNURL-pay
-  final String? lnurlPayComment;
-
-  /// Only set for [PaymentType::Sent] payments that are sent to a Lightning Address
-  final String? lnAddress;
-
-  /// Only set for [PaymentType::Sent] payments where the receiver endpoint returned LNURL metadata
-  final String? lnurlMetadata;
-
-  /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
-  final String? lnurlWithdrawEndpoint;
   final LnUrlInfo? lnurlInfo;
 
   /// Only set for [PaymentType::Received] payments that were received in the context of a swap
@@ -359,12 +340,6 @@ class LnPaymentDetails {
     required this.keysend,
     required this.bolt11,
     required this.description,
-    this.lnurlSuccessAction,
-    this.lnurlPayDomain,
-    this.lnurlPayComment,
-    this.lnAddress,
-    this.lnurlMetadata,
-    this.lnurlWithdrawEndpoint,
     this.lnurlInfo,
     this.swapInfo,
     this.reverseSwapInfo,
@@ -378,12 +353,6 @@ class LnPaymentDetails {
       keysend.hashCode ^
       bolt11.hashCode ^
       description.hashCode ^
-      lnurlSuccessAction.hashCode ^
-      lnurlPayDomain.hashCode ^
-      lnurlPayComment.hashCode ^
-      lnAddress.hashCode ^
-      lnurlMetadata.hashCode ^
-      lnurlWithdrawEndpoint.hashCode ^
       lnurlInfo.hashCode ^
       swapInfo.hashCode ^
       reverseSwapInfo.hashCode;
@@ -399,12 +368,6 @@ class LnPaymentDetails {
           keysend == other.keysend &&
           bolt11 == other.bolt11 &&
           description == other.description &&
-          lnurlSuccessAction == other.lnurlSuccessAction &&
-          lnurlPayDomain == other.lnurlPayDomain &&
-          lnurlPayComment == other.lnurlPayComment &&
-          lnAddress == other.lnAddress &&
-          lnurlMetadata == other.lnurlMetadata &&
-          lnurlWithdrawEndpoint == other.lnurlWithdrawEndpoint &&
           lnurlInfo == other.lnurlInfo &&
           swapInfo == other.swapInfo &&
           reverseSwapInfo == other.reverseSwapInfo;

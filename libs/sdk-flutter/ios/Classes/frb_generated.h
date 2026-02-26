@@ -49,6 +49,24 @@ typedef struct wire_cst_BreezEvent_InvoicePaid {
   struct wire_cst_invoice_paid_details *details;
 } wire_cst_BreezEvent_InvoicePaid;
 
+typedef struct wire_cst_LnUrlPayTarget_LnAddress {
+  struct wire_cst_list_prim_u_8_strict *address;
+} wire_cst_LnUrlPayTarget_LnAddress;
+
+typedef struct wire_cst_LnUrlPayTarget_Domain {
+  struct wire_cst_list_prim_u_8_strict *domain;
+} wire_cst_LnUrlPayTarget_Domain;
+
+typedef union LnUrlPayTargetKind {
+  struct wire_cst_LnUrlPayTarget_LnAddress LnAddress;
+  struct wire_cst_LnUrlPayTarget_Domain Domain;
+} LnUrlPayTargetKind;
+
+typedef struct wire_cst_ln_url_pay_target {
+  int32_t tag;
+  union LnUrlPayTargetKind kind;
+} wire_cst_ln_url_pay_target;
+
 typedef struct wire_cst_aes_success_action_data_decrypted {
   struct wire_cst_list_prim_u_8_strict *description;
   struct wire_cst_list_prim_u_8_strict *plaintext;
@@ -104,24 +122,6 @@ typedef struct wire_cst_success_action_processed {
   int32_t tag;
   union SuccessActionProcessedKind kind;
 } wire_cst_success_action_processed;
-
-typedef struct wire_cst_LnUrlPayTarget_LnAddress {
-  struct wire_cst_list_prim_u_8_strict *address;
-} wire_cst_LnUrlPayTarget_LnAddress;
-
-typedef struct wire_cst_LnUrlPayTarget_Domain {
-  struct wire_cst_list_prim_u_8_strict *domain;
-} wire_cst_LnUrlPayTarget_Domain;
-
-typedef union LnUrlPayTargetKind {
-  struct wire_cst_LnUrlPayTarget_LnAddress LnAddress;
-  struct wire_cst_LnUrlPayTarget_Domain Domain;
-} LnUrlPayTargetKind;
-
-typedef struct wire_cst_ln_url_pay_target {
-  int32_t tag;
-  union LnUrlPayTargetKind kind;
-} wire_cst_ln_url_pay_target;
 
 typedef struct wire_cst_ln_url_pay_info {
   struct wire_cst_ln_url_pay_target target;
@@ -209,12 +209,6 @@ typedef struct wire_cst_ln_payment_details {
   bool keysend;
   struct wire_cst_list_prim_u_8_strict *bolt11;
   struct wire_cst_list_prim_u_8_strict *description;
-  struct wire_cst_success_action_processed *lnurl_success_action;
-  struct wire_cst_list_prim_u_8_strict *lnurl_pay_domain;
-  struct wire_cst_list_prim_u_8_strict *lnurl_pay_comment;
-  struct wire_cst_list_prim_u_8_strict *ln_address;
-  struct wire_cst_list_prim_u_8_strict *lnurl_metadata;
-  struct wire_cst_list_prim_u_8_strict *lnurl_withdraw_endpoint;
   struct wire_cst_ln_url_info *lnurl_info;
   struct wire_cst_swap_info *swap_info;
   struct wire_cst_reverse_swap_info *reverse_swap_info;

@@ -2516,7 +2516,6 @@ pub(crate) mod tests {
                         keysend: false,
                         bolt11: "1111".to_string(),
                         description: "test lnurl-withdraw receive".to_string(),
-                        lnurl_withdraw_endpoint: Some(test_lnurl_withdraw_endpoint.to_string()),
                         lnurl_info: Some(lnurl_withdraw_info.clone()),
                         ..Default::default()
                     },
@@ -2539,9 +2538,6 @@ pub(crate) mod tests {
                         keysend: false,
                         bolt11: "123".to_string(),
                         description: "test payment".to_string(),
-                        lnurl_success_action: Some(sa.clone()),
-                        lnurl_metadata: Some(lnurl_metadata.to_string()),
-                        ln_address: Some(test_ln_address.to_string()),
                         lnurl_info: Some(lnurl_pay_info.clone()),
                         ..Default::default()
                     },
@@ -2690,18 +2686,6 @@ pub(crate) mod tests {
             })
             .await?;
         assert_eq!(sent, vec![cloned[4].clone(), cloned[2].clone()]);
-        assert!(matches!(
-                &sent[1].details,
-                PaymentDetails::Ln {data: LnPaymentDetails {lnurl_success_action, ..}}
-                if lnurl_success_action == &Some(sa)));
-        assert!(matches!(
-                &sent[1].details,
-                PaymentDetails::Ln {data: LnPaymentDetails {lnurl_pay_domain, ln_address, ..}}
-                if lnurl_pay_domain.is_none() && ln_address == &Some(test_ln_address.to_string())));
-        assert!(matches!(
-                &received[1].details,
-                PaymentDetails::Ln {data: LnPaymentDetails {lnurl_withdraw_endpoint, ..}}
-                if lnurl_withdraw_endpoint == &Some(test_lnurl_withdraw_endpoint.to_string())));
         assert!(matches!(
                 &received[0].details,
                 PaymentDetails::Ln {data: LnPaymentDetails {swap_info: swap, ..}}

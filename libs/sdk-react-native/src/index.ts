@@ -171,12 +171,6 @@ export interface LnPaymentDetails {
     keysend: boolean
     bolt11: string
     description: string
-    lnurlSuccessAction?: SuccessActionProcessed
-    lnurlPayDomain?: string
-    lnurlPayComment?: string
-    lnurlMetadata?: string
-    lnAddress?: string
-    lnurlWithdrawEndpoint?: string
     lnurlInfo?: LnUrlInfo
     swapInfo?: SwapInfo
     reverseSwapInfo?: ReverseSwapInfo
