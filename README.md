@@ -1,3 +1,5 @@
+**See the [report](REPORT.md) of the development.**
+
 > ⚠️ **DEPRECATION NOTICE**
 > 
 > This repository (`breez-sdk-greenlight`) is **deprecated** and no longer maintained. It's highly recommend migrating to **Breez SDK – Nodeless**:
