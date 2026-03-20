@@ -300,6 +300,16 @@ impl NodeAPI for MockNodeAPI {
         Ok(payment)
     }
 
+    async fn send_bolt12_payment(
+        &self,
+        offer: String,
+        _amount_msat: Option<u64>,
+        _payer_note: Option<String>,
+    ) -> NodeResult<Payment> {
+        let payment = self.add_dummy_payment_for(offer, None, None).await?;
+        Ok(payment)
+    }
+
     async fn send_spontaneous_payment(
         &self,
         _node_id: String,

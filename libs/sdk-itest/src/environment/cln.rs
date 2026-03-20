@@ -126,6 +126,18 @@ impl Cln {
             .ok_or(anyhow!("CLN getinfo response missing id"))
     }
 
+    pub async fn get_offer(&self, amount_msat: Option<u64>) -> Result<String> {
+        let amount = amount_msat
+            .map(|amount_msat| format!("{amount_msat}msat"))
+            .unwrap_or_else(|| "any".to_string());
+        let response = self.cli_json(&["offer", &amount, "cln-offer"]).await?;
+        response
+            .get("bolt12")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .ok_or(anyhow!("CLN offer response missing bolt12"))
+    }
+
     pub async fn open_channel(
         &self,
         peer: PublicKey,

@@ -134,6 +134,17 @@ fn to_payment_details(
         ldk_node::payment::PaymentKind::Spontaneous { hash, preimage } => Ok(PaymentDetails::Ln {
             data: ln_payment_details(hash, preimage, destination_pubkey, true, bolt11),
         }),
+        ldk_node::payment::PaymentKind::Bolt12Offer { hash, preimage, .. } => {
+            Ok(PaymentDetails::Ln {
+                data: ln_payment_details(
+                    &hash.unwrap_or(PaymentHash([0; 32])),
+                    preimage,
+                    destination_pubkey,
+                    false,
+                    None,
+                ),
+            })
+        }
         other => Err(NodeError::Generic(format!(
             "Unsupported payment kind: {other:?}"
         ))),

@@ -822,6 +822,14 @@ pub struct SendPaymentRequest {
     pub amount_msat: Option<u64>,
 }
 
+/// Represents a send BOLT12 payment request.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SendBolt12PaymentRequest {
+    pub offer: LNOffer,
+    pub amount_msat: Option<u64>,
+    pub payer_note: Option<String>,
+}
+
 /// Represents a TLV entry for a keysend payment.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TlvEntry {

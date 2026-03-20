@@ -12,7 +12,7 @@ use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::liquidity::LSPS2ServiceConfig;
 use ldk_node::{Builder, Node};
 use log::{LevelFilter, error, info};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::signal::ctrl_c;
 use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::oneshot;
@@ -60,6 +60,40 @@ async fn balance(State(state): State<AppState>) -> Json<Balance> {
     })
 }
 
+#[derive(Deserialize)]
+struct Bolt12OfferRequest {
+    amount_msat: Option<u64>,
+    description: Option<String>,
+    expiry_secs: Option<u32>,
+    quantity: Option<u64>,
+}
+
+async fn newoffer(
+    State(state): State<AppState>,
+    Json(request): Json<Bolt12OfferRequest>,
+) -> String {
+    let description = request
+        .description
+        .unwrap_or_else(|| "lsps2-offer".to_string());
+    let result = match request.amount_msat {
+        Some(amount_msat) => state.node.bolt12_payment().receive(
+            amount_msat,
+            &description,
+            request.expiry_secs,
+            request.quantity,
+        ),
+        None => state
+            .node
+            .bolt12_payment()
+            .receive_variable_amount(&description, request.expiry_secs),
+    };
+
+    match result {
+        Ok(offer) => offer.to_string(),
+        Err(e) => format!("Failed to create offer: {e}"),
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -103,6 +137,7 @@ async fn main() -> Result<()> {
         .route("/sync", post(sync))
         .route("/tip", get(tip))
         .route("/balance", get(balance))
+        .route("/newoffer", post(newoffer))
         .with_state(state);
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     let shutdown_signal = async move {

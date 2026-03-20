@@ -4,7 +4,7 @@ use anyhow::{Error, Result};
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Network};
 use reqwest::{Client, Method};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use testcontainers::core::WaitFor;
 use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
@@ -29,6 +29,14 @@ pub struct Balance {
     pub total_onchain_sats: u64,
     pub spendable_onchain_sats: u64,
     pub lightning_sats: u64,
+}
+
+#[derive(Serialize, Default)]
+struct Bolt12OfferRequest {
+    amount_msat: Option<u64>,
+    description: Option<String>,
+    expiry_secs: Option<u32>,
+    quantity: Option<u64>,
 }
 
 impl Lsp {
@@ -66,37 +74,49 @@ impl Lsp {
     }
 
     pub async fn get_node_id(&self) -> Result<PublicKey> {
-        self.request(Method::GET, "getid")
+        self.request(Method::GET, "getid", None)
             .await?
             .parse()
             .map_err(Error::msg)
     }
 
     pub async fn get_new_address(&self) -> Result<Address> {
-        let address = self.request(Method::POST, "newaddr").await?;
+        let address = self.request(Method::POST, "newaddr", None).await?;
         Ok(Address::from_str(&address)?.require_network(Network::Regtest)?)
     }
 
     pub async fn get_balance(&self, sync: bool) -> Result<Balance> {
         if sync {
-            self.request(Method::POST, "sync").await?;
+            self.request(Method::POST, "sync", None).await?;
         }
-        let balance = self.request(Method::GET, "balance").await?;
+        let balance = self.request(Method::GET, "balance", None).await?;
         serde_json::from_str(&balance).map_err(Error::msg)
     }
 
-    async fn request(&self, method: Method, command: &str) -> Result<String> {
-        let response = self
-            .client
-            .request(
-                method,
-                format!("{}/{command}", self.api.external_endpoint()),
-            )
-            .send()
-            .await?
-            .error_for_status()?
-            .text()
-            .await?;
+    pub async fn get_offer(&self, amount_msat: Option<u64>) -> Result<String> {
+        let request = Bolt12OfferRequest {
+            amount_msat,
+            ..Default::default()
+        };
+        let request = serde_json::to_vec(&request)?;
+        self.request(Method::POST, "newoffer", Some(request)).await
+    }
+
+    async fn request(
+        &self,
+        method: Method,
+        command: &str,
+        body: Option<Vec<u8>>,
+    ) -> Result<String> {
+        let mut request = self.client.request(
+            method,
+            format!("{}/{command}", self.api.external_endpoint()),
+        );
+        if let Some(body) = body {
+            request = request.header(reqwest::header::CONTENT_TYPE, "application/json");
+            request = request.body(body);
+        }
+        let response = request.send().await?.error_for_status()?.text().await?;
         Ok(response)
     }
 }

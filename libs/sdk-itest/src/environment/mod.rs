@@ -327,7 +327,7 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
-    async fn lsp(&self) -> Result<&Lsp> {
+    pub async fn lsp(&self) -> Result<&Lsp> {
         self.lsp
             .get_or_try_init(|| async {
                 info!("Initializing LSP");
