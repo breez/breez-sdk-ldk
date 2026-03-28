@@ -29,6 +29,7 @@ class ReceivePaymentJob(
     private val logger: ServiceLogger,
 ) : Job {
     private var receivedPayment: Payment? = null
+    private var breezSDK: BlockingBreezServices? = null
 
     companion object {
         private const val TAG = "ReceivePaymentJob"
@@ -36,6 +37,7 @@ class ReceivePaymentJob(
 
     override fun start(breezSDK: BlockingBreezServices) {
         try {
+            this.breezSDK = breezSDK
             val decoder = Json { ignoreUnknownKeys = true }
             val request = decoder.decodeFromString(ReceivePaymentRequest.serializer(), payload)
             val payment = breezSDK.paymentByHash(request.paymentHash)
@@ -54,8 +56,18 @@ class ReceivePaymentJob(
         when (e) {
             is BreezEvent.InvoicePaid -> {
                 val pd = e.details
-                handleReceivedPayment(pd.bolt11, pd.paymentHash, pd.payment?.amountMsat)
-                receivedPayment = pd.payment
+                handleReceivedPayment(pd.paymentHash, pd.amountMsat)
+                val payment = try {
+                    breezSDK?.paymentByHash(pd.paymentHash)
+                } catch (e: Exception) {
+                    logger.log(
+                        TAG,
+                        "Failed to load payment by hash ${pd.paymentHash}: ${e.message}",
+                        "WARN"
+                    )
+                    null
+                }
+                receivedPayment = payment
             }
 
             is BreezEvent.Synced -> {
@@ -71,13 +83,9 @@ class ReceivePaymentJob(
 
     override fun onShutdown() {}
 
-    private fun handleReceivedPayment(
-        bolt11: String,
-        paymentHash: String,
-        amountMsat: ULong?,
-    ) {
-        logger.log(TAG, "Received payment. Bolt11:${bolt11}\nPayment Hash:${paymentHash}", "INFO")
-        val amountSat = (amountMsat ?: ULong.MIN_VALUE) / 1000u
+    private fun handleReceivedPayment(paymentHash: String, amountMsat: ULong) {
+        logger.log(TAG, "Received payment. Payment Hash:${paymentHash}", "INFO")
+        val amountSat = amountMsat / 1000u
         notifyChannel(
             context,
             NOTIFICATION_CHANNEL_PAYMENT_RECEIVED,

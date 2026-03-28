@@ -5,8 +5,6 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
-use ldk_node::bitcoin::hashes::sha256::Hash as Sha256;
-use ldk_node::bitcoin::hashes::Hash;
 use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::router::{
@@ -33,11 +31,11 @@ use crate::ldk::node_state::convert_payment;
 use crate::ldk::restore_state::RestoreStateTracker;
 use crate::ldk::store::{KVStore, Store};
 use crate::ldk::store_builder::{build_mirroring_store, build_vss_store};
-use crate::ldk::utils::Hex;
 use crate::models::{Config, LspAPI, NodeState, OpeningFeeParams, OpeningFeeParamsMenu};
 use crate::node_api::{
     CreateInvoiceRequest, FetchBolt11Result, IncomingPayment, NodeAPI, NodeError, NodeResult,
 };
+use crate::persist::payment_store::PaymentStore;
 use crate::{
     CustomMessage, LspInformation, MaxChannelAmount, Payment, PaymentResponse,
     PrepareRedeemOnchainFundsRequest, PrepareRedeemOnchainFundsResponse, RouteHintHop, TlvEntry,
@@ -129,6 +127,10 @@ impl Ldk {
             remote_lock_shutdown_tx,
         })
     }
+
+    pub fn get_payment_store(&self) -> Arc<dyn PaymentStore> {
+        Arc::new(self.store.clone())
+    }
 }
 
 #[tonic::async_trait]
@@ -151,15 +153,10 @@ impl NodeAPI for Ldk {
     }
 
     async fn create_invoice(&self, req: CreateInvoiceRequest) -> NodeResult<String> {
-        let description = if req.use_description_hash.unwrap_or(false) {
-            let hash = Sha256::hash(req.description.as_bytes());
-            Bolt11InvoiceDescription::Hash(ldk_node::lightning_invoice::Sha256(hash))
-        } else {
-            let description = Description::new(req.description).map_err(|e| {
-                NodeError::Generic(format!("Failed to create invoice description: {e}"))
-            })?;
-            Bolt11InvoiceDescription::Direct(description)
-        };
+        let description = Description::new(req.description).map_err(|e| {
+            NodeError::Generic(format!("Failed to create invoice description: {e}"))
+        })?;
+        let description = Bolt11InvoiceDescription::Direct(description);
 
         let preimage = match req.preimage.map(|p| p.as_slice().try_into()) {
             Some(Ok(preimage)) => Some(PaymentPreimage(preimage)),
@@ -186,10 +183,7 @@ impl NodeAPI for Ldk {
                 payments.receive_for_hash(req.amount_msat, &description, req.expiry, payment_hash)
             }
         }?;
-        let bolt11 = invoice.to_string();
-        self.store
-            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11.clone())?;
-        Ok(bolt11)
+        Ok(invoice.to_string())
     }
 
     async fn fetch_bolt11(&self, _payment_hash: Vec<u8>) -> NodeResult<Option<FetchBolt11Result>> {
@@ -205,11 +199,10 @@ impl NodeAPI for Ldk {
     }
 
     async fn list_payments(&self) -> NodeResult<Vec<Payment>> {
-        let local_node_id = self.node.node_id();
         self.node
             .list_payments()
             .into_iter()
-            .map(|p| convert_payment(p, &local_node_id, &self.store))
+            .map(convert_payment)
             .collect::<Result<Vec<_>, _>>()
     }
 
@@ -224,16 +217,13 @@ impl NodeAPI for Ldk {
             max_channel_saturation_power_of_half: 2,
         });
 
-        self.store
-            .store_bolt11(&invoice.payment_hash().to_hex(), bolt11)?;
-
         let payment_id = match amount_msat {
             Some(amount_msat) => payments.send_using_amount(&invoice, amount_msat, params),
             None => payments.send(&invoice, params),
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id(), &self.store)
+        convert_payment(payment)
     }
 
     async fn send_spontaneous_payment(
@@ -262,7 +252,7 @@ impl NodeAPI for Ldk {
         }?;
 
         let payment = wait_for_payment_success(&self.node, events, payment_id).await?;
-        convert_payment(payment, &self.node.node_id(), &self.store)
+        convert_payment(payment)
     }
 
     async fn node_id(&self) -> NodeResult<String> {

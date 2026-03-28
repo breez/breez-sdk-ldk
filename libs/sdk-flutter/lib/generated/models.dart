@@ -324,25 +324,8 @@ class LnPaymentDetails {
   final String paymentPreimage;
   final bool keysend;
   final String bolt11;
-
-  /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
-  /// the endpoint returns a success action
-  final SuccessActionProcessed? lnurlSuccessAction;
-
-  /// Only set for [PaymentType::Sent] payments if it is not a payment to a Lightning Address
-  final String? lnurlPayDomain;
-
-  /// Only set for [PaymentType::Sent] payments if the user sent the comment using LNURL-pay
-  final String? lnurlPayComment;
-
-  /// Only set for [PaymentType::Sent] payments that are sent to a Lightning Address
-  final String? lnAddress;
-
-  /// Only set for [PaymentType::Sent] payments where the receiver endpoint returned LNURL metadata
-  final String? lnurlMetadata;
-
-  /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
-  final String? lnurlWithdrawEndpoint;
+  final String? description;
+  final LnUrlInfo? lnurlInfo;
 
   /// Only set for [PaymentType::Received] payments that were received in the context of a swap
   final SwapInfo? swapInfo;
@@ -356,12 +339,8 @@ class LnPaymentDetails {
     required this.paymentPreimage,
     required this.keysend,
     required this.bolt11,
-    this.lnurlSuccessAction,
-    this.lnurlPayDomain,
-    this.lnurlPayComment,
-    this.lnAddress,
-    this.lnurlMetadata,
-    this.lnurlWithdrawEndpoint,
+    this.description,
+    this.lnurlInfo,
     this.swapInfo,
     this.reverseSwapInfo,
   });
@@ -373,12 +352,8 @@ class LnPaymentDetails {
       paymentPreimage.hashCode ^
       keysend.hashCode ^
       bolt11.hashCode ^
-      lnurlSuccessAction.hashCode ^
-      lnurlPayDomain.hashCode ^
-      lnurlPayComment.hashCode ^
-      lnAddress.hashCode ^
-      lnurlMetadata.hashCode ^
-      lnurlWithdrawEndpoint.hashCode ^
+      description.hashCode ^
+      lnurlInfo.hashCode ^
       swapInfo.hashCode ^
       reverseSwapInfo.hashCode;
 
@@ -392,14 +367,62 @@ class LnPaymentDetails {
           paymentPreimage == other.paymentPreimage &&
           keysend == other.keysend &&
           bolt11 == other.bolt11 &&
-          lnurlSuccessAction == other.lnurlSuccessAction &&
-          lnurlPayDomain == other.lnurlPayDomain &&
-          lnurlPayComment == other.lnurlPayComment &&
-          lnAddress == other.lnAddress &&
-          lnurlMetadata == other.lnurlMetadata &&
-          lnurlWithdrawEndpoint == other.lnurlWithdrawEndpoint &&
+          description == other.description &&
+          lnurlInfo == other.lnurlInfo &&
           swapInfo == other.swapInfo &&
           reverseSwapInfo == other.reverseSwapInfo;
+}
+
+@freezed
+sealed class LnUrlInfo with _$LnUrlInfo {
+  const LnUrlInfo._();
+
+  const factory LnUrlInfo.pay({required LnUrlPayInfo info}) = LnUrlInfo_Pay;
+  const factory LnUrlInfo.withdraw({required LnUrlWithdrawInfo info}) = LnUrlInfo_Withdraw;
+}
+
+class LnUrlPayInfo {
+  final LnUrlPayTarget target;
+  final String metadata;
+  final String? comment;
+  final SuccessActionProcessed? successAction;
+
+  const LnUrlPayInfo({required this.target, required this.metadata, this.comment, this.successAction});
+
+  @override
+  int get hashCode => target.hashCode ^ metadata.hashCode ^ comment.hashCode ^ successAction.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LnUrlPayInfo &&
+          runtimeType == other.runtimeType &&
+          target == other.target &&
+          metadata == other.metadata &&
+          comment == other.comment &&
+          successAction == other.successAction;
+}
+
+@freezed
+sealed class LnUrlPayTarget with _$LnUrlPayTarget {
+  const LnUrlPayTarget._();
+
+  const factory LnUrlPayTarget.lnAddress({required String address}) = LnUrlPayTarget_LnAddress;
+  const factory LnUrlPayTarget.domain({required String domain}) = LnUrlPayTarget_Domain;
+}
+
+class LnUrlWithdrawInfo {
+  final String endpoint;
+
+  const LnUrlWithdrawInfo({required this.endpoint});
+
+  @override
+  int get hashCode => endpoint.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LnUrlWithdrawInfo && runtimeType == other.runtimeType && endpoint == other.endpoint;
 }
 
 /// Internal SDK log entry
@@ -696,7 +719,6 @@ class Payment {
   final BigInt feeMsat;
   final PaymentStatus status;
   final String? error;
-  final String? description;
   final PaymentDetails details;
   final String? metadata;
 
@@ -708,7 +730,6 @@ class Payment {
     required this.feeMsat,
     required this.status,
     this.error,
-    this.description,
     required this.details,
     this.metadata,
   });
@@ -722,7 +743,6 @@ class Payment {
       feeMsat.hashCode ^
       status.hashCode ^
       error.hashCode ^
-      description.hashCode ^
       details.hashCode ^
       metadata.hashCode;
 
@@ -738,7 +758,6 @@ class Payment {
           feeMsat == other.feeMsat &&
           status == other.status &&
           error == other.error &&
-          description == other.description &&
           details == other.details &&
           metadata == other.metadata;
 }
@@ -952,9 +971,6 @@ class ReceivePaymentRequest {
   /// Otherwise the default fee options will be used.
   final OpeningFeeParams? openingFeeParams;
 
-  /// If set to true, then the bolt11 invoice returned includes the description hash.
-  final bool? useDescriptionHash;
-
   /// if specified, set the time the invoice is valid for, in seconds.
   final int? expiry;
 
@@ -966,7 +982,6 @@ class ReceivePaymentRequest {
     required this.description,
     this.preimage,
     this.openingFeeParams,
-    this.useDescriptionHash,
     this.expiry,
     this.cltv,
   });
@@ -977,7 +992,6 @@ class ReceivePaymentRequest {
       description.hashCode ^
       preimage.hashCode ^
       openingFeeParams.hashCode ^
-      useDescriptionHash.hashCode ^
       expiry.hashCode ^
       cltv.hashCode;
 
@@ -990,7 +1004,6 @@ class ReceivePaymentRequest {
           description == other.description &&
           preimage == other.preimage &&
           openingFeeParams == other.openingFeeParams &&
-          useDescriptionHash == other.useDescriptionHash &&
           expiry == other.expiry &&
           cltv == other.cltv;
 }

@@ -648,7 +648,6 @@ pub struct Payment {
     pub fee_msat: u64,
     pub status: PaymentStatus,
     pub error: Option<String>,
-    pub description: Option<String>,
     pub details: PaymentDetails,
     pub metadata: Option<String>,
 }
@@ -664,6 +663,39 @@ pub(crate) struct PaymentExternalInfo {
     pub lnurl_withdraw_endpoint: Option<String>,
     pub attempted_amount_msat: Option<u64>,
     pub attempted_error: Option<String>,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub enum LnUrlPayTarget {
+    LnAddress { address: String },
+    Domain { domain: String },
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub struct LnUrlPayInfo {
+    pub target: LnUrlPayTarget,
+    pub metadata: String,
+    pub comment: Option<String>,
+    pub success_action: Option<SuccessActionProcessed>,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub struct LnUrlWithdrawInfo {
+    pub endpoint: String,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub enum LnUrlInfo {
+    Pay { info: LnUrlPayInfo },
+    Withdraw { info: LnUrlWithdrawInfo },
+}
+
+#[derive(Default, PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct LnPaymentInfo {
+    pub bolt11: String,
+    pub payment_hash: String,
+    pub destination_pubkey: String,
+    pub description: Option<String>,
 }
 
 /// Represents a list payments request.
@@ -722,25 +754,9 @@ pub struct LnPaymentDetails {
     pub payment_preimage: String,
     pub keysend: bool,
     pub bolt11: String,
+    pub description: Option<String>,
 
-    /// Only set for [PaymentType::Sent] payments that are part of a LNURL-pay workflow where
-    /// the endpoint returns a success action
-    pub lnurl_success_action: Option<SuccessActionProcessed>,
-
-    /// Only set for [PaymentType::Sent] payments if it is not a payment to a Lightning Address
-    pub lnurl_pay_domain: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments if the user sent the comment using LNURL-pay
-    pub lnurl_pay_comment: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments that are sent to a Lightning Address
-    pub ln_address: Option<String>,
-
-    /// Only set for [PaymentType::Sent] payments where the receiver endpoint returned LNURL metadata
-    pub lnurl_metadata: Option<String>,
-
-    /// Only set for [PaymentType::Received] payments that were received as part of LNURL-withdraw
-    pub lnurl_withdraw_endpoint: Option<String>,
+    pub lnurl_info: Option<LnUrlInfo>,
 
     /// Only set for [PaymentType::Received] payments that were received in the context of a swap
     pub swap_info: Option<SwapInfo>,
@@ -790,8 +806,6 @@ pub struct ReceivePaymentRequest {
     /// If set and valid, these fess options are used when a new channels is needed.
     /// Otherwise the default fee options will be used.
     pub opening_fee_params: Option<OpeningFeeParams>,
-    /// If set to true, then the bolt11 invoice returned includes the description hash.
-    pub use_description_hash: Option<bool>,
     /// if specified, set the time the invoice is valid for, in seconds.
     pub expiry: Option<u32>,
     /// if specified, sets the min_final_cltv_expiry for the invoice

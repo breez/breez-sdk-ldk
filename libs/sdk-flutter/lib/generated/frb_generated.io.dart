@@ -126,7 +126,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   LnUrlErrorData dco_decode_box_autoadd_ln_url_error_data(dynamic raw);
 
   @protected
+  LnUrlInfo dco_decode_box_autoadd_ln_url_info(dynamic raw);
+
+  @protected
   LnUrlPayErrorData dco_decode_box_autoadd_ln_url_pay_error_data(dynamic raw);
+
+  @protected
+  LnUrlPayInfo dco_decode_box_autoadd_ln_url_pay_info(dynamic raw);
 
   @protected
   LnUrlPayRequest dco_decode_box_autoadd_ln_url_pay_request(dynamic raw);
@@ -136,6 +142,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LnUrlPaySuccessData dco_decode_box_autoadd_ln_url_pay_success_data(dynamic raw);
+
+  @protected
+  LnUrlWithdrawInfo dco_decode_box_autoadd_ln_url_withdraw_info(dynamic raw);
 
   @protected
   LnUrlWithdrawRequest dco_decode_box_autoadd_ln_url_withdraw_request(dynamic raw);
@@ -375,7 +384,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   LnUrlErrorData dco_decode_ln_url_error_data(dynamic raw);
 
   @protected
+  LnUrlInfo dco_decode_ln_url_info(dynamic raw);
+
+  @protected
   LnUrlPayErrorData dco_decode_ln_url_pay_error_data(dynamic raw);
+
+  @protected
+  LnUrlPayInfo dco_decode_ln_url_pay_info(dynamic raw);
 
   @protected
   LnUrlPayRequest dco_decode_ln_url_pay_request(dynamic raw);
@@ -388,6 +403,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LnUrlPaySuccessData dco_decode_ln_url_pay_success_data(dynamic raw);
+
+  @protected
+  LnUrlPayTarget dco_decode_ln_url_pay_target(dynamic raw);
+
+  @protected
+  LnUrlWithdrawInfo dco_decode_ln_url_withdraw_info(dynamic raw);
 
   @protected
   LnUrlWithdrawRequest dco_decode_ln_url_withdraw_request(dynamic raw);
@@ -454,6 +475,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice? dco_decode_opt_box_autoadd_ln_invoice(dynamic raw);
+
+  @protected
+  LnUrlInfo? dco_decode_opt_box_autoadd_ln_url_info(dynamic raw);
 
   @protected
   LspInformation? dco_decode_opt_box_autoadd_lsp_information(dynamic raw);
@@ -765,7 +789,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   LnUrlErrorData sse_decode_box_autoadd_ln_url_error_data(SseDeserializer deserializer);
 
   @protected
+  LnUrlInfo sse_decode_box_autoadd_ln_url_info(SseDeserializer deserializer);
+
+  @protected
   LnUrlPayErrorData sse_decode_box_autoadd_ln_url_pay_error_data(SseDeserializer deserializer);
+
+  @protected
+  LnUrlPayInfo sse_decode_box_autoadd_ln_url_pay_info(SseDeserializer deserializer);
 
   @protected
   LnUrlPayRequest sse_decode_box_autoadd_ln_url_pay_request(SseDeserializer deserializer);
@@ -775,6 +805,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LnUrlPaySuccessData sse_decode_box_autoadd_ln_url_pay_success_data(SseDeserializer deserializer);
+
+  @protected
+  LnUrlWithdrawInfo sse_decode_box_autoadd_ln_url_withdraw_info(SseDeserializer deserializer);
 
   @protected
   LnUrlWithdrawRequest sse_decode_box_autoadd_ln_url_withdraw_request(SseDeserializer deserializer);
@@ -1022,7 +1055,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   LnUrlErrorData sse_decode_ln_url_error_data(SseDeserializer deserializer);
 
   @protected
+  LnUrlInfo sse_decode_ln_url_info(SseDeserializer deserializer);
+
+  @protected
   LnUrlPayErrorData sse_decode_ln_url_pay_error_data(SseDeserializer deserializer);
+
+  @protected
+  LnUrlPayInfo sse_decode_ln_url_pay_info(SseDeserializer deserializer);
 
   @protected
   LnUrlPayRequest sse_decode_ln_url_pay_request(SseDeserializer deserializer);
@@ -1035,6 +1074,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LnUrlPaySuccessData sse_decode_ln_url_pay_success_data(SseDeserializer deserializer);
+
+  @protected
+  LnUrlPayTarget sse_decode_ln_url_pay_target(SseDeserializer deserializer);
+
+  @protected
+  LnUrlWithdrawInfo sse_decode_ln_url_withdraw_info(SseDeserializer deserializer);
 
   @protected
   LnUrlWithdrawRequest sse_decode_ln_url_withdraw_request(SseDeserializer deserializer);
@@ -1101,6 +1146,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   LNInvoice? sse_decode_opt_box_autoadd_ln_invoice(SseDeserializer deserializer);
+
+  @protected
+  LnUrlInfo? sse_decode_opt_box_autoadd_ln_url_info(SseDeserializer deserializer);
 
   @protected
   LspInformation? sse_decode_opt_box_autoadd_lsp_information(SseDeserializer deserializer);
@@ -1540,12 +1588,28 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  ffi.Pointer<wire_cst_ln_url_info> cst_encode_box_autoadd_ln_url_info(LnUrlInfo raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ptr = wire.cst_new_box_autoadd_ln_url_info();
+    cst_api_fill_to_wire_ln_url_info(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
   ffi.Pointer<wire_cst_ln_url_pay_error_data> cst_encode_box_autoadd_ln_url_pay_error_data(
     LnUrlPayErrorData raw,
   ) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ptr = wire.cst_new_box_autoadd_ln_url_pay_error_data();
     cst_api_fill_to_wire_ln_url_pay_error_data(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_ln_url_pay_info> cst_encode_box_autoadd_ln_url_pay_info(LnUrlPayInfo raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ptr = wire.cst_new_box_autoadd_ln_url_pay_info();
+    cst_api_fill_to_wire_ln_url_pay_info(raw, ptr.ref);
     return ptr;
   }
 
@@ -1574,6 +1638,16 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     // Codec=Cst (C-struct based), see doc to use other codecs
     final ptr = wire.cst_new_box_autoadd_ln_url_pay_success_data();
     cst_api_fill_to_wire_ln_url_pay_success_data(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_ln_url_withdraw_info> cst_encode_box_autoadd_ln_url_withdraw_info(
+    LnUrlWithdrawInfo raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ptr = wire.cst_new_box_autoadd_ln_url_withdraw_info();
+    cst_api_fill_to_wire_ln_url_withdraw_info(raw, ptr.ref);
     return ptr;
   }
 
@@ -2095,6 +2169,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  ffi.Pointer<wire_cst_ln_url_info> cst_encode_opt_box_autoadd_ln_url_info(LnUrlInfo? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? ffi.nullptr : cst_encode_box_autoadd_ln_url_info(raw);
+  }
+
+  @protected
   ffi.Pointer<wire_cst_lsp_information> cst_encode_opt_box_autoadd_lsp_information(LspInformation? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? ffi.nullptr : cst_encode_box_autoadd_lsp_information(raw);
@@ -2418,11 +2498,27 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  void cst_api_fill_to_wire_box_autoadd_ln_url_info(
+    LnUrlInfo apiObj,
+    ffi.Pointer<wire_cst_ln_url_info> wireObj,
+  ) {
+    cst_api_fill_to_wire_ln_url_info(apiObj, wireObj.ref);
+  }
+
+  @protected
   void cst_api_fill_to_wire_box_autoadd_ln_url_pay_error_data(
     LnUrlPayErrorData apiObj,
     ffi.Pointer<wire_cst_ln_url_pay_error_data> wireObj,
   ) {
     cst_api_fill_to_wire_ln_url_pay_error_data(apiObj, wireObj.ref);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_box_autoadd_ln_url_pay_info(
+    LnUrlPayInfo apiObj,
+    ffi.Pointer<wire_cst_ln_url_pay_info> wireObj,
+  ) {
+    cst_api_fill_to_wire_ln_url_pay_info(apiObj, wireObj.ref);
   }
 
   @protected
@@ -2447,6 +2543,14 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     ffi.Pointer<wire_cst_ln_url_pay_success_data> wireObj,
   ) {
     cst_api_fill_to_wire_ln_url_pay_success_data(apiObj, wireObj.ref);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_box_autoadd_ln_url_withdraw_info(
+    LnUrlWithdrawInfo apiObj,
+    ffi.Pointer<wire_cst_ln_url_withdraw_info> wireObj,
+  ) {
+    cst_api_fill_to_wire_ln_url_withdraw_info(apiObj, wireObj.ref);
   }
 
   @protected
@@ -2895,8 +2999,8 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wire_cst_invoice_paid_details wireObj,
   ) {
     wireObj.payment_hash = cst_encode_String(apiObj.paymentHash);
-    wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
-    wireObj.payment = cst_encode_opt_box_autoadd_payment(apiObj.payment);
+    wireObj.payment_preimage = cst_encode_String(apiObj.paymentPreimage);
+    wireObj.amount_msat = cst_encode_u_64(apiObj.amountMsat);
   }
 
   @protected
@@ -2965,14 +3069,8 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.payment_preimage = cst_encode_String(apiObj.paymentPreimage);
     wireObj.keysend = cst_encode_bool(apiObj.keysend);
     wireObj.bolt11 = cst_encode_String(apiObj.bolt11);
-    wireObj.lnurl_success_action = cst_encode_opt_box_autoadd_success_action_processed(
-      apiObj.lnurlSuccessAction,
-    );
-    wireObj.lnurl_pay_domain = cst_encode_opt_String(apiObj.lnurlPayDomain);
-    wireObj.lnurl_pay_comment = cst_encode_opt_String(apiObj.lnurlPayComment);
-    wireObj.ln_address = cst_encode_opt_String(apiObj.lnAddress);
-    wireObj.lnurl_metadata = cst_encode_opt_String(apiObj.lnurlMetadata);
-    wireObj.lnurl_withdraw_endpoint = cst_encode_opt_String(apiObj.lnurlWithdrawEndpoint);
+    wireObj.description = cst_encode_opt_String(apiObj.description);
+    wireObj.lnurl_info = cst_encode_opt_box_autoadd_ln_url_info(apiObj.lnurlInfo);
     wireObj.swap_info = cst_encode_opt_box_autoadd_swap_info(apiObj.swapInfo);
     wireObj.reverse_swap_info = cst_encode_opt_box_autoadd_reverse_swap_info(apiObj.reverseSwapInfo);
   }
@@ -3011,12 +3109,36 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   }
 
   @protected
+  void cst_api_fill_to_wire_ln_url_info(LnUrlInfo apiObj, wire_cst_ln_url_info wireObj) {
+    if (apiObj is LnUrlInfo_Pay) {
+      var pre_info = cst_encode_box_autoadd_ln_url_pay_info(apiObj.info);
+      wireObj.tag = 0;
+      wireObj.kind.Pay.info = pre_info;
+      return;
+    }
+    if (apiObj is LnUrlInfo_Withdraw) {
+      var pre_info = cst_encode_box_autoadd_ln_url_withdraw_info(apiObj.info);
+      wireObj.tag = 1;
+      wireObj.kind.Withdraw.info = pre_info;
+      return;
+    }
+  }
+
+  @protected
   void cst_api_fill_to_wire_ln_url_pay_error_data(
     LnUrlPayErrorData apiObj,
     wire_cst_ln_url_pay_error_data wireObj,
   ) {
     wireObj.payment_hash = cst_encode_String(apiObj.paymentHash);
     wireObj.reason = cst_encode_String(apiObj.reason);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_ln_url_pay_info(LnUrlPayInfo apiObj, wire_cst_ln_url_pay_info wireObj) {
+    cst_api_fill_to_wire_ln_url_pay_target(apiObj.target, wireObj.target);
+    wireObj.metadata = cst_encode_String(apiObj.metadata);
+    wireObj.comment = cst_encode_opt_String(apiObj.comment);
+    wireObj.success_action = cst_encode_opt_box_autoadd_success_action_processed(apiObj.successAction);
   }
 
   @protected
@@ -3073,6 +3195,30 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   ) {
     cst_api_fill_to_wire_payment(apiObj.payment, wireObj.payment);
     wireObj.success_action = cst_encode_opt_box_autoadd_success_action_processed(apiObj.successAction);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_ln_url_pay_target(LnUrlPayTarget apiObj, wire_cst_ln_url_pay_target wireObj) {
+    if (apiObj is LnUrlPayTarget_LnAddress) {
+      var pre_address = cst_encode_String(apiObj.address);
+      wireObj.tag = 0;
+      wireObj.kind.LnAddress.address = pre_address;
+      return;
+    }
+    if (apiObj is LnUrlPayTarget_Domain) {
+      var pre_domain = cst_encode_String(apiObj.domain);
+      wireObj.tag = 1;
+      wireObj.kind.Domain.domain = pre_domain;
+      return;
+    }
+  }
+
+  @protected
+  void cst_api_fill_to_wire_ln_url_withdraw_info(
+    LnUrlWithdrawInfo apiObj,
+    wire_cst_ln_url_withdraw_info wireObj,
+  ) {
+    wireObj.endpoint = cst_encode_String(apiObj.endpoint);
   }
 
   @protected
@@ -3272,7 +3418,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.fee_msat = cst_encode_u_64(apiObj.feeMsat);
     wireObj.status = cst_encode_payment_status(apiObj.status);
     wireObj.error = cst_encode_opt_String(apiObj.error);
-    wireObj.description = cst_encode_opt_String(apiObj.description);
     cst_api_fill_to_wire_payment_details(apiObj.details, wireObj.details);
     wireObj.metadata = cst_encode_opt_String(apiObj.metadata);
   }
@@ -3388,7 +3533,6 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
     wireObj.description = cst_encode_String(apiObj.description);
     wireObj.preimage = cst_encode_opt_list_prim_u_8_strict(apiObj.preimage);
     wireObj.opening_fee_params = cst_encode_opt_box_autoadd_opening_fee_params(apiObj.openingFeeParams);
-    wireObj.use_description_hash = cst_encode_opt_box_autoadd_bool(apiObj.useDescriptionHash);
     wireObj.expiry = cst_encode_opt_box_autoadd_u_32(apiObj.expiry);
     wireObj.cltv = cst_encode_opt_box_autoadd_u_32(apiObj.cltv);
   }
@@ -3838,7 +3982,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_box_autoadd_ln_url_error_data(LnUrlErrorData self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_ln_url_info(LnUrlInfo self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_ln_url_pay_error_data(LnUrlPayErrorData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_ln_url_pay_info(LnUrlPayInfo self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_ln_url_pay_request(LnUrlPayRequest self, SseSerializer serializer);
@@ -3848,6 +3998,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_box_autoadd_ln_url_pay_success_data(LnUrlPaySuccessData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_ln_url_withdraw_info(LnUrlWithdrawInfo self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_ln_url_withdraw_request(LnUrlWithdrawRequest self, SseSerializer serializer);
@@ -4117,7 +4270,13 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
   void sse_encode_ln_url_error_data(LnUrlErrorData self, SseSerializer serializer);
 
   @protected
+  void sse_encode_ln_url_info(LnUrlInfo self, SseSerializer serializer);
+
+  @protected
   void sse_encode_ln_url_pay_error_data(LnUrlPayErrorData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_url_pay_info(LnUrlPayInfo self, SseSerializer serializer);
 
   @protected
   void sse_encode_ln_url_pay_request(LnUrlPayRequest self, SseSerializer serializer);
@@ -4130,6 +4289,12 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_ln_url_pay_success_data(LnUrlPaySuccessData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_url_pay_target(LnUrlPayTarget self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_url_withdraw_info(LnUrlWithdrawInfo self, SseSerializer serializer);
 
   @protected
   void sse_encode_ln_url_withdraw_request(LnUrlWithdrawRequest self, SseSerializer serializer);
@@ -4199,6 +4364,9 @@ abstract class BreezSdkBindingsApiImplPlatform extends BaseApiImpl<BreezSdkBindi
 
   @protected
   void sse_encode_opt_box_autoadd_ln_invoice(LNInvoice? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_ln_url_info(LnUrlInfo? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_lsp_information(LspInformation? self, SseSerializer serializer);
@@ -5415,6 +5583,17 @@ class BreezSdkBindingsWire implements BaseWire {
   late final _cst_new_box_autoadd_ln_url_error_data = _cst_new_box_autoadd_ln_url_error_dataPtr
       .asFunction<ffi.Pointer<wire_cst_ln_url_error_data> Function()>();
 
+  ffi.Pointer<wire_cst_ln_url_info> cst_new_box_autoadd_ln_url_info() {
+    return _cst_new_box_autoadd_ln_url_info();
+  }
+
+  late final _cst_new_box_autoadd_ln_url_infoPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_ln_url_info> Function()>>(
+        'frbgen_breez_sdk_cst_new_box_autoadd_ln_url_info',
+      );
+  late final _cst_new_box_autoadd_ln_url_info = _cst_new_box_autoadd_ln_url_infoPtr
+      .asFunction<ffi.Pointer<wire_cst_ln_url_info> Function()>();
+
   ffi.Pointer<wire_cst_ln_url_pay_error_data> cst_new_box_autoadd_ln_url_pay_error_data() {
     return _cst_new_box_autoadd_ln_url_pay_error_data();
   }
@@ -5425,6 +5604,17 @@ class BreezSdkBindingsWire implements BaseWire {
       );
   late final _cst_new_box_autoadd_ln_url_pay_error_data = _cst_new_box_autoadd_ln_url_pay_error_dataPtr
       .asFunction<ffi.Pointer<wire_cst_ln_url_pay_error_data> Function()>();
+
+  ffi.Pointer<wire_cst_ln_url_pay_info> cst_new_box_autoadd_ln_url_pay_info() {
+    return _cst_new_box_autoadd_ln_url_pay_info();
+  }
+
+  late final _cst_new_box_autoadd_ln_url_pay_infoPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_ln_url_pay_info> Function()>>(
+        'frbgen_breez_sdk_cst_new_box_autoadd_ln_url_pay_info',
+      );
+  late final _cst_new_box_autoadd_ln_url_pay_info = _cst_new_box_autoadd_ln_url_pay_infoPtr
+      .asFunction<ffi.Pointer<wire_cst_ln_url_pay_info> Function()>();
 
   ffi.Pointer<wire_cst_ln_url_pay_request> cst_new_box_autoadd_ln_url_pay_request() {
     return _cst_new_box_autoadd_ln_url_pay_request();
@@ -5458,6 +5648,17 @@ class BreezSdkBindingsWire implements BaseWire {
       );
   late final _cst_new_box_autoadd_ln_url_pay_success_data = _cst_new_box_autoadd_ln_url_pay_success_dataPtr
       .asFunction<ffi.Pointer<wire_cst_ln_url_pay_success_data> Function()>();
+
+  ffi.Pointer<wire_cst_ln_url_withdraw_info> cst_new_box_autoadd_ln_url_withdraw_info() {
+    return _cst_new_box_autoadd_ln_url_withdraw_info();
+  }
+
+  late final _cst_new_box_autoadd_ln_url_withdraw_infoPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_ln_url_withdraw_info> Function()>>(
+        'frbgen_breez_sdk_cst_new_box_autoadd_ln_url_withdraw_info',
+      );
+  late final _cst_new_box_autoadd_ln_url_withdraw_info = _cst_new_box_autoadd_ln_url_withdraw_infoPtr
+      .asFunction<ffi.Pointer<wire_cst_ln_url_withdraw_info> Function()>();
 
   ffi.Pointer<wire_cst_ln_url_withdraw_request> cst_new_box_autoadd_ln_url_withdraw_request() {
     return _cst_new_box_autoadd_ln_url_withdraw_request();
@@ -6053,6 +6254,40 @@ final class wire_cst_list_prim_u_8_strict extends ffi.Struct {
   external int len;
 }
 
+final class wire_cst_invoice_paid_details extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_hash;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_preimage;
+
+  @ffi.Uint64()
+  external int amount_msat;
+}
+
+final class wire_cst_BreezEvent_InvoicePaid extends ffi.Struct {
+  external ffi.Pointer<wire_cst_invoice_paid_details> details;
+}
+
+final class wire_cst_LnUrlPayTarget_LnAddress extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> address;
+}
+
+final class wire_cst_LnUrlPayTarget_Domain extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> domain;
+}
+
+final class LnUrlPayTargetKind extends ffi.Union {
+  external wire_cst_LnUrlPayTarget_LnAddress LnAddress;
+
+  external wire_cst_LnUrlPayTarget_Domain Domain;
+}
+
+final class wire_cst_ln_url_pay_target extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external LnUrlPayTargetKind kind;
+}
+
 final class wire_cst_aes_success_action_data_decrypted extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
 
@@ -6118,6 +6353,41 @@ final class wire_cst_success_action_processed extends ffi.Struct {
   external int tag;
 
   external SuccessActionProcessedKind kind;
+}
+
+final class wire_cst_ln_url_pay_info extends ffi.Struct {
+  external wire_cst_ln_url_pay_target target;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> metadata;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> comment;
+
+  external ffi.Pointer<wire_cst_success_action_processed> success_action;
+}
+
+final class wire_cst_LnUrlInfo_Pay extends ffi.Struct {
+  external ffi.Pointer<wire_cst_ln_url_pay_info> info;
+}
+
+final class wire_cst_ln_url_withdraw_info extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> endpoint;
+}
+
+final class wire_cst_LnUrlInfo_Withdraw extends ffi.Struct {
+  external ffi.Pointer<wire_cst_ln_url_withdraw_info> info;
+}
+
+final class LnUrlInfoKind extends ffi.Union {
+  external wire_cst_LnUrlInfo_Pay Pay;
+
+  external wire_cst_LnUrlInfo_Withdraw Withdraw;
+}
+
+final class wire_cst_ln_url_info extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external LnUrlInfoKind kind;
 }
 
 final class wire_cst_list_String extends ffi.Struct {
@@ -6233,17 +6503,9 @@ final class wire_cst_ln_payment_details extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> bolt11;
 
-  external ffi.Pointer<wire_cst_success_action_processed> lnurl_success_action;
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
 
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_pay_domain;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_pay_comment;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> ln_address;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_metadata;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> lnurl_withdraw_endpoint;
+  external ffi.Pointer<wire_cst_ln_url_info> lnurl_info;
 
   external ffi.Pointer<wire_cst_swap_info> swap_info;
 
@@ -6302,23 +6564,9 @@ final class wire_cst_payment extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> error;
 
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
-
   external wire_cst_payment_details details;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> metadata;
-}
-
-final class wire_cst_invoice_paid_details extends ffi.Struct {
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> payment_hash;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> bolt11;
-
-  external ffi.Pointer<wire_cst_payment> payment;
-}
-
-final class wire_cst_BreezEvent_InvoicePaid extends ffi.Struct {
-  external ffi.Pointer<wire_cst_invoice_paid_details> details;
 }
 
 final class wire_cst_BreezEvent_PaymentSucceed extends ffi.Struct {
@@ -6711,8 +6959,6 @@ final class wire_cst_receive_payment_request extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> preimage;
 
   external ffi.Pointer<wire_cst_opening_fee_params> opening_fee_params;
-
-  external ffi.Pointer<ffi.Bool> use_description_hash;
 
   external ffi.Pointer<ffi.Uint32> expiry;
 

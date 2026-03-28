@@ -13,6 +13,7 @@ class ReceivePaymentTask : TaskProtocol {
     internal var bestAttemptContent: UNMutableNotificationContent?
     internal var logger: ServiceLogger
     internal var receivedPayment: Payment? = nil
+    internal var breezSDK: BlockingBreezServices? = nil
     
     init(payload: String, logger: ServiceLogger, contentHandler: ((UNNotificationContent) -> Void)? = nil, bestAttemptContent: UNMutableNotificationContent? = nil) {
         self.payload = payload
@@ -24,8 +25,15 @@ class ReceivePaymentTask : TaskProtocol {
     public func onEvent(e: BreezEvent) {
         switch e {
         case .invoicePaid(details: let details):
-            self.logger.log(tag: TAG, line: "Received payment. Bolt11: \(details.bolt11)\nPayment Hash:\(details.paymentHash)", level: "INFO")
-            receivedPayment = details.payment
+            self.logger.log(tag: TAG, line: "Received payment.\nPayment Hash:\(details.paymentHash)", level: "INFO")
+            let loadedPayment: Payment?
+            do {
+                loadedPayment = try self.breezSDK?.paymentByHash(hash: details.paymentHash)
+            } catch let e {
+                self.logger.log(tag: TAG, line: "Failed to load payment by hash \(details.paymentHash): \(e)", level: "WARN")
+                loadedPayment = nil
+            }
+            receivedPayment = loadedPayment
             break
         case .synced:
             self.logger.log(tag: TAG, line: "got synced event", level: "INFO")
@@ -40,6 +48,7 @@ class ReceivePaymentTask : TaskProtocol {
     
     func start(breezSDK: BlockingBreezServices) throws {
         do {
+            self.breezSDK = breezSDK
             let request = try JSONDecoder().decode(ReceivePaymentNotificationRequest.self, from: self.payload.data(using: .utf8)!)
             let existingPayment = try breezSDK.paymentByHash(hash: request.payment_hash)
             if existingPayment != nil {

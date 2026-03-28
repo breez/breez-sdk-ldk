@@ -260,7 +260,6 @@ dictionary Payment {
     u64 fee_msat;
     PaymentStatus status;
     string? error;
-    string? description;
     PaymentDetails details;
     string? metadata;
 };
@@ -320,14 +319,33 @@ dictionary LnPaymentDetails {
     string payment_preimage;
     boolean keysend;
     string bolt11;
-    SuccessActionProcessed? lnurl_success_action;
-    string? lnurl_pay_domain;
-    string? lnurl_pay_comment;
-    string? lnurl_metadata;
-    string? ln_address;
-    string? lnurl_withdraw_endpoint;
+    string description;
+	LnUrlInfo? lnurl_info;
     SwapInfo? swap_info;
     ReverseSwapInfo? reverse_swap_info;
+};
+
+[Enum]
+interface LnUrlPayTarget {
+    LnAddress(string address);
+    Domain(string domain);
+};
+
+dictionary LnUrlPayInfo {
+    LnUrlPayTarget target;
+    string metadata;
+    string? comment;
+    SuccessActionProcessed? success_action;
+};
+
+dictionary LnUrlWithdrawInfo {
+    string endpoint;
+};
+
+[Enum]
+interface LnUrlInfo {
+    Pay(LnUrlPayInfo info);
+    Withdraw(LnUrlWithdrawInfo info);
 };
 
 dictionary ClosedChannelPaymentDetails {
@@ -395,8 +413,8 @@ dictionary LogEntry {
 
 dictionary InvoicePaidDetails {
     string payment_hash;
-    string bolt11;
-    Payment? payment;
+    string payment_preimage;
+	u64 amount_msat;
 };
 
 dictionary PaymentFailedData {

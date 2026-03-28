@@ -112,8 +112,8 @@ export interface FiatCurrency {
 
 export interface InvoicePaidDetails {
     paymentHash: string
-    bolt11: string
-    payment?: Payment
+    paymentPreimage: string
+    amountMsat: number
 }
 
 export interface LnInvoice {
@@ -170,12 +170,8 @@ export interface LnPaymentDetails {
     paymentPreimage: string
     keysend: boolean
     bolt11: string
-    lnurlSuccessAction?: SuccessActionProcessed
-    lnurlPayDomain?: string
-    lnurlPayComment?: string
-    lnurlMetadata?: string
-    lnAddress?: string
-    lnurlWithdrawEndpoint?: string
+    description: string
+    lnurlInfo?: LnUrlInfo
     swapInfo?: SwapInfo
     reverseSwapInfo?: ReverseSwapInfo
 }
@@ -194,6 +190,13 @@ export interface LnUrlErrorData {
 export interface LnUrlPayErrorData {
     paymentHash: string
     reason: string
+}
+
+export interface LnUrlPayInfo {
+    target: LnUrlPayTarget
+    metadata: string
+    comment?: string
+    successAction?: SuccessActionProcessed
 }
 
 export interface LnUrlPayRequest {
@@ -219,6 +222,10 @@ export interface LnUrlPayRequestData {
 export interface LnUrlPaySuccessData {
     successAction?: SuccessActionProcessed
     payment: Payment
+}
+
+export interface LnUrlWithdrawInfo {
+    endpoint: string
 }
 
 export interface LnUrlWithdrawRequest {
@@ -345,7 +352,6 @@ export interface Payment {
     feeMsat: number
     status: PaymentStatus
     error?: string
-    description?: string
     details: PaymentDetails
     metadata?: string
 }
@@ -731,6 +737,19 @@ export type LnUrlCallbackStatus = {
     data: LnUrlErrorData
 }
 
+export enum LnUrlInfoVariant {
+    PAY = "pay",
+    WITHDRAW = "withdraw"
+}
+
+export type LnUrlInfo = {
+    type: LnUrlInfoVariant.PAY,
+    info: LnUrlPayInfo
+} | {
+    type: LnUrlInfoVariant.WITHDRAW,
+    info: LnUrlWithdrawInfo
+}
+
 export enum LnUrlPayResultVariant {
     ENDPOINT_SUCCESS = "endpointSuccess",
     ENDPOINT_ERROR = "endpointError",
@@ -746,6 +765,19 @@ export type LnUrlPayResult = {
 } | {
     type: LnUrlPayResultVariant.PAY_ERROR,
     data: LnUrlPayErrorData
+}
+
+export enum LnUrlPayTargetVariant {
+    LN_ADDRESS = "lnAddress",
+    DOMAIN = "domain"
+}
+
+export type LnUrlPayTarget = {
+    type: LnUrlPayTargetVariant.LN_ADDRESS,
+    address: string
+} | {
+    type: LnUrlPayTargetVariant.DOMAIN,
+    domain: string
 }
 
 export enum LnUrlWithdrawResultVariant {

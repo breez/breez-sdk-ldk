@@ -2,6 +2,7 @@ pub(crate) mod cache;
 pub(crate) mod db;
 pub(crate) mod error;
 pub(crate) mod migrations;
+pub(crate) mod payment_store;
 pub(crate) mod reverseswap;
 pub(crate) mod send_pays;
 pub(crate) mod settings;

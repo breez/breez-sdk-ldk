@@ -108,13 +108,17 @@ class CheckMessageResponse {
 /// Details of an invoice that has been paid, included as payload in an emitted [BreezEvent]
 class InvoicePaidDetails {
   final String paymentHash;
-  final String bolt11;
-  final Payment? payment;
+  final String paymentPreimage;
+  final BigInt amountMsat;
 
-  const InvoicePaidDetails({required this.paymentHash, required this.bolt11, this.payment});
+  const InvoicePaidDetails({
+    required this.paymentHash,
+    required this.paymentPreimage,
+    required this.amountMsat,
+  });
 
   @override
-  int get hashCode => paymentHash.hashCode ^ bolt11.hashCode ^ payment.hashCode;
+  int get hashCode => paymentHash.hashCode ^ paymentPreimage.hashCode ^ amountMsat.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -122,8 +126,8 @@ class InvoicePaidDetails {
       other is InvoicePaidDetails &&
           runtimeType == other.runtimeType &&
           paymentHash == other.paymentHash &&
-          bolt11 == other.bolt11 &&
-          payment == other.payment;
+          paymentPreimage == other.paymentPreimage &&
+          amountMsat == other.amountMsat;
 }
 
 class PaymentFailedData {

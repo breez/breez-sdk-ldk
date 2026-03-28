@@ -119,10 +119,10 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.amount_msat, huge_amount_msat - opening_fee_msat);
     assert_eq!(payment.fee_msat, opening_fee_msat);
     assert_eq!(payment.payment_type, PaymentType::Received);
-    assert_eq!(payment.description.unwrap(), "Init");
     if let PaymentDetails::Ln { data } = &payment.details {
         assert_eq!(data.bolt11, invoice.bolt11);
         assert_eq!(data.destination_pubkey, node_pubkey);
+        assert_eq!(data.description, "Init");
     } else {
         panic!("Expected LN payment details");
     }
@@ -156,10 +156,10 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.amount_msat, small_amount_msat);
     assert_eq!(payment.fee_msat, 0);
     assert_eq!(payment.payment_type, PaymentType::Received);
-    assert_eq!(payment.description.unwrap(), "small");
     if let PaymentDetails::Ln { data } = &payment.details {
         assert_eq!(data.bolt11, invoice.bolt11);
         assert_eq!(data.destination_pubkey, node_pubkey);
+        assert_eq!(data.description, "small");
     } else {
         panic!("Expected LN payment details");
     }
@@ -261,12 +261,12 @@ async fn test_node_receive_payments() {
         PaymentStatus::Pending | PaymentStatus::Complete
     ));
 
-    let payment = sent_payment.await.unwrap().unwrap().payment;
-    assert_eq!(payment.status, PaymentStatus::Complete);
-    assert_eq!(payment.amount_msat, amount.to_msat());
-    assert_eq!(payment.fee_msat, 1000);
+    let sent_payment = sent_payment.await.unwrap().unwrap().payment;
+    assert_eq!(sent_payment.status, PaymentStatus::Complete);
+    assert_eq!(sent_payment.amount_msat, amount.to_msat());
+    assert_eq!(sent_payment.fee_msat, 1000);
     assert!(matches!(
-        payment.details,
+        sent_payment.details,
         PaymentDetails::Ln {
             data: LnPaymentDetails { keysend: false, .. }
         }
@@ -278,14 +278,15 @@ async fn test_node_receive_payments() {
     ));
     let payments = services.list_payments(Default::default()).await.unwrap();
     assert_eq!(payments.len(), 3);
-    let payment = payments.first().cloned().unwrap();
+    let payment = payments.first().unwrap();
+    assert_eq!(&sent_payment, payment);
     assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
-    assert_eq!(payment.description.unwrap(), "LND");
     if let PaymentDetails::Ln { data } = &payment.details {
         assert_eq!(data.bolt11, bolt11);
         assert_eq!(data.destination_pubkey, lnd_pubkey);
+        assert_eq!(data.description, "LND");
     } else {
         panic!("Expected LN payment details");
     }
@@ -323,10 +324,10 @@ async fn test_node_receive_payments() {
     assert_eq!(payment.payment_type, PaymentType::Sent);
     assert_eq!(payment.amount_msat, amount.to_msat());
     assert_eq!(payment.fee_msat, 1000);
-    assert_eq!(payment.description.unwrap(), "LND");
     if let PaymentDetails::Ln { data } = &payment.details {
         assert_eq!(data.bolt11, bolt11);
         assert_eq!(data.destination_pubkey, lnd_pubkey);
+        assert_eq!(data.description, "LND");
     } else {
         panic!("Expected LN payment details");
     }
@@ -371,10 +372,10 @@ async fn test_node_receive_payments() {
             data: LnPaymentDetails { keysend: true, .. }
         }
     ));
-    assert!(payment.description.is_none());
     if let PaymentDetails::Ln { data } = &payment.details {
         assert_eq!(data.bolt11, "");
         assert_eq!(data.destination_pubkey, "");
+        assert_eq!(data.description, "");
     } else {
         panic!("Expected LN payment details");
     }
