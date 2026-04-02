@@ -7,6 +7,7 @@ mod log;
 mod lsp;
 mod mempool;
 mod rgs;
+mod swapd;
 mod vss;
 
 use std::path::PathBuf;
@@ -22,6 +23,7 @@ use lsp::Lsp;
 use mempool::Mempool;
 use rand::Rng;
 use rgs::Rgs;
+use swapd::Swapd;
 use testcontainers::{ContainerAsync, Image};
 use testdir::testdir;
 use tokio::sync::OnceCell;
@@ -83,6 +85,7 @@ pub struct ApiCredentials {
     pub username: String,
     pub password: String,
     pub cert: Cert,
+    pub macaroon: Vec<u8>,
 }
 
 impl ApiCredentials {
@@ -128,6 +131,7 @@ pub struct Environment {
     lsp: OnceCell<Lsp>,
     lnd: OnceCell<Lnd>,
     cln: OnceCell<Cln>,
+    swapd: OnceCell<Swapd>,
     channel: OnceCell<()>,
     cln_channel: OnceCell<()>,
     rgs: OnceCell<Rgs>,
@@ -227,6 +231,21 @@ impl Environment {
             .get_or_try_init(|| self.cln_open_channel())
             .await?;
         self.cln().await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn swapd(&self) -> Result<&ApiCredentials> {
+        let swapd = self
+            .swapd
+            .get_or_try_init(|| async {
+                info!("Initializing swapd");
+                let bitcoind_api = self.bitcoind_api();
+                let lnd_grpc_api = async { Ok(&self.lnd().await?.grpc_api) };
+                let result = Swapd::new(&self.environmnet_id, bitcoind_api, lnd_grpc_api).await;
+                log_result(result, "swapd")
+            })
+            .await?;
+        Ok(&swapd.api)
     }
 
     #[instrument(skip(self))]
@@ -339,7 +358,7 @@ impl Environment {
     }
 
     #[instrument(skip(self))]
-    async fn bitcoind(&self) -> Result<&Bitcoind> {
+    pub async fn bitcoind(&self) -> Result<&Bitcoind> {
         let bitcoind = self
             .bitcoind
             .get_or_try_init(|| async {

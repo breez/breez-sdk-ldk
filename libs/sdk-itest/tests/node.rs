@@ -1,8 +1,9 @@
 mod event_listener;
 
+use std::str::FromStr;
 use std::time::Duration;
 
-use bitcoin::Amount;
+use bitcoin::{Address, Amount};
 use breez_sdk_core::error::{ConnectError, SendPaymentError};
 use breez_sdk_core::{
     BreezEvent, BreezServices, Config, ConnectRequest, ListPaymentsRequest, LnPaymentDetails,
@@ -30,6 +31,67 @@ const UNPAYABLE_BOLT11: &str = "lnbcrt10u1p5h5g5kpp5asutj0mvuxr7g5asar2cu0l0mrey
 #[test_log::test]
 async fn test_environment() {
     Environment::default().cln_with_channel().await.unwrap();
+}
+
+#[rstest]
+#[tokio::test(flavor = "multi_thread")]
+#[test_log::test]
+async fn test_node_swap() {
+    let env = Environment::default();
+    let (bitcoind, esplora, vss, lsp, _lnd, swapd) = try_join!(
+        env.bitcoind(),
+        env.esplora_api(),
+        env.vss_api(),
+        env.lsp_external_address(),
+        env.lnd_with_channel(),
+        env.swapd(),
+    )
+    .unwrap();
+    info!("Esplora is running: {}", esplora.external_endpoint());
+    info!("    VSS is running: {}", vss.external_endpoint());
+    info!("    LND is running");
+
+    let seed = rand::rng().random::<[u8; 64]>().to_vec();
+
+    let mut config = Config::regtest(String::new());
+    config.working_dir = testdir!().to_string_lossy().to_string();
+    config.mempoolspace_url = None;
+    config.esplora_url = esplora.external_endpoint();
+    config.vss_url = vss.external_endpoint();
+    config.rgs_url = "localhost:9".to_string();
+    config.lsps2_address = lsp;
+    config.breezserver = swapd.endpoint();
+
+    info!("Starting a fresh node with restore_only=None");
+    let req = ConnectRequest {
+        config: config.clone(),
+        seed: seed.clone(),
+        restore_only: None,
+    };
+
+    let (tx, mut events) = mpsc::channel(100);
+    let services = BreezServices::connect(req, Box::new(EventListenerImpl::new(tx)))
+        .await
+        .unwrap();
+
+    let res = services.receive_onchain(Default::default()).await.unwrap();
+    assert!(res.bitcoin_address.starts_with("bcrt1"));
+    let address = Address::from_str(&res.bitcoin_address)
+        .unwrap()
+        .assume_checked();
+    let amount = Amount::from_sat(50_000);
+    bitcoind.fund_address(&address, amount).await.unwrap();
+    bitcoind.generate_blocks(6).await.unwrap();
+
+    info!("Waiting for BreezEvent::InvoicePaid...");
+    wait_for!(matches!(
+        events.recv().await,
+        Some(BreezEvent::InvoicePaid { .. })
+    ));
+
+    services.disconnect().await.unwrap();
+    drop(services);
+    assert!(events.is_closed());
 }
 
 #[rstest]
